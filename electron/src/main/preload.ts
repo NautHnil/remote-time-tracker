@@ -85,6 +85,19 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // App control APIs
   app: {
     quit: () => ipcRenderer.invoke("app:quit"),
+    getVersion: () => ipcRenderer.invoke("app:get-version"),
+  },
+
+  // Updates APIs
+  updates: {
+    check: () => ipcRenderer.invoke("update:check"),
+    download: () => ipcRenderer.invoke("update:download"),
+    install: () => ipcRenderer.invoke("update:install"),
+    onEvent: (callback: (event: any) => void) => {
+      const handler = (_: any, payload: any) => callback(payload);
+      ipcRenderer.on("update-event", handler);
+      return () => ipcRenderer.removeListener("update-event", handler);
+    },
   },
 });
 
@@ -136,6 +149,13 @@ export interface ElectronAPI {
   };
   app: {
     quit: () => Promise<boolean>;
+    getVersion: () => Promise<string>;
+  };
+  updates: {
+    check: () => Promise<any>;
+    download: () => Promise<any>;
+    install: () => Promise<any>;
+    onEvent: (cb: (event: any) => void) => () => void;
   };
 }
 

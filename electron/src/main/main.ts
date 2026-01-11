@@ -6,6 +6,7 @@ import { ScreenshotService } from "./services/ScreenshotService";
 import { SyncService } from "./services/SyncService";
 import { TaskService } from "./services/TaskService";
 import { TimeTrackerService } from "./services/TimeTrackerService";
+import { UpdateService } from "./services/UpdateService";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -17,6 +18,7 @@ let screenshotService: ScreenshotService;
 let syncService: SyncService;
 let taskService: TaskService;
 let timeTrackerService: TimeTrackerService;
+let updateService: UpdateService | null = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -226,6 +228,11 @@ async function initializeServices() {
   // Start background services
   syncService.startAutoSync();
   console.log("✅ Background services started");
+
+  // Initialize update service (mainWindow may not exist yet)
+  // We will set the window later after creating the BrowserWindow.
+  updateService = new UpdateService(null);
+  console.log("✅ Update service created");
 }
 
 function setupIpcHandlers() {
@@ -412,6 +419,30 @@ function setupIpcHandlers() {
     return true;
   });
 
+  // Updates
+  ipcMain.handle("update:check", async () => {
+    if (!updateService)
+      return { success: false, error: "Update service not initialized" };
+    return await updateService.checkForUpdates();
+  });
+
+  ipcMain.handle("update:download", async () => {
+    if (!updateService)
+      return { success: false, error: "Update service not initialized" };
+    return await updateService.downloadUpdate();
+  });
+
+  ipcMain.handle("update:install", async () => {
+    if (!updateService)
+      return { success: false, error: "Update service not initialized" };
+    return await updateService.installAndRestart();
+  });
+
+  // App info
+  ipcMain.handle("app:get-version", async () => {
+    return app.getVersion();
+  });
+
   // App control
   ipcMain.handle("app:quit", async () => {
     await quitApp();
@@ -423,6 +454,16 @@ function setupIpcHandlers() {
 app.whenReady().then(async () => {
   await initializeServices();
   createWindow();
+
+  // Now that window is available, attach to updateService
+  if (updateService && mainWindow) {
+    updateService.setWindow(mainWindow);
+    // Optionally check for updates on start (non-blocking)
+    updateService
+      .checkForUpdatesAndNotify()
+      .catch((e) => console.error("Update check on start failed:", e));
+  }
+
   createTray();
 
   app.on("activate", () => {

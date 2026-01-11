@@ -388,6 +388,12 @@ function Settings() {
             </p>
           </div>
         </div>
+
+        {/* Updates */}
+        <div className="bg-gray-800 rounded-xl p-6">
+          <h3 className="text-xl font-semibold mb-4">Updates</h3>
+          <UpdateSection />
+        </div>
       </div>
 
       {/* Dialogs */}
@@ -396,6 +402,153 @@ function Settings() {
       <PromptDialog {...promptDialog.state} onCancel={promptDialog.close} />
 
       <AlertDialog {...alertDialog.state} onClose={alertDialog.close} />
+    </div>
+  );
+}
+
+function UpdateSection() {
+  const [version, setVersion] = useState<string>("?");
+  const [status, setStatus] = useState<string>("Idle");
+  const [availableVersion, setAvailableVersion] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+
+  useEffect(() => {
+    let unsub: (() => void) | null = null;
+
+    (async () => {
+      try {
+        const v = await window.electronAPI.app.getVersion();
+        setVersion(v);
+      } catch (err) {
+        console.error("Failed to get app version:", err);
+      }
+
+      // Subscribe to update events
+      unsub = window.electronAPI.updates.onEvent((payload: any) => {
+        switch (payload.type) {
+          case "checking-for-update":
+            setStatus("Checking for updates...");
+            break;
+          case "update-available":
+            setStatus("Update available");
+            setAvailableVersion(payload.info?.version || null);
+            break;
+          case "update-not-available":
+            setStatus("Up to date");
+            setAvailableVersion(null);
+            break;
+          case "download-progress":
+            setStatus("Downloading...");
+            setProgress(Math.round(payload.progress.percent || 0));
+            break;
+          case "update-downloaded":
+            setStatus("Downloaded");
+            setProgress(100);
+            break;
+          case "error":
+            setStatus("Error: " + (payload.error || ""));
+            break;
+          default:
+            break;
+        }
+      });
+    })();
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, []);
+
+  const handleCheck = async () => {
+    setStatus("Checking for updates...");
+    setAvailableVersion(null);
+    setProgress(null);
+    try {
+      const res = await window.electronAPI.updates.check();
+      if (!res.success) {
+        setStatus("Error: " + (res.error || "unknown"));
+      }
+    } catch (err: any) {
+      setStatus("Error: " + (err?.message || String(err)));
+    }
+  };
+
+  const handleDownload = async () => {
+    setStatus("Starting download...");
+    try {
+      const res = await window.electronAPI.updates.download();
+      if (!res.success) {
+        setStatus("Download failed: " + (res.error || "unknown"));
+      }
+    } catch (err: any) {
+      setStatus("Download error: " + (err?.message || String(err)));
+    }
+  };
+
+  const handleInstall = async () => {
+    setStatus("Installing and restarting...");
+    try {
+      await window.electronAPI.updates.install();
+    } catch (err: any) {
+      setStatus("Install failed: " + (err?.message || String(err)));
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-white font-medium">Current Version</p>
+          <p className="text-gray-400 text-sm">v{version}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-white font-medium">Status</p>
+          <p className="text-gray-400 text-sm">{status}</p>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button
+          onClick={handleCheck}
+          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg"
+        >
+          Check for updates
+        </button>
+
+        <button
+          onClick={handleDownload}
+          disabled={!availableVersion}
+          className="bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white font-semibold py-2 px-4 rounded-lg"
+        >
+          Download
+        </button>
+
+        <button
+          onClick={handleInstall}
+          disabled={progress !== 100}
+          className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 text-white font-semibold py-2 px-4 rounded-lg"
+        >
+          Install & Restart
+        </button>
+      </div>
+
+      {progress !== null && (
+        <div className="mt-2">
+          <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
+            <div
+              className="bg-blue-500 h-3"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">{progress}%</p>
+        </div>
+      )}
+
+      {availableVersion && (
+        <div className="mt-2 text-sm text-gray-300">
+          New version available: <strong>v{availableVersion}</strong>
+        </div>
+      )}
     </div>
   );
 }
