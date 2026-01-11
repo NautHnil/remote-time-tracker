@@ -6,25 +6,59 @@ on:
       - "v*"
 
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  # Build cho macOS
+  build-mac:
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
 
-      - name: Install and Build
+      - name: Install dependencies
         working-directory: ./electron
-        run: |
-          npm install
-          npm run build
+        run: npm install
 
-      - name: Release
+      - name: Build and Release (macOS)
         working-directory: ./electron
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          electron-builder --mac --publish always
-          electron-builder --win --publish always
-          electron-builder --linux --publish always
+        run: npm run build && electron-builder --mac --publish always
+
+  # Build cho Windows
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: ./electron
+        run: npm install
+
+      - name: Build and Release (Windows)
+        working-directory: ./electron
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run build && electron-builder --win --publish always
+
+  # Build cho Linux
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: ./electron
+        run: npm install
+
+      - name: Build and Release (Linux)
+        working-directory: ./electron
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run build && electron-builder --linux --publish always
