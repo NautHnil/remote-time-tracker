@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+out/
+release/
+*.exe
+*.app
+*.dmg
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Go
+*.test
+*.out
+coverage.txt
+
+# Screenshots (keep folder structure but ignore files)
+screenshots/
+uploads/*
+!uploads/.gitkeep
+!uploads/screenshots/
+uploads/screenshots/*
+!uploads/screenshots/.gitkeep
+
+# Temporary files
+tmp/
+temp/

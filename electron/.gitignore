@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-electron/
+.env
+*.log
+screenshots/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.DS_Store
+Thumbs.db

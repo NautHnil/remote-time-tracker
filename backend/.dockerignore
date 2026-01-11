@@ -1,0 +1,12 @@
+*.md
+.git
+.gitignore
+.env.local
+.env.development
+.env.production
+tmp
+.vscode
+.idea
+*.log
+bin
+dist

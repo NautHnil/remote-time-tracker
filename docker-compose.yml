@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: rtt-postgres
+    environment:
+      POSTGRES_USER: rtt_user
+      POSTGRES_PASSWORD: rtt_password
+      POSTGRES_DB: remote_time_tracker
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rtt_user -d remote_time_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rtt-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rtt-backend
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend/.env:/app/.env
+      - ./backend/uploads:/app/uploads
+    networks:
+      - rtt-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rtt-frontend
+    environment:
+      VITE_API_URL: http://localhost:8080/api/v1
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - rtt-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  rtt-network:
+    driver: bridge
