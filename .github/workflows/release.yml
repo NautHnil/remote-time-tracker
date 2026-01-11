@@ -1,0 +1,30 @@
+name: Release App
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install and Build
+        working-directory: ./electron
+        run: |
+          npm install
+          npm run build
+
+      - name: Release
+        working-directory: ./electron
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          electron-builder --mac --publish always
+          electron-builder --win --publish always
+          electron-builder --linux --publish always
