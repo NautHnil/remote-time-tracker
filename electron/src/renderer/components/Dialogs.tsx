@@ -1,7 +1,22 @@
 import { useEffect, useState } from "react";
 import { Icons } from "./Icons";
+import {
+  AlertBox,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogIconHeader,
+  DialogTitle,
+} from "./ui/Dialog";
 
-// ==================== ConfirmDialog ====================
+// ============================================================================
+// CONFIRM DIALOG
+// ============================================================================
+
 interface ConfirmDialogProps {
   isOpen: boolean;
   title: string;
@@ -10,7 +25,8 @@ interface ConfirmDialogProps {
   onCancel: () => void;
   confirmText?: string;
   cancelText?: string;
-  confirmButtonClass?: string;
+  variant?: "default" | "danger" | "warning";
+  isLoading?: boolean;
 }
 
 export function ConfirmDialog({
@@ -21,35 +37,46 @@ export function ConfirmDialog({
   onCancel,
   confirmText = "Confirm",
   cancelText = "Cancel",
-  confirmButtonClass = "bg-blue-600 hover:bg-blue-700",
+  variant = "default",
+  isLoading = false,
 }: ConfirmDialogProps) {
-  if (!isOpen) return null;
+  const buttonVariant =
+    variant === "danger"
+      ? "danger"
+      : variant === "warning"
+      ? "warning"
+      : "primary";
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
-        <h3 className="text-xl font-semibold mb-4 text-white">{title}</h3>
-        <p className="text-gray-300 mb-6 whitespace-pre-line">{message}</p>
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
-          >
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent size="md" preventClose={isLoading}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <p className="text-dark-300 whitespace-pre-line">{message}</p>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="default" onClick={onCancel} disabled={isLoading}>
             {cancelText}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={buttonVariant}
             onClick={onConfirm}
-            className={`px-4 py-2 text-white rounded-lg transition ${confirmButtonClass}`}
+            isLoading={isLoading}
           >
             {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// ==================== PromptDialog ====================
+// ============================================================================
+// PROMPT DIALOG
+// ============================================================================
+
 interface PromptDialogProps {
   isOpen: boolean;
   title: string;
@@ -61,7 +88,8 @@ interface PromptDialogProps {
   onCancel: () => void;
   confirmText?: string;
   cancelText?: string;
-  validation?: (value: string) => string | null; // Returns error message or null
+  validation?: (value: string) => string | null;
+  isLoading?: boolean;
 }
 
 export function PromptDialog({
@@ -76,6 +104,7 @@ export function PromptDialog({
   confirmText = "OK",
   cancelText = "Cancel",
   validation,
+  isLoading = false,
 }: PromptDialogProps) {
   const [value, setValue] = useState(defaultValue);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +119,6 @@ export function PromptDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate if validation function provided
     if (validation) {
       const validationError = validation(value);
       if (validationError) {
@@ -102,48 +130,52 @@ export function PromptDialog({
     onConfirm(value);
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
-        <h3 className="text-xl font-semibold mb-4 text-white">{title}</h3>
-        <p className="text-gray-300 mb-4">{message}</p>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent size="md" preventClose={isLoading}>
         <form onSubmit={handleSubmit}>
-          <input
-            type={inputType}
-            value={value}
-            onChange={(e) => {
-              setValue(e.target.value);
-              setError(null); // Clear error on change
-            }}
-            placeholder={placeholder}
-            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-            autoFocus
-          />
-          {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
-          <div className="flex gap-3 justify-end mt-4">
-            <button
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{message}</DialogDescription>
+          </DialogHeader>
+          <DialogBody>
+            <input
+              type={inputType}
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value);
+                setError(null);
+              }}
+              placeholder={placeholder}
+              className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+              autoFocus
+              disabled={isLoading}
+            />
+            {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+          </DialogBody>
+          <DialogFooter>
+            <Button
               type="button"
+              variant="default"
               onClick={onCancel}
-              className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+              disabled={isLoading}
             >
               {cancelText}
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
+            </Button>
+            <Button type="submit" variant="primary" isLoading={isLoading}>
               {confirmText}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// ==================== AlertDialog ====================
+// ============================================================================
+// ALERT DIALOG
+// ============================================================================
+
 interface AlertDialogProps {
   isOpen: boolean;
   title: string;
@@ -161,61 +193,371 @@ export function AlertDialog({
   type = "info",
   closeText = "OK",
 }: AlertDialogProps) {
-  if (!isOpen) return null;
-
-  const getTypeStyles = () => {
+  const getIconAndVariant = () => {
     switch (type) {
       case "success":
         return {
-          bgColor: "bg-green-600",
           icon: <Icons.Check className="w-6 h-6 text-white" />,
+          variant: "success" as const,
+          buttonVariant: "primary" as const,
         };
       case "error":
         return {
-          bgColor: "bg-red-600",
           icon: <Icons.X className="w-6 h-6 text-white" />,
+          variant: "error" as const,
+          buttonVariant: "danger" as const,
         };
       case "warning":
         return {
-          bgColor: "bg-yellow-600",
           icon: <Icons.Warning className="w-6 h-6 text-white" />,
+          variant: "warning" as const,
+          buttonVariant: "warning" as const,
         };
       default:
         return {
-          bgColor: "bg-blue-600",
           icon: <Icons.Info className="w-6 h-6 text-white" />,
+          variant: "info" as const,
+          buttonVariant: "primary" as const,
         };
     }
   };
 
-  const { bgColor, icon } = getTypeStyles();
+  const { icon, variant, buttonVariant } = getIconAndVariant();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
-        <div className="flex items-center gap-3 mb-4">
-          <div
-            className={`w-10 h-10 ${bgColor} rounded-full flex items-center justify-center flex-shrink-0`}
-          >
-            {icon}
-          </div>
-          <h3 className="text-xl font-semibold text-white">{title}</h3>
-        </div>
-        <p className="text-gray-300 mb-6 whitespace-pre-line">{message}</p>
-        <div className="flex justify-end">
-          <button
-            onClick={onClose}
-            className={`px-6 py-2 ${bgColor} text-white rounded-lg hover:opacity-90 transition`}
-          >
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent size="md">
+        <DialogIconHeader icon={icon} title={title} variant={variant} />
+        <DialogBody className="pt-0">
+          <p className="text-dark-300 whitespace-pre-line">{message}</p>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant={buttonVariant} onClick={onClose}>
             {closeText}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// ==================== Custom Hooks ====================
+// ============================================================================
+// LOGOUT CONFIRM DIALOG
+// ============================================================================
+
+interface LogoutConfirmDialogProps {
+  isOpen: boolean;
+  isTracking: boolean;
+  taskTitle?: string;
+  elapsedTime?: number;
+  isManualTask?: boolean;
+  onConfirmLogout: () => void;
+  onStopAndLogout: (taskTitle: string) => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}
+
+export function LogoutConfirmDialog({
+  isOpen,
+  isTracking,
+  taskTitle,
+  elapsedTime = 0,
+  isManualTask = false,
+  onConfirmLogout,
+  onStopAndLogout,
+  onCancel,
+  isLoading = false,
+}: LogoutConfirmDialogProps) {
+  const [inputTaskTitle, setInputTaskTitle] = useState(taskTitle || "");
+
+  // Reset input when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setInputTaskTitle(taskTitle || "");
+    }
+  }, [isOpen, taskTitle]);
+
+  const formatDuration = (ms: number): string => {
+    const seconds = Math.floor(ms / 1000);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours}h ${minutes}m ${secs}s`;
+  };
+
+  const handleStopAndLogout = () => {
+    // For manual tasks, use the existing task title
+    // For auto-track tasks, use the input value or generate default
+    if (isManualTask && taskTitle) {
+      onStopAndLogout(taskTitle);
+    } else {
+      const finalTitle = inputTaskTitle.trim() || "";
+      onStopAndLogout(finalTitle);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent size="md" preventClose={isLoading}>
+        <DialogIconHeader
+          icon={<Icons.Logout className="w-6 h-6 text-white" />}
+          title="Sign Out"
+          description={
+            isTracking ? "Active session detected" : "Confirm logout"
+          }
+          variant="warning"
+        />
+
+        <DialogBody className="pt-0">
+          {isTracking ? (
+            <div className="space-y-4">
+              <AlertBox
+                variant="warning"
+                icon={<Icons.Warning className="w-5 h-5 text-yellow-500" />}
+                title="Time tracking has been paused"
+              >
+                Please stop and save the current session before logging out, or
+                cancel to resume tracking.
+              </AlertBox>
+
+              <div className="bg-dark-800/50 rounded-xl p-4 space-y-3">
+                {isManualTask ? (
+                  // For manual tasks, show the task title as read-only
+                  <div className="flex items-center justify-between">
+                    <span className="text-dark-400 text-sm">Current Task</span>
+                    <span className="text-white font-medium text-sm truncate max-w-[200px]">
+                      {taskTitle || "Untitled Task"}
+                    </span>
+                  </div>
+                ) : (
+                  // For auto-track tasks, show an input to save task title
+                  <div className="space-y-2">
+                    <label className="text-dark-400 text-sm">
+                      Task Title (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={inputTaskTitle}
+                      onChange={(e) => setInputTaskTitle(e.target.value)}
+                      placeholder="Enter a title for this work session..."
+                      className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      disabled={isLoading}
+                      autoFocus
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-dark-400 text-sm">Time Tracked</span>
+                  <span className="text-primary-400 font-mono font-semibold">
+                    {formatDuration(elapsedTime)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-dark-400 text-sm">Status</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-yellow-500 rounded-full" />
+                    <span className="text-yellow-400 text-sm font-medium">
+                      Paused
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-dark-300">
+              Are you sure you want to sign out? You will need to log in again
+              to access your account.
+            </p>
+          )}
+        </DialogBody>
+
+        <DialogFooter>
+          <Button variant="default" onClick={onCancel} disabled={isLoading}>
+            Cancel
+          </Button>
+          {isTracking ? (
+            <Button
+              variant="warning"
+              onClick={handleStopAndLogout}
+              isLoading={isLoading}
+              leftIcon={<Icons.Stop className="w-4 h-4" />}
+            >
+              Stop & Sign Out
+            </Button>
+          ) : (
+            <Button
+              variant="danger"
+              onClick={onConfirmLogout}
+              isLoading={isLoading}
+            >
+              Sign Out
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================================
+// QUIT APP CONFIRM DIALOG
+// ============================================================================
+
+interface QuitAppConfirmDialogProps {
+  isOpen: boolean;
+  isTracking: boolean;
+  taskTitle?: string;
+  elapsedTime?: number;
+  isManualTask?: boolean;
+  onConfirmQuit: () => void;
+  onStopAndQuit: (taskTitle: string) => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}
+
+export function QuitAppConfirmDialog({
+  isOpen,
+  isTracking,
+  taskTitle,
+  elapsedTime = 0,
+  isManualTask = false,
+  onConfirmQuit,
+  onStopAndQuit,
+  onCancel,
+  isLoading = false,
+}: QuitAppConfirmDialogProps) {
+  const [inputTaskTitle, setInputTaskTitle] = useState(taskTitle || "");
+
+  // Reset input when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setInputTaskTitle(taskTitle || "");
+    }
+  }, [isOpen, taskTitle]);
+
+  const formatDuration = (ms: number): string => {
+    const seconds = Math.floor(ms / 1000);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours}h ${minutes}m ${secs}s`;
+  };
+
+  const handleStopAndQuit = () => {
+    // For manual tasks, use the existing task title
+    // For auto-track tasks, use the input value or generate default
+    if (isManualTask && taskTitle) {
+      onStopAndQuit(taskTitle);
+    } else {
+      const finalTitle = inputTaskTitle.trim() || "";
+      onStopAndQuit(finalTitle);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent size="md" preventClose={isLoading}>
+        <DialogIconHeader
+          icon={<Icons.X className="w-6 h-6 text-white" />}
+          title="Quit Application"
+          description={isTracking ? "Active session detected" : "Confirm quit"}
+          variant="error"
+        />
+
+        <DialogBody className="pt-0">
+          {isTracking ? (
+            <div className="space-y-4">
+              <AlertBox
+                variant="warning"
+                icon={<Icons.Warning className="w-5 h-5 text-yellow-500" />}
+                title="Time tracking has been paused"
+              >
+                Please stop and save the current session before quitting, or
+                cancel to resume tracking.
+              </AlertBox>
+
+              <div className="bg-dark-800/50 rounded-xl p-4 space-y-3">
+                {isManualTask ? (
+                  // For manual tasks, show the task title as read-only
+                  <div className="flex items-center justify-between">
+                    <span className="text-dark-400 text-sm">Current Task</span>
+                    <span className="text-white font-medium text-sm truncate max-w-[200px]">
+                      {taskTitle || "Untitled Task"}
+                    </span>
+                  </div>
+                ) : (
+                  // For auto-track tasks, show an input to save task title
+                  <div className="space-y-2">
+                    <label className="text-dark-400 text-sm">
+                      Task Title (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={inputTaskTitle}
+                      onChange={(e) => setInputTaskTitle(e.target.value)}
+                      placeholder="Enter a title for this work session..."
+                      className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      disabled={isLoading}
+                      autoFocus
+                    />
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-dark-400 text-sm">Time Tracked</span>
+                  <span className="text-primary-400 font-mono font-semibold">
+                    {formatDuration(elapsedTime)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-dark-400 text-sm">Status</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 bg-yellow-500 rounded-full" />
+                    <span className="text-yellow-400 text-sm font-medium">
+                      Paused
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-dark-300">
+              Are you sure you want to quit the application? The app will
+              continue running in the system tray.
+            </p>
+          )}
+        </DialogBody>
+
+        <DialogFooter>
+          <Button variant="default" onClick={onCancel} disabled={isLoading}>
+            Cancel
+          </Button>
+          {isTracking ? (
+            <Button
+              variant="warning"
+              onClick={handleStopAndQuit}
+              isLoading={isLoading}
+              leftIcon={<Icons.Stop className="w-4 h-4" />}
+            >
+              Stop & Quit
+            </Button>
+          ) : (
+            <Button
+              variant="danger"
+              onClick={onConfirmQuit}
+              isLoading={isLoading}
+            >
+              Quit App
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ============================================================================
+// CUSTOM HOOKS
+// ============================================================================
 
 /**
  * Hook to manage confirm dialog state
@@ -227,7 +569,7 @@ export function useConfirmDialog() {
     message: string;
     onConfirm: () => void;
     confirmText?: string;
-    confirmButtonClass?: string;
+    variant?: "default" | "danger" | "warning";
   }>({
     isOpen: false,
     title: "",
@@ -276,7 +618,6 @@ export function usePromptDialog() {
   };
 
   const handleCancel = () => {
-    // Call onCancel callback if provided
     if (state.onCancel) {
       state.onCancel();
     }
@@ -312,3 +653,79 @@ export function useAlertDialog() {
 
   return { state, show, close };
 }
+
+/**
+ * Hook to manage logout confirm dialog state
+ */
+export function useLogoutConfirmDialog() {
+  const [state, setState] = useState<{
+    isOpen: boolean;
+    isTracking: boolean;
+    taskTitle?: string;
+    elapsedTime?: number;
+    isManualTask?: boolean;
+  }>({
+    isOpen: false,
+    isTracking: false,
+    taskTitle: "",
+    elapsedTime: 0,
+    isManualTask: false,
+  });
+
+  const show = (config: Omit<typeof state, "isOpen">) => {
+    setState({ ...config, isOpen: true });
+  };
+
+  const close = () => {
+    setState((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  return { state, show, close };
+}
+
+/**
+ * Hook to manage quit app confirm dialog state
+ */
+export function useQuitAppConfirmDialog() {
+  const [state, setState] = useState<{
+    isOpen: boolean;
+    isTracking: boolean;
+    taskTitle?: string;
+    elapsedTime?: number;
+    isManualTask?: boolean;
+  }>({
+    isOpen: false,
+    isTracking: false,
+    taskTitle: "",
+    elapsedTime: 0,
+    isManualTask: false,
+  });
+
+  const show = (config: Omit<typeof state, "isOpen">) => {
+    setState({ ...config, isOpen: true });
+  };
+
+  const close = () => {
+    setState((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  return { state, show, close };
+}
+
+// ============================================================================
+// RE-EXPORT UI COMPONENTS
+// ============================================================================
+
+export {
+  AlertBox,
+  Button,
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogIconHeader,
+  DialogTitle,
+  useDialog,
+} from "./ui/Dialog";

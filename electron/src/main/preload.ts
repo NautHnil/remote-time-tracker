@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("time-tracker:start", taskId, notes),
     stop: (taskTitle?: string) =>
       ipcRenderer.invoke("time-tracker:stop", taskTitle),
+    stopAndSync: (taskTitle?: string) =>
+      ipcRenderer.invoke("time-tracker:stop-and-sync", taskTitle),
     pause: () => ipcRenderer.invoke("time-tracker:pause"),
     resume: () => ipcRenderer.invoke("time-tracker:resume"),
     getStatus: () => ipcRenderer.invoke("time-tracker:get-status"),
@@ -31,6 +33,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("screenshots:get-by-timelog", timeLogId),
     getByTask: (taskId: number) =>
       ipcRenderer.invoke("screenshots:get-by-task", taskId),
+    forceStopCapture: () =>
+      ipcRenderer.invoke("screenshots:force-stop-capture"),
+    getCaptureStatus: () =>
+      ipcRenderer.invoke("screenshots:get-capture-status"),
   },
 
   // Screenshot viewer APIs
@@ -86,6 +92,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   app: {
     quit: () => ipcRenderer.invoke("app:quit"),
     getVersion: () => ipcRenderer.invoke("app:get-version"),
+    checkTrackingBeforeQuit: () =>
+      ipcRenderer.invoke("app:check-tracking-before-quit"),
+    forceStopAndQuit: () => ipcRenderer.invoke("app:force-stop-and-quit"),
   },
 
   // Updates APIs
@@ -150,6 +159,12 @@ export interface ElectronAPI {
   app: {
     quit: () => Promise<boolean>;
     getVersion: () => Promise<string>;
+    checkTrackingBeforeQuit: () => Promise<{
+      isTracking: boolean;
+      taskTitle?: string;
+      elapsedTime?: number;
+    }>;
+    forceStopAndQuit: () => Promise<boolean>;
   };
   updates: {
     check: () => Promise<any>;

@@ -53,6 +53,52 @@ export class ScreenshotService {
     console.log("📸 Screenshot capture stopped");
   }
 
+  /**
+   * Force stop all screenshot capturing activities
+   * Use this to clean up any stuck capture processes from previous errors
+   */
+  async forceStopCapturing(): Promise<{ success: boolean; message: string }> {
+    console.log("🛑 Force stopping all screenshot capture activities...");
+
+    // Clear any existing timer
+    if (this.screenshotTimer) {
+      clearInterval(this.screenshotTimer);
+      this.screenshotTimer = null;
+      console.log("  ✓ Cleared screenshot timer");
+    }
+
+    // Reset all state flags
+    const wasCapturing = this.isCapturing;
+    this.isCapturing = false;
+    this.currentTaskId = undefined;
+
+    const message = wasCapturing
+      ? "Force stopped active screenshot capture"
+      : "No active capture to stop, state reset anyway";
+
+    console.log(`🛑 ${message}`);
+
+    return {
+      success: true,
+      message,
+    };
+  }
+
+  /**
+   * Get current capture status
+   */
+  getCaptureStatus(): {
+    isCapturing: boolean;
+    hasTimer: boolean;
+    currentTaskId?: number;
+  } {
+    return {
+      isCapturing: this.isCapturing,
+      hasTimer: this.screenshotTimer !== null,
+      currentTaskId: this.currentTaskId,
+    };
+  }
+
   private async captureAllScreens(
     timeLogId?: number,
     taskLocalId?: string,

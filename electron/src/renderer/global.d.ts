@@ -12,6 +12,13 @@ interface TimeTrackerStatus {
   status: "running" | "paused" | "stopped";
   elapsedTime: number;
   pausedTime: number;
+  currentTimeLog?: {
+    id?: number;
+    taskTitle?: string;
+    isManualTask?: boolean;
+    taskId?: number;
+    taskLocalId?: string;
+  };
 }
 
 interface Screenshot {
@@ -35,6 +42,7 @@ interface ElectronAPI {
     pause: () => Promise<void>;
     resume: () => Promise<void>;
     stop: (taskTitle?: string) => Promise<any>;
+    stopAndSync: (taskTitle?: string) => Promise<any>;
     getStatus: () => Promise<TimeTrackerStatus>;
     forceStop: () => Promise<void>;
   };
@@ -47,6 +55,12 @@ interface ElectronAPI {
     getAll: () => Promise<any[]>;
     getByTimeLog: (timeLogId: number) => Promise<any[]>;
     getByTask: (taskId: number) => Promise<any>;
+    forceStopCapture: () => Promise<{ success: boolean; message: string }>;
+    getCaptureStatus: () => Promise<{
+      isCapturing: boolean;
+      hasTimer: boolean;
+      currentTaskId?: number;
+    }>;
   };
   tasks: {
     getAll: () => Promise<any>;
@@ -77,6 +91,12 @@ interface ElectronAPI {
   app: {
     quit: () => Promise<boolean>;
     getVersion: () => Promise<string>;
+    checkTrackingBeforeQuit: () => Promise<{
+      isTracking: boolean;
+      taskTitle?: string;
+      elapsedTime?: number;
+    }>;
+    forceStopAndQuit: () => Promise<boolean>;
   };
   updates: {
     check: () => Promise<any>;

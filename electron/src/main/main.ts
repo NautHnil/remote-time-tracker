@@ -183,8 +183,13 @@ async function quitApp() {
   }
 
   try {
-    // Cleanup services
+    // Force stop any active tracking session before quit
     if (timeTrackerService) {
+      const status = await timeTrackerService.getStatus();
+      if (status.isTracking) {
+        console.log("⏹️ Force stopping active tracking session before quit...");
+        await timeTrackerService.forceStop();
+      }
       await timeTrackerService.cleanup();
     }
     if (syncService) {
@@ -205,6 +210,22 @@ async function quitApp() {
 
   // Force quit without triggering before-quit again
   app.exit(0);
+}
+
+// Emergency stop tracking (for crash scenarios)
+async function emergencyStopTracking() {
+  try {
+    if (timeTrackerService) {
+      const status = await timeTrackerService.getStatus();
+      if (status.isTracking) {
+        console.log("🆘 Emergency stopping tracking session...");
+        await timeTrackerService.forceStop();
+        console.log("✅ Emergency stop completed");
+      }
+    }
+  } catch (error) {
+    console.error("❌ Emergency stop failed:", error);
+  }
 }
 
 async function initializeServices() {
@@ -254,8 +275,16 @@ function setupIpcHandlers() {
   );
 
   ipcMain.handle("time-tracker:stop", async (_event, taskTitle?: string) => {
-    return await timeTrackerService.stop(taskTitle);
+    return await timeTrackerService.stop(taskTitle, false);
   });
+
+  // Stop with sync - used when quitting app to ensure data is saved
+  ipcMain.handle(
+    "time-tracker:stop-and-sync",
+    async (_event, taskTitle?: string) => {
+      return await timeTrackerService.stop(taskTitle, true);
+    }
+  );
 
   ipcMain.handle("time-tracker:pause", async () => {
     return await timeTrackerService.pause();
@@ -332,6 +361,16 @@ function setupIpcHandlers() {
 
   ipcMain.handle("screenshots:get-by-task", async (_, taskId) => {
     return await dbService.getScreenshotsByTaskId(taskId);
+  });
+
+  // Force stop screenshot capturing - use this to clean up stuck capture processes
+  ipcMain.handle("screenshots:force-stop-capture", async () => {
+    return await screenshotService.forceStopCapturing();
+  });
+
+  // Get screenshot capture status
+  ipcMain.handle("screenshots:get-capture-status", async () => {
+    return screenshotService.getCaptureStatus();
   });
 
   // Tasks
@@ -464,6 +503,33 @@ function setupIpcHandlers() {
     await quitApp();
     return true;
   });
+
+  // Check tracking status (for quit confirmation in renderer)
+  ipcMain.handle("app:check-tracking-before-quit", async () => {
+    try {
+      const status = await timeTrackerService.getStatus();
+      return {
+        isTracking: status.isTracking,
+        taskTitle: status.currentTimeLog?.taskTitle,
+        elapsedTime: status.elapsedTime,
+      };
+    } catch (error) {
+      console.error("Error checking tracking status:", error);
+      return { isTracking: false };
+    }
+  });
+
+  // Force stop tracking and quit
+  ipcMain.handle("app:force-stop-and-quit", async () => {
+    try {
+      await timeTrackerService.forceStop();
+      await quitApp();
+      return true;
+    } catch (error) {
+      console.error("Error force stopping and quitting:", error);
+      return false;
+    }
+  });
 }
 
 // App lifecycle
@@ -482,17 +548,38 @@ app.whenReady().then(async () => {
 
   createTray();
 
-  // Handle before-quit event for auto-updater
-  app.on("before-quit", (event) => {
+  // Handle before-quit event for auto-updater and tracking cleanup
+  app.on("before-quit", async (event) => {
     console.log(
       "before-quit event, isUpdating:",
       isUpdating,
       "isQuitting:",
       isQuitting
     );
+
     if (isUpdating) {
       console.log("Allowing quit for update...");
       // Don't prevent quit during update
+      return;
+    }
+
+    // If not already quitting, prevent default and handle tracking stop
+    if (!isQuitting) {
+      event.preventDefault();
+
+      // Check if tracking is active
+      try {
+        const status = await timeTrackerService.getStatus();
+        if (status.isTracking) {
+          console.log("⏹️ Stopping active tracking before quit...");
+          await timeTrackerService.forceStop();
+        }
+      } catch (error) {
+        console.error("Error stopping tracking before quit:", error);
+      }
+
+      // Now actually quit
+      await quitApp();
     }
   });
 
@@ -508,11 +595,29 @@ app.on("window-all-closed", () => {
   // User phải dùng "Quit" từ tray menu để thoát
 });
 
-// Handle uncaught exceptions
-process.on("uncaughtException", (error) => {
-  console.error("Uncaught exception:", error);
+// Handle uncaught exceptions - Emergency stop tracking
+process.on("uncaughtException", async (error) => {
+  console.error("❌ Uncaught exception:", error);
+  // Try to emergency stop tracking before crash
+  await emergencyStopTracking();
 });
 
-process.on("unhandledRejection", (error) => {
-  console.error("Unhandled rejection:", error);
+process.on("unhandledRejection", async (error) => {
+  console.error("❌ Unhandled rejection:", error);
+  // Try to emergency stop tracking
+  await emergencyStopTracking();
+});
+
+// Handle SIGTERM (graceful shutdown)
+process.on("SIGTERM", async () => {
+  console.log("📴 SIGTERM received, cleaning up...");
+  await emergencyStopTracking();
+  await quitApp();
+});
+
+// Handle SIGINT (Ctrl+C)
+process.on("SIGINT", async () => {
+  console.log("📴 SIGINT received, cleaning up...");
+  await emergencyStopTracking();
+  await quitApp();
 });

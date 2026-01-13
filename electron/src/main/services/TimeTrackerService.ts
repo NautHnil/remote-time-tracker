@@ -187,7 +187,10 @@ export class TimeTrackerService {
     return this.getStatus();
   }
 
-  async stop(taskTitle?: string): Promise<TimeTrackerStatus> {
+  async stop(
+    taskTitle?: string,
+    waitForSync: boolean = false
+  ): Promise<TimeTrackerStatus> {
     if (!this.currentTimeLog || this.currentTimeLog.status === "stopped") {
       throw new Error("No active time tracking session");
     }
@@ -229,10 +232,22 @@ export class TimeTrackerService {
       `⏹️  Time tracking stopped (Duration: ${this.formatDuration(duration)})`
     );
 
-    // Trigger sync
-    setTimeout(() => {
-      this.syncService.syncNow();
-    }, 1000);
+    // Trigger sync - wait for it if requested (e.g., before quit)
+    if (waitForSync) {
+      console.log("🔄 Waiting for sync to complete before quit...");
+      try {
+        await this.syncService.syncNow();
+        console.log("✅ Sync completed successfully");
+      } catch (error) {
+        console.error("❌ Sync failed:", error);
+        // Don't throw - we still want to quit even if sync fails
+      }
+    } else {
+      // Background sync after 1 second delay
+      setTimeout(() => {
+        this.syncService.syncNow();
+      }, 1000);
+    }
 
     const status = this.getStatus();
 

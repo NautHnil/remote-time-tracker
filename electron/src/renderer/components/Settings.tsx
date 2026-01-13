@@ -177,7 +177,7 @@ function Settings() {
           title: "Confirm Delete",
           message: `This will permanently delete all SYNCED screenshots older than ${daysNum} days.\n\nUnsynced screenshots will be kept to avoid data loss.\n\nContinue?`,
           confirmText: "Delete",
-          confirmButtonClass: "bg-red-600 hover:bg-red-700",
+          variant: "danger",
           onConfirm: async () => {
             confirmDialog.close();
             try {
