@@ -14,6 +14,7 @@ import {
   UserOrganization,
   UserWorkspace,
 } from "../../contexts/AuthContext";
+import { formatTimeCompact } from "../../utils/timeFormat";
 import { Icons } from "../Icons";
 
 // ============================================================================
@@ -64,16 +65,6 @@ const MiniTrackerStatus: React.FC<MiniTrackerStatusProps> = ({ onClick }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    if (h > 0) {
-      return `${h}:${m.toString().padStart(2, "0")}`;
-    }
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
-
   return (
     <button
       onClick={onClick}
@@ -88,7 +79,7 @@ const MiniTrackerStatus: React.FC<MiniTrackerStatusProps> = ({ onClick }) => {
         <>
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           <span className="text-[10px] font-mono text-green-400 mt-0.5">
-            {formatTime(elapsedTime)}
+            {formatTimeCompact(elapsedTime)}
           </span>
         </>
       ) : (

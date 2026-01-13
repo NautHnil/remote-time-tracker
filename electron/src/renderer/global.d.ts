@@ -76,6 +76,13 @@ interface ElectronAPI {
   };
   app: {
     quit: () => Promise<boolean>;
+    getVersion: () => Promise<string>;
+  };
+  updates: {
+    check: () => Promise<any>;
+    download: () => Promise<any>;
+    install: () => Promise<any>;
+    onEvent: (cb: (event: any) => void) => () => void;
   };
   getScreenshots: (options?: {
     date?: string;

@@ -406,11 +406,23 @@ function Settings() {
   );
 }
 
+type UpdateStep =
+  | "idle"
+  | "checking"
+  | "available"
+  | "downloading"
+  | "downloaded"
+  | "installing"
+  | "up-to-date"
+  | "manual-install"
+  | "error";
+
 function UpdateSection() {
   const [version, setVersion] = useState<string>("?");
-  const [status, setStatus] = useState<string>("Idle");
+  const [step, setStep] = useState<UpdateStep>("idle");
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
-  const [progress, setProgress] = useState<number | null>(null);
+  const [progress, setProgress] = useState<number>(0);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   useEffect(() => {
     let unsub: (() => void) | null = null;
@@ -427,26 +439,28 @@ function UpdateSection() {
       unsub = window.electronAPI.updates.onEvent((payload: any) => {
         switch (payload.type) {
           case "checking-for-update":
-            setStatus("Checking for updates...");
+            setStep("checking");
+            setErrorMessage("");
             break;
           case "update-available":
-            setStatus("Update available");
+            setStep("available");
             setAvailableVersion(payload.info?.version || null);
             break;
           case "update-not-available":
-            setStatus("Up to date");
+            setStep("up-to-date");
             setAvailableVersion(null);
             break;
           case "download-progress":
-            setStatus("Downloading...");
+            setStep("downloading");
             setProgress(Math.round(payload.progress.percent || 0));
             break;
           case "update-downloaded":
-            setStatus("Downloaded");
+            setStep("downloaded");
             setProgress(100);
             break;
           case "error":
-            setStatus("Error: " + (payload.error || ""));
+            setStep("error");
+            setErrorMessage(payload.error || "Unknown error");
             break;
           default:
             break;
@@ -460,95 +474,243 @@ function UpdateSection() {
   }, []);
 
   const handleCheck = async () => {
-    setStatus("Checking for updates...");
+    setStep("checking");
     setAvailableVersion(null);
-    setProgress(null);
+    setProgress(0);
+    setErrorMessage("");
     try {
       const res = await window.electronAPI.updates.check();
       if (!res.success) {
-        setStatus("Error: " + (res.error || "unknown"));
+        setStep("error");
+        setErrorMessage(res.error || "Failed to check for updates");
       }
     } catch (err: any) {
-      setStatus("Error: " + (err?.message || String(err)));
+      setStep("error");
+      setErrorMessage(err?.message || String(err));
     }
   };
 
   const handleDownload = async () => {
-    setStatus("Starting download...");
+    setStep("downloading");
+    setProgress(0);
     try {
+      // Start download - don't await, let events update the UI
       const res = await window.electronAPI.updates.download();
+      // Only handle error here, success is handled by 'update-downloaded' event
       if (!res.success) {
-        setStatus("Download failed: " + (res.error || "unknown"));
+        setStep("error");
+        setErrorMessage(res.error || "Failed to download update");
       }
+      // Note: On success, the 'update-downloaded' event will set step to 'downloaded'
     } catch (err: any) {
-      setStatus("Download error: " + (err?.message || String(err)));
+      setStep("error");
+      setErrorMessage(err?.message || String(err));
     }
   };
 
   const handleInstall = async () => {
-    setStatus("Installing and restarting...");
+    setStep("installing");
     try {
-      await window.electronAPI.updates.install();
+      const res = await window.electronAPI.updates.install();
+      if (!res.success) {
+        // Check if it's the macOS manual install case
+        if (res.error?.includes("Manual installation required")) {
+          setStep("manual-install");
+          setErrorMessage(
+            "Please install the update manually from your Downloads folder."
+          );
+        } else {
+          setStep("error");
+          setErrorMessage(res.error || "Failed to install update");
+        }
+      }
+      // On success, app will restart automatically
     } catch (err: any) {
-      setStatus("Install failed: " + (err?.message || String(err)));
+      setStep("error");
+      setErrorMessage(err?.message || String(err));
+    }
+  };
+
+  const getStatusText = (): string => {
+    switch (step) {
+      case "idle":
+        return "Click to check for updates";
+      case "checking":
+        return "Checking for updates...";
+      case "available":
+        return `New version v${availableVersion} available`;
+      case "downloading":
+        return `Downloading... ${progress}%`;
+      case "downloaded":
+        return "Download complete. Ready to install.";
+      case "installing":
+        return "Installing and restarting...";
+      case "up-to-date":
+        return "You're up to date!";
+      case "manual-install":
+        return "Manual installation required";
+      case "error":
+        return `Error: ${errorMessage}`;
+      default:
+        return "";
+    }
+  };
+
+  const getStatusColor = (): string => {
+    switch (step) {
+      case "idle":
+        return "text-gray-400";
+      case "checking":
+      case "downloading":
+      case "installing":
+        return "text-yellow-400";
+      case "available":
+        return "text-blue-400";
+      case "downloaded":
+        return "text-green-400";
+      case "up-to-date":
+        return "text-green-400";
+      case "manual-install":
+        return "text-orange-400";
+      case "error":
+        return "text-red-400";
+      default:
+        return "text-gray-400";
+    }
+  };
+
+  const renderActionButton = () => {
+    switch (step) {
+      case "idle":
+      case "up-to-date":
+      case "error":
+        return (
+          <button
+            onClick={handleCheck}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"
+          >
+            <Icons.RefreshCw className="w-5 h-5" />
+            Check for updates
+          </button>
+        );
+      case "checking":
+        return (
+          <button
+            disabled
+            className="w-full bg-blue-800 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2 cursor-not-allowed"
+          >
+            <Icons.RefreshCw className="w-5 h-5 animate-spin" />
+            Checking...
+          </button>
+        );
+      case "available":
+        return (
+          <button
+            onClick={handleDownload}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"
+          >
+            <Icons.Download className="w-5 h-5" />
+            Download v{availableVersion}
+          </button>
+        );
+      case "downloading":
+        return (
+          <button
+            disabled
+            className="w-full bg-green-800 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2 cursor-not-allowed"
+          >
+            <Icons.Download className="w-5 h-5 animate-pulse" />
+            Downloading... {progress}%
+          </button>
+        );
+      case "downloaded":
+        return (
+          <button
+            onClick={handleInstall}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"
+          >
+            <Icons.RefreshCw className="w-5 h-5" />
+            Install & Restart
+          </button>
+        );
+      case "installing":
+        return (
+          <button
+            disabled
+            className="w-full bg-indigo-800 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2 cursor-not-allowed"
+          >
+            <Icons.RefreshCw className="w-5 h-5 animate-spin" />
+            Installing...
+          </button>
+        );
+      case "manual-install":
+        return (
+          <div className="space-y-2">
+            <div className="p-3 bg-orange-900/30 border border-orange-600 rounded-lg">
+              <p className="text-orange-400 text-sm">
+                ⚠️ Auto-install is not available on macOS (app not code-signed).
+              </p>
+              <p className="text-gray-400 text-xs mt-1">
+                The update has been downloaded. Please check your Downloads
+                folder and install manually.
+              </p>
+            </div>
+            <button
+              onClick={handleCheck}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"
+            >
+              <Icons.RefreshCw className="w-5 h-5" />
+              Check again
+            </button>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4">
+      {/* Version Info */}
+      <div className="flex justify-between items-center p-4 bg-gray-700 rounded-lg">
         <div>
           <p className="text-white font-medium">Current Version</p>
           <p className="text-gray-400 text-sm">v{version}</p>
         </div>
         <div className="text-right">
           <p className="text-white font-medium">Status</p>
-          <p className="text-gray-400 text-sm">{status}</p>
+          <p className={`text-sm ${getStatusColor()}`}>{getStatusText()}</p>
         </div>
       </div>
 
-      <div className="flex gap-3">
-        <button
-          onClick={handleCheck}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg"
-        >
-          Check for updates
-        </button>
-
-        <button
-          onClick={handleDownload}
-          disabled={!availableVersion}
-          className="bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white font-semibold py-2 px-4 rounded-lg"
-        >
-          Download
-        </button>
-
-        <button
-          onClick={handleInstall}
-          disabled={progress !== 100}
-          className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 text-white font-semibold py-2 px-4 rounded-lg"
-        >
-          Install & Restart
-        </button>
-      </div>
-
-      {progress !== null && (
-        <div className="mt-2">
+      {/* Progress Bar (only show during download) */}
+      {step === "downloading" && (
+        <div>
           <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
             <div
-              className="bg-blue-500 h-3"
+              className="bg-green-500 h-3 transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <p className="text-xs text-gray-400 mt-1">{progress}%</p>
+          <p className="text-xs text-gray-400 mt-1 text-center">
+            {progress}% downloaded
+          </p>
         </div>
       )}
 
-      {availableVersion && (
-        <div className="mt-2 text-sm text-gray-300">
-          New version available: <strong>v{availableVersion}</strong>
-        </div>
-      )}
+      {/* Action Button */}
+      {renderActionButton()}
+
+      {/* Info text based on step */}
+      <div className="text-xs text-gray-500 text-center">
+        {step === "idle" && "Check if a newer version is available"}
+        {step === "available" && "Click Download to get the latest version"}
+        {step === "downloaded" && "Click Install & Restart to apply the update"}
+        {step === "up-to-date" && "You have the latest version installed"}
+        {step === "manual-install" &&
+          "Downloads folder has been opened. Install the update manually."}
+        {step === "error" && "Try again or check your internet connection"}
+      </div>
     </div>
   );
 }

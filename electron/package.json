@@ -18,9 +18,9 @@
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
     "build:all": "npm run build:mac && npm run build:win && npm run build:linux",
-    "build:mac": "npm run build && electron-builder --mac",
-    "build:win": "npm run build && electron-builder --win",
-    "build:linux": "npm run build && electron-builder --linux",
+    "build:mac": "npm run build && electron-builder --mac --publish never",
+    "build:win": "npm run build && electron-builder --win --publish never",
+    "build:linux": "npm run build && electron-builder --linux --publish never",
     "release": "npm run build && electron-builder --publish always",
     "release:all": "npm run build:all && npm run release:mac && npm run release:win && npm run release:linux",
     "release:mac": "npm run build && electron-builder --mac --publish always",
@@ -98,9 +98,8 @@
     },
     "publish": [
       {
-        "provider": "github",
-        "owner": "NautHnil",
-        "repo": "remote-time-tracker"
+        "provider": "generic",
+        "url": "http://localhost:8081"
       }
     ]
   }

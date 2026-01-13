@@ -11,6 +11,7 @@ import { UpdateService } from "./services/UpdateService";
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+let isUpdating = false; // Flag for auto-update quit
 
 // Services
 let dbService: DatabaseService;
@@ -58,7 +59,8 @@ function createWindow() {
 
   // Handle window close
   mainWindow.on("close", (event) => {
-    if (!isQuitting) {
+    // Allow close if quitting or updating
+    if (!isQuitting && !isUpdating) {
       event.preventDefault();
       mainWindow?.hide();
     }
@@ -172,6 +174,13 @@ async function quitApp() {
 
   console.log("🛑 Quitting application...");
   isQuitting = true;
+
+  // Skip cleanup if updating (auto-updater handles restart)
+  if (isUpdating) {
+    console.log("🔄 Skipping cleanup - updating app...");
+    app.exit(0);
+    return;
+  }
 
   try {
     // Cleanup services
@@ -435,6 +444,13 @@ function setupIpcHandlers() {
   ipcMain.handle("update:install", async () => {
     if (!updateService)
       return { success: false, error: "Update service not initialized" };
+
+    // Set flag to skip cleanup during update
+    isUpdating = true;
+    isQuitting = true; // Also set isQuitting to ensure window can close
+
+    console.log("update:install - flags set, calling installAndRestart");
+
     return await updateService.installAndRestart();
   });
 
@@ -465,6 +481,20 @@ app.whenReady().then(async () => {
   }
 
   createTray();
+
+  // Handle before-quit event for auto-updater
+  app.on("before-quit", (event) => {
+    console.log(
+      "before-quit event, isUpdating:",
+      isUpdating,
+      "isQuitting:",
+      isQuitting
+    );
+    if (isUpdating) {
+      console.log("Allowing quit for update...");
+      // Don't prevent quit during update
+    }
+  });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {

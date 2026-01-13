@@ -245,6 +245,28 @@ export function formatTimeHMS(milliseconds: number): string {
 }
 
 /**
+ * Format time in compact format for mini displays
+ * Shows H:MM when hours > 0, otherwise M:SS
+ * @example
+ * formatTimeCompact(3665000) // "1:01" (1 hour 1 minute)
+ * formatTimeCompact(65000) // "1:05" (1 minute 5 seconds)
+ * formatTimeCompact(5000) // "0:05" (5 seconds)
+ */
+export function formatTimeCompact(milliseconds: number): string {
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (hours > 0) {
+    // Show H:MM format when hours > 0
+    return `${hours}:${String(minutes).padStart(2, "0")}`;
+  }
+  // Show M:SS format when no hours
+  return `${minutes}:${String(secs).padStart(2, "0")}`;
+}
+
+/**
  * Get smart duration format based on value
  * Auto-selects best unit (seconds, minutes, or hours)
  * @example
