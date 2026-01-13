@@ -6,15 +6,56 @@ import screenshot from "screenshot-desktop";
 import { v4 as uuidv4 } from "uuid";
 import { AppConfig } from "../config";
 import { DatabaseService } from "./DatabaseService";
+import { ImageOptimizer } from "./ImageOptimizer";
 
 export class ScreenshotService {
   private dbService: DatabaseService;
   private screenshotTimer: NodeJS.Timeout | null = null;
   private isCapturing = false;
   private currentTaskId?: number; // For manual tasks
+  private imageOptimizer!: ImageOptimizer; // Definite assignment assertion - initialized in initializeOptimizer()
 
   constructor(dbService: DatabaseService) {
     this.dbService = dbService;
+    // Initialize image optimizer with settings from config
+    this.initializeOptimizer();
+  }
+
+  /**
+   * Initialize or reinitialize the image optimizer with current config settings
+   */
+  private initializeOptimizer(): void {
+    const config = AppConfig.imageOptimization;
+    this.imageOptimizer = new ImageOptimizer({
+      format: config.format,
+      quality: config.quality,
+      maxWidth: config.maxWidth,
+      maxHeight: config.maxHeight,
+      stripMetadata: true,
+    });
+    console.log(
+      `🖼️ Image optimizer initialized: ${config.format} @ ${config.quality}% quality, max ${config.maxWidth}x${config.maxHeight}`
+    );
+  }
+
+  /**
+   * Update image optimization settings and reinitialize optimizer
+   */
+  updateOptimizationSettings(settings: {
+    format?: "jpeg" | "webp" | "png";
+    quality?: number;
+    maxWidth?: number;
+    maxHeight?: number;
+  }): void {
+    AppConfig.setImageOptimization(settings);
+    this.initializeOptimizer();
+  }
+
+  /**
+   * Get current optimization settings
+   */
+  getOptimizationSettings() {
+    return AppConfig.imageOptimization;
   }
 
   async startCapturing(
@@ -135,16 +176,69 @@ export class ScreenshotService {
       const localId = uuidv4();
       const nowMs = Date.now();
       const timestamp = formatISO(nowMs).replace(/[:.]/g, "-");
-      const fileName = `screenshot-${timestamp}-screen${screenNumber}.png`;
+
+      const config = AppConfig.imageOptimization;
+      const isOptimizationEnabled = config.enabled;
+
+      // Determine file extension based on optimization settings
+      const fileExt = isOptimizationEnabled
+        ? this.imageOptimizer.getOutputExtension()
+        : ".png";
+      const fileName = `screenshot-${timestamp}-screen${screenNumber}${fileExt}`;
       const filePath = path.join(AppConfig.getScreenshotsPath(), fileName);
 
-      // Capture screenshot
+      // Capture screenshot as buffer
       const imgBuffer = await screenshot({ screen: screenNumber });
+      const originalSize = imgBuffer.length;
 
-      // Save to file
-      fs.writeFileSync(filePath, imgBuffer);
+      let finalFilePath = filePath;
+      let finalFileName = fileName;
+      let fileSize = originalSize;
+      let mimeType = isOptimizationEnabled
+        ? this.imageOptimizer.getMimeType()
+        : "image/png";
 
-      const fileSize = fs.statSync(filePath).size;
+      if (isOptimizationEnabled) {
+        // Optimize image before saving (converts PNG buffer to optimized format)
+        const optimizationResult = await this.imageOptimizer.optimizeBuffer(
+          imgBuffer,
+          filePath
+        );
+
+        if (optimizationResult.success) {
+          finalFilePath = optimizationResult.optimizedPath;
+          finalFileName = path.basename(optimizationResult.optimizedPath);
+          fileSize = optimizationResult.optimizedSize;
+
+          console.log(
+            `✅ Screenshot captured & optimized: ${finalFileName} ` +
+              `(${this.formatBytes(originalSize)} → ${this.formatBytes(
+                fileSize
+              )}, ` +
+              `${optimizationResult.compressionRatio}% saved)`
+          );
+        } else {
+          // Fallback: save original buffer if optimization fails
+          console.warn(
+            `⚠️ Optimization failed, saving original: ${optimizationResult.error}`
+          );
+          fs.writeFileSync(filePath, imgBuffer);
+          fileSize = fs.statSync(filePath).size;
+          mimeType = "image/png";
+          console.log(
+            `✅ Screenshot captured (unoptimized): ${fileName} (${this.formatBytes(
+              fileSize
+            )})`
+          );
+        }
+      } else {
+        // Optimization disabled - save original PNG
+        fs.writeFileSync(filePath, imgBuffer);
+        fileSize = fs.statSync(filePath).size;
+        console.log(
+          `✅ Screenshot captured: ${fileName} (${this.formatBytes(fileSize)})`
+        );
+      }
 
       // Save to database with taskLocalId and taskId (for manual tasks)
       await this.dbService.createScreenshot({
@@ -152,10 +246,10 @@ export class ScreenshotService {
         timeLogId,
         taskId, // For manual tasks - link to existing task ID
         taskLocalId,
-        filePath,
-        fileName,
+        filePath: finalFilePath,
+        fileName: finalFileName,
         fileSize,
-        mimeType: "image/png",
+        mimeType,
         capturedAt: formatISO(nowMs),
         screenNumber,
         isEncrypted: false,
@@ -163,10 +257,6 @@ export class ScreenshotService {
         isSynced: false,
         createdAt: formatISO(nowMs),
       });
-
-      console.log(
-        `✅ Screenshot captured: ${fileName} (${this.formatBytes(fileSize)})`
-      );
     } catch (error) {
       console.error(`Error capturing screen ${screenNumber}:`, error);
     }
@@ -177,27 +267,79 @@ export class ScreenshotService {
 
     try {
       const screens = await screenshot.listDisplays();
+      const config = AppConfig.imageOptimization;
+      const isOptimizationEnabled = config.enabled;
 
       for (let i = 0; i < screens.length; i++) {
         const localId = uuidv4();
         const nowMs = Date.now();
         const timestamp = formatISO(nowMs).replace(/[:.]/g, "-");
-        const fileName = `manual-${timestamp}-screen${i}.png`;
+
+        // Determine file extension based on optimization settings
+        const fileExt = isOptimizationEnabled
+          ? this.imageOptimizer.getOutputExtension()
+          : ".png";
+        const fileName = `manual-${timestamp}-screen${i}${fileExt}`;
         const filePath = path.join(AppConfig.getScreenshotsPath(), fileName);
 
+        // Capture screenshot as buffer
         const imgBuffer = await screenshot({ screen: i });
-        fs.writeFileSync(filePath, imgBuffer);
+        const originalSize = imgBuffer.length;
 
-        capturedFiles.push(filePath);
+        let finalFilePath = filePath;
+        let finalFileName = fileName;
+        let fileSize = originalSize;
+        let mimeType = isOptimizationEnabled
+          ? this.imageOptimizer.getMimeType()
+          : "image/png";
 
-        const fileSize = fs.statSync(filePath).size;
+        if (isOptimizationEnabled) {
+          // Optimize image before saving
+          const optimizationResult = await this.imageOptimizer.optimizeBuffer(
+            imgBuffer,
+            filePath
+          );
+
+          if (optimizationResult.success) {
+            finalFilePath = optimizationResult.optimizedPath;
+            finalFileName = path.basename(optimizationResult.optimizedPath);
+            fileSize = optimizationResult.optimizedSize;
+
+            console.log(
+              `✅ Manual screenshot optimized: ${finalFileName} ` +
+                `(${this.formatBytes(originalSize)} → ${this.formatBytes(
+                  fileSize
+                )}, ` +
+                `${optimizationResult.compressionRatio}% saved)`
+            );
+          } else {
+            // Fallback: save original if optimization fails
+            console.warn(
+              `⚠️ Manual screenshot optimization failed, saving original`
+            );
+            fs.writeFileSync(filePath, imgBuffer);
+            fileSize = fs.statSync(filePath).size;
+            mimeType = "image/png";
+          }
+        } else {
+          // Optimization disabled - save original PNG
+          fs.writeFileSync(filePath, imgBuffer);
+          fileSize = fs.statSync(filePath).size;
+          console.log(
+            `✅ Manual screenshot captured: ${fileName} (${this.formatBytes(
+              fileSize
+            )})`
+          );
+        }
+
+        capturedFiles.push(finalFilePath);
 
         await this.dbService.createScreenshot({
           localId,
-          filePath,
-          fileName,
+          filePath: finalFilePath,
+          fileName: finalFileName,
           fileSize,
-          mimeType: "image/png",
+          mimeType,
           capturedAt: formatISO(nowMs),
           screenNumber: i,
           isEncrypted: false,

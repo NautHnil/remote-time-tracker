@@ -31,6 +31,14 @@ interface Screenshot {
   file_size: number;
 }
 
+interface ImageOptimizationSettings {
+  enabled: boolean;
+  format: "jpeg" | "webp" | "png";
+  quality: number;
+  maxWidth: number;
+  maxHeight: number;
+}
+
 interface ElectronAPI {
   auth: {
     getCredentials: () => Promise<Credentials | null>;
@@ -61,6 +69,10 @@ interface ElectronAPI {
       hasTimer: boolean;
       currentTaskId?: number;
     }>;
+    getOptimizationSettings: () => Promise<ImageOptimizationSettings>;
+    updateOptimizationSettings: (
+      settings: Partial<ImageOptimizationSettings>
+    ) => Promise<ImageOptimizationSettings>;
   };
   tasks: {
     getAll: () => Promise<any>;

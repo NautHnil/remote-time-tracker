@@ -373,6 +373,19 @@ function setupIpcHandlers() {
     return screenshotService.getCaptureStatus();
   });
 
+  // Image optimization settings
+  ipcMain.handle("screenshots:get-optimization-settings", async () => {
+    return screenshotService.getOptimizationSettings();
+  });
+
+  ipcMain.handle(
+    "screenshots:update-optimization-settings",
+    async (_, settings) => {
+      screenshotService.updateOptimizationSettings(settings);
+      return screenshotService.getOptimizationSettings();
+    }
+  );
+
   // Tasks
   ipcMain.handle("tasks:get-all", async () => {
     return await taskService.getAllTasks();

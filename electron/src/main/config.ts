@@ -9,12 +9,22 @@ interface Credentials {
   email: string;
 }
 
+// Image optimization settings
+export interface ImageOptimizationConfig {
+  enabled: boolean;
+  format: "jpeg" | "webp" | "png";
+  quality: number; // 1-100
+  maxWidth: number;
+  maxHeight: number;
+}
+
 interface Config {
   apiUrl: string;
   screenshotInterval: number;
   syncInterval: number;
   credentials?: Credentials;
   deviceUUID?: string;
+  imageOptimization: ImageOptimizationConfig;
 }
 
 class AppConfigClass {
@@ -28,6 +38,13 @@ class AppConfigClass {
           process.env.SCREENSHOT_INTERVAL || "300000"
         ), // 5 minutes
         syncInterval: parseInt(process.env.SYNC_INTERVAL || "60000"), // 1 minute
+        imageOptimization: {
+          enabled: true,
+          format: "jpeg",
+          quality: 75, // Good balance between quality and size
+          maxWidth: 1920, // Full HD
+          maxHeight: 1080,
+        },
       },
     });
   }
@@ -79,6 +96,16 @@ class AppConfigClass {
 
   getDatabasePath(): string {
     return path.join(this.getAppDataPath(), "database.sqlite");
+  }
+
+  // Image optimization configuration
+  get imageOptimization(): ImageOptimizationConfig {
+    return this.store.get("imageOptimization");
+  }
+
+  setImageOptimization(config: Partial<ImageOptimizationConfig>): void {
+    const current = this.imageOptimization;
+    this.store.set("imageOptimization", { ...current, ...config });
   }
 }
 

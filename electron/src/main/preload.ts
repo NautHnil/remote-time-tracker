@@ -37,6 +37,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("screenshots:force-stop-capture"),
     getCaptureStatus: () =>
       ipcRenderer.invoke("screenshots:get-capture-status"),
+    getOptimizationSettings: () =>
+      ipcRenderer.invoke("screenshots:get-optimization-settings"),
+    updateOptimizationSettings: (settings: {
+      enabled?: boolean;
+      format?: "jpeg" | "webp" | "png";
+      quality?: number;
+      maxWidth?: number;
+      maxHeight?: number;
+    }) =>
+      ipcRenderer.invoke("screenshots:update-optimization-settings", settings),
   },
 
   // Screenshot viewer APIs
