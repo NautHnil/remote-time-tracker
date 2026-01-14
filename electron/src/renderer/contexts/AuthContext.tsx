@@ -227,17 +227,34 @@ export function AuthProvider({
         ? wsWithOrg.filter((w) => w.organization_id === selectedOrgId)
         : wsWithOrg;
 
+      let selectedWsId: number | null = null;
       if (
         savedWsId &&
         orgWorkspaces.some((w) => w.id === parseInt(savedWsId))
       ) {
-        setCurrentWorkspaceId(parseInt(savedWsId));
+        selectedWsId = parseInt(savedWsId);
+        setCurrentWorkspaceId(selectedWsId);
       } else if (orgWorkspaces.length > 0) {
         // Auto-select first workspace if none saved
-        setCurrentWorkspaceId(orgWorkspaces[0].id);
-        localStorage.setItem(
-          "current_workspace_id",
-          orgWorkspaces[0].id.toString()
+        selectedWsId = orgWorkspaces[0].id;
+        setCurrentWorkspaceId(selectedWsId);
+        localStorage.setItem("current_workspace_id", selectedWsId.toString());
+      }
+
+      // Update credentials in main process with org/ws context
+      try {
+        const existingCreds = await window.electronAPI.auth.getCredentials();
+        if (existingCreds) {
+          await window.electronAPI.auth.setCredentials({
+            ...existingCreds,
+            organizationId: selectedOrgId,
+            workspaceId: selectedWsId,
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Failed to update credentials with org/ws context:",
+          error
         );
       }
     } catch (error) {
@@ -389,8 +406,10 @@ export function AuthProvider({
 
   // Set current organization
   const setCurrentOrg = useCallback(
-    (orgId: number | null) => {
+    async (orgId: number | null) => {
       setCurrentOrgId(orgId);
+      let newWorkspaceId: number | null = null;
+
       if (orgId) {
         localStorage.setItem("current_org_id", orgId.toString());
 
@@ -399,10 +418,11 @@ export function AuthProvider({
           (w) => w.organization_id === orgId
         );
         if (orgWorkspaces.length > 0) {
-          setCurrentWorkspaceId(orgWorkspaces[0].id);
+          newWorkspaceId = orgWorkspaces[0].id;
+          setCurrentWorkspaceId(newWorkspaceId);
           localStorage.setItem(
             "current_workspace_id",
-            orgWorkspaces[0].id.toString()
+            newWorkspaceId.toString()
           );
         } else {
           setCurrentWorkspaceId(null);
@@ -414,19 +434,55 @@ export function AuthProvider({
         setCurrentWorkspaceId(null);
         localStorage.removeItem("current_workspace_id");
       }
+
+      // Update credentials in main process to include org/ws context
+      try {
+        const existingCreds = await window.electronAPI.auth.getCredentials();
+        if (existingCreds) {
+          await window.electronAPI.auth.setCredentials({
+            ...existingCreds,
+            organizationId: orgId,
+            workspaceId: newWorkspaceId,
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Failed to update credentials with org/ws context:",
+          error
+        );
+      }
     },
     [workspaces]
   );
 
   // Set current workspace
-  const setCurrentWorkspace = useCallback((workspaceId: number | null) => {
-    setCurrentWorkspaceId(workspaceId);
-    if (workspaceId) {
-      localStorage.setItem("current_workspace_id", workspaceId.toString());
-    } else {
-      localStorage.removeItem("current_workspace_id");
-    }
-  }, []);
+  const setCurrentWorkspace = useCallback(
+    async (workspaceId: number | null) => {
+      setCurrentWorkspaceId(workspaceId);
+      if (workspaceId) {
+        localStorage.setItem("current_workspace_id", workspaceId.toString());
+      } else {
+        localStorage.removeItem("current_workspace_id");
+      }
+
+      // Update credentials in main process to include workspace context
+      try {
+        const existingCreds = await window.electronAPI.auth.getCredentials();
+        if (existingCreds) {
+          await window.electronAPI.auth.setCredentials({
+            ...existingCreds,
+            workspaceId: workspaceId,
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Failed to update credentials with workspace context:",
+          error
+        );
+      }
+    },
+    []
+  );
 
   // Helper: Get user's role in organization
   const getOrgRole = useCallback(

@@ -73,12 +73,12 @@ func (s *syncService) BatchSync(userID uint, req *dto.BatchSyncRequest) (*dto.Ba
 
 	// Sync time logs
 	if len(req.TimeLogs) > 0 {
-		response.TimeLogsSync = s.syncTimeLogs(userID, device, req.TimeLogs)
+		response.TimeLogsSync = s.syncTimeLogs(userID, device, req.TimeLogs, req.OrganizationID, req.WorkspaceID)
 	}
 
 	// Sync screenshots
 	if len(req.Screenshots) > 0 {
-		response.ScreenshotsSync = s.syncScreenshots(userID, device, req.Screenshots)
+		response.ScreenshotsSync = s.syncScreenshots(userID, device, req.Screenshots, req.OrganizationID, req.WorkspaceID)
 	}
 
 	// Create sync log
@@ -144,7 +144,10 @@ func (s *syncService) syncDeviceInfo(userID uint, deviceInfo *dto.SyncDeviceInfo
 	return device, nil
 }
 
-func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items []dto.SyncTimeLogItem) dto.SyncResult {
+func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items []dto.SyncTimeLogItem, defaultOrgID *uint, defaultWsID *uint) dto.SyncResult {
+	// Debug logging
+	fmt.Printf("🔄 syncTimeLogs called with defaultOrgID=%v, defaultWsID=%v\n", defaultOrgID, defaultWsID)
+
 	result := dto.SyncResult{
 		Total:   len(items),
 		Success: 0,
@@ -153,6 +156,21 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 	}
 
 	for _, item := range items {
+		// Resolve organization and workspace IDs
+		// Priority: item-specific > default from batch request
+		orgID := item.OrganizationID
+		if orgID == nil {
+			orgID = defaultOrgID
+		}
+		wsID := item.WorkspaceID
+		if wsID == nil {
+			wsID = defaultWsID
+		}
+
+		// Debug logging for resolved IDs
+		fmt.Printf("📋 TimeLog item: LocalID=%s, item.OrgID=%v, item.WsID=%v, resolved orgID=%v, wsID=%v\n",
+			item.LocalID, item.OrganizationID, item.WorkspaceID, orgID, wsID)
+
 		// Handle task creation/lookup
 		var taskID *uint
 
@@ -184,17 +202,19 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 				}
 
 				task := &models.Task{
-					UserID:      userID,
-					LocalID:     item.TaskLocalID, // Set UUID from Electron
-					Title:       item.TaskTitle,
-					Description: item.Notes,
-					Status:      taskStatus,
-					Priority:    1,
-					IsManual:    false, // Auto-created from time tracker
+					UserID:         userID,
+					OrganizationID: orgID,            // Set organization context
+					WorkspaceID:    wsID,             // Set workspace context
+					LocalID:        item.TaskLocalID, // Set UUID from Electron
+					Title:          item.TaskTitle,
+					Description:    item.Notes,
+					Status:         taskStatus,
+					Priority:       1,
+					IsManual:       false, // Auto-created from time tracker
 				}
 				if err := s.taskRepo.Create(task); err == nil {
 					taskID = &task.ID
-					fmt.Printf("✅ Created task with LocalID: %s (Title: %s, ID: %d)\n", item.TaskLocalID, item.TaskTitle, task.ID)
+					fmt.Printf("✅ Created task with LocalID: %s (Title: %s, ID: %d, WsID: %v)\n", item.TaskLocalID, item.TaskTitle, task.ID, wsID)
 				} else {
 					fmt.Printf("⚠️  Failed to create task: %s - %v\n", item.TaskTitle, err)
 				}
@@ -210,16 +230,18 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 			}
 
 			task := &models.Task{
-				UserID:      userID,
-				Title:       item.TaskTitle,
-				Description: item.Notes,
-				Status:      taskStatus,
-				Priority:    1,
-				IsManual:    false, // Auto-created from time tracker
+				UserID:         userID,
+				OrganizationID: orgID, // Set organization context
+				WorkspaceID:    wsID,  // Set workspace context
+				Title:          item.TaskTitle,
+				Description:    item.Notes,
+				Status:         taskStatus,
+				Priority:       1,
+				IsManual:       false, // Auto-created from time tracker
 			}
 			if err := s.taskRepo.Create(task); err == nil {
 				taskID = &task.ID
-				fmt.Printf("✅ Auto-created task: %s (ID: %d)\n", item.TaskTitle, task.ID)
+				fmt.Printf("✅ Auto-created task: %s (ID: %d, WsID: %v)\n", item.TaskTitle, task.ID, wsID)
 			} else {
 				fmt.Printf("⚠️  Failed to create task: %s - %v\n", item.TaskTitle, err)
 			}
@@ -263,14 +285,16 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 			// Users can have multiple tasks with the same title (different task_id)
 			if taskID == nil && item.TaskTitle != "" {
 				newTask := &models.Task{
-					UserID:   userID,
-					Title:    item.TaskTitle,
-					Status:   "active",
-					Priority: 0,
+					UserID:         userID,
+					OrganizationID: orgID, // Set organization context
+					WorkspaceID:    wsID,  // Set workspace context
+					Title:          item.TaskTitle,
+					Status:         "active",
+					Priority:       0,
 				}
 				if err := s.taskRepo.Create(newTask); err == nil {
 					taskID = &newTask.ID
-					fmt.Printf("✅ Auto-created task: %s (ID: %d)\n", newTask.Title, newTask.ID)
+					fmt.Printf("✅ Auto-created task: %s (ID: %d, WsID: %v)\n", newTask.Title, newTask.ID, wsID)
 				} else {
 					fmt.Printf("⚠️  Failed to create task: %v\n", err)
 				}
@@ -283,23 +307,26 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 			fmt.Printf("   TaskTitle: %s\n", item.TaskTitle)
 			fmt.Printf("   StartTime: %v\n", item.StartTime)
 			fmt.Printf("   EndTime: %v\n", item.EndTime)
+			fmt.Printf("   WorkspaceID: %v\n", wsID)
 
 			// Create new
 			timeLog := &models.TimeLog{
-				UserID:      userID,
-				TaskID:      taskID,
-				TaskLocalID: item.TaskLocalID, // Store UUID for consistent reference
-				LocalID:     item.LocalID,
-				StartTime:   item.StartTime,
-				EndTime:     item.EndTime,
-				PausedAt:    item.PausedAt,
-				ResumedAt:   item.ResumedAt,
-				Duration:    item.Duration,
-				PausedTotal: item.PausedTotal,
-				Status:      item.Status,
-				Notes:       item.Notes,
-				TaskTitle:   item.TaskTitle,
-				IsSynced:    true,
+				UserID:         userID,
+				OrganizationID: orgID, // Set organization context
+				WorkspaceID:    wsID,  // Set workspace context
+				TaskID:         taskID,
+				TaskLocalID:    item.TaskLocalID, // Store UUID for consistent reference
+				LocalID:        item.LocalID,
+				StartTime:      item.StartTime,
+				EndTime:        item.EndTime,
+				PausedAt:       item.PausedAt,
+				ResumedAt:      item.ResumedAt,
+				Duration:       item.Duration,
+				PausedTotal:    item.PausedTotal,
+				Status:         item.Status,
+				Notes:          item.Notes,
+				TaskTitle:      item.TaskTitle,
+				IsSynced:       true,
 			}
 
 			if device != nil {
@@ -334,7 +361,7 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 	return result
 }
 
-func (s *syncService) syncScreenshots(userID uint, device *models.DeviceInfo, items []dto.SyncScreenshotItem) dto.SyncResult {
+func (s *syncService) syncScreenshots(userID uint, device *models.DeviceInfo, items []dto.SyncScreenshotItem, defaultOrgID *uint, defaultWsID *uint) dto.SyncResult {
 	result := dto.SyncResult{
 		Total:   len(items),
 		Success: 0,
@@ -343,6 +370,17 @@ func (s *syncService) syncScreenshots(userID uint, device *models.DeviceInfo, it
 	}
 
 	for _, item := range items {
+		// Resolve organization and workspace IDs
+		// Priority: item-specific > default from batch request
+		orgID := item.OrganizationID
+		if orgID == nil {
+			orgID = defaultOrgID
+		}
+		wsID := item.WorkspaceID
+		if wsID == nil {
+			wsID = defaultWsID
+		}
+
 		// Check if screenshot already exists
 		existing, _ := s.screenshotRepo.FindByLocalID(item.LocalID, userID)
 		if existing != nil {
@@ -417,20 +455,22 @@ func (s *syncService) syncScreenshots(userID uint, device *models.DeviceInfo, it
 
 		// Create screenshot record
 		screenshot := &models.Screenshot{
-			UserID:       userID,
-			TimeLogID:    serverTimeLogID,  // Use mapped server ID or nil
-			TaskID:       serverTaskID,     // Use resolved server TaskID
-			TaskLocalID:  item.TaskLocalID, // Primary task identifier (UUID)
-			LocalID:      item.LocalID,
-			FilePath:     filePath,
-			FileName:     item.FileName,
-			FileSize:     item.FileSize,
-			MimeType:     item.MimeType,
-			CapturedAt:   item.CapturedAt,
-			ScreenNumber: item.ScreenNumber,
-			IsEncrypted:  item.IsEncrypted,
-			Checksum:     item.Checksum,
-			IsSynced:     true,
+			UserID:         userID,
+			OrganizationID: orgID,            // Set organization context
+			WorkspaceID:    wsID,             // Set workspace context
+			TimeLogID:      serverTimeLogID,  // Use mapped server ID or nil
+			TaskID:         serverTaskID,     // Use resolved server TaskID
+			TaskLocalID:    item.TaskLocalID, // Primary task identifier (UUID)
+			LocalID:        item.LocalID,
+			FilePath:       filePath,
+			FileName:       item.FileName,
+			FileSize:       item.FileSize,
+			MimeType:       item.MimeType,
+			CapturedAt:     item.CapturedAt,
+			ScreenNumber:   item.ScreenNumber,
+			IsEncrypted:    item.IsEncrypted,
+			Checksum:       item.Checksum,
+			IsSynced:       true,
 		}
 
 		if device != nil {

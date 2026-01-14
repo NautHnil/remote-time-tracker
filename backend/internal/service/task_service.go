@@ -36,14 +36,16 @@ func (s *taskService) Create(userID uint, req *dto.CreateTaskRequest) (*models.T
 	localID := uuid.New().String()
 
 	task := &models.Task{
-		UserID:      userID,
-		LocalID:     localID, // Auto-generate UUID for LocalID
-		Title:       req.Title,
-		Description: req.Description,
-		Priority:    req.Priority,
-		Color:       req.Color,
-		Status:      "active",
-		IsManual:    req.IsManual, // Set from request
+		UserID:         userID,
+		OrganizationID: req.OrganizationID, // Set organization context
+		WorkspaceID:    req.WorkspaceID,    // Set workspace context
+		LocalID:        localID,            // Auto-generate UUID for LocalID
+		Title:          req.Title,
+		Description:    req.Description,
+		Priority:       req.Priority,
+		Color:          req.Color,
+		Status:         "active",
+		IsManual:       req.IsManual, // Set from request
 	}
 
 	if err := s.taskRepo.Create(task); err != nil {
@@ -192,6 +194,22 @@ func mapToTaskWithStats(m map[string]interface{}) (dto.TaskWithStats, error) {
 
 	if isManual, ok := m["is_manual"].(bool); ok {
 		task.IsManual = isManual
+	}
+
+	// Organization ID
+	if orgID, ok := m["organization_id"].(int64); ok {
+		orgIDUint := uint(orgID)
+		task.OrganizationID = &orgIDUint
+	} else if orgID, ok := m["organization_id"].(uint); ok {
+		task.OrganizationID = &orgID
+	}
+
+	// Workspace ID
+	if wsID, ok := m["workspace_id"].(int64); ok {
+		wsIDUint := uint(wsID)
+		task.WorkspaceID = &wsIDUint
+	} else if wsID, ok := m["workspace_id"].(uint); ok {
+		task.WorkspaceID = &wsID
 	}
 
 	// Duration - can be int64 or float64 from SQL

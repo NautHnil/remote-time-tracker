@@ -7,6 +7,8 @@ interface Credentials {
   refreshToken: string;
   userId: number;
   email: string;
+  organizationId?: number; // Current selected organization
+  workspaceId?: number; // Current selected workspace
 }
 
 // Image optimization settings

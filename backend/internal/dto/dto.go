@@ -50,11 +50,13 @@ type UserResponse struct {
 
 // CreateTaskRequest represents task creation request
 type CreateTaskRequest struct {
-	Title       string `json:"title" binding:"required"`
-	Description string `json:"description"`
-	Priority    int    `json:"priority"`
-	Color       string `json:"color"`
-	IsManual    bool   `json:"is_manual"` // true: manually created, false: auto from time tracker
+	Title          string `json:"title" binding:"required"`
+	Description    string `json:"description"`
+	Priority       int    `json:"priority"`
+	Color          string `json:"color"`
+	IsManual       bool   `json:"is_manual"`       // true: manually created, false: auto from time tracker
+	OrganizationID *uint  `json:"organization_id"` // Organization ID (required for workspace context)
+	WorkspaceID    *uint  `json:"workspace_id"`    // Workspace ID the task belongs to
 }
 
 // UpdateTaskRequest represents task update request
@@ -76,6 +78,8 @@ type TaskWithStats struct {
 	Priority        int       `json:"priority"`
 	Color           string    `json:"color"`
 	IsManual        bool      `json:"is_manual"`        // true: manually created, false: auto from time tracker
+	OrganizationID  *uint     `json:"organization_id"`  // Organization ID
+	WorkspaceID     *uint     `json:"workspace_id"`     // Workspace ID the task belongs to
 	Duration        int64     `json:"duration"`         // Total duration in seconds
 	ScreenshotCount int64     `json:"screenshot_count"` // Total screenshots
 	CreatedAt       time.Time `json:"created_at"`
@@ -109,26 +113,30 @@ type ResumeTimeLogRequest struct {
 
 // BatchSyncRequest represents a batch synchronization request
 type BatchSyncRequest struct {
-	DeviceUUID  string               `json:"device_uuid" binding:"required"`
-	TimeLogs    []SyncTimeLogItem    `json:"time_logs"`
-	Screenshots []SyncScreenshotItem `json:"screenshots"`
-	DeviceInfo  *SyncDeviceInfoItem  `json:"device_info"`
+	DeviceUUID     string               `json:"device_uuid" binding:"required"`
+	OrganizationID *uint                `json:"organization_id"` // Default organization ID for all items
+	WorkspaceID    *uint                `json:"workspace_id"`    // Default workspace ID for all items
+	TimeLogs       []SyncTimeLogItem    `json:"time_logs"`
+	Screenshots    []SyncScreenshotItem `json:"screenshots"`
+	DeviceInfo     *SyncDeviceInfoItem  `json:"device_info"`
 }
 
 // SyncTimeLogItem represents a time log item to sync
 type SyncTimeLogItem struct {
-	LocalID     string     `json:"local_id" binding:"required"`
-	TaskID      *uint      `json:"task_id"`       // Deprecated: Use TaskLocalID instead
-	TaskLocalID string     `json:"task_local_id"` // UUID from Electron - primary task identifier
-	StartTime   time.Time  `json:"start_time" binding:"required"`
-	EndTime     *time.Time `json:"end_time"`
-	PausedAt    *time.Time `json:"paused_at"`
-	ResumedAt   *time.Time `json:"resumed_at"`
-	Duration    int64      `json:"duration"`
-	PausedTotal int64      `json:"paused_total"`
-	Status      string     `json:"status"`
-	Notes       string     `json:"notes"`
-	TaskTitle   string     `json:"task_title"` // Task title when stopped
+	LocalID        string     `json:"local_id" binding:"required"`
+	TaskID         *uint      `json:"task_id"`         // Deprecated: Use TaskLocalID instead
+	TaskLocalID    string     `json:"task_local_id"`   // UUID from Electron - primary task identifier
+	OrganizationID *uint      `json:"organization_id"` // Organization ID
+	WorkspaceID    *uint      `json:"workspace_id"`    // Workspace ID the time log belongs to
+	StartTime      time.Time  `json:"start_time" binding:"required"`
+	EndTime        *time.Time `json:"end_time"`
+	PausedAt       *time.Time `json:"paused_at"`
+	ResumedAt      *time.Time `json:"resumed_at"`
+	Duration       int64      `json:"duration"`
+	PausedTotal    int64      `json:"paused_total"`
+	Status         string     `json:"status"`
+	Notes          string     `json:"notes"`
+	TaskTitle      string     `json:"task_title"` // Task title when stopped
 }
 
 // SyncScreenshotItem represents a screenshot item to sync
@@ -138,6 +146,8 @@ type SyncScreenshotItem struct {
 	TimeLogLocalID string    `json:"time_log_local_id"` // Local ID of TimeLog from Electron
 	TaskID         *uint     `json:"task_id"`           // Deprecated: Use TaskLocalID instead
 	TaskLocalID    string    `json:"task_local_id"`     // UUID from Electron - primary task identifier
+	OrganizationID *uint     `json:"organization_id"`   // Organization ID
+	WorkspaceID    *uint     `json:"workspace_id"`      // Workspace ID the screenshot belongs to
 	FileName       string    `json:"file_name" binding:"required"`
 	FileSize       int64     `json:"file_size"`
 	MimeType       string    `json:"mime_type"`

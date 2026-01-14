@@ -158,11 +158,19 @@ export class SyncService {
         };
       }
 
+      // Get current workspace context from stored credentials
+      const workspaceContext = this.getWorkspaceContext();
+      console.log(
+        `🏢 Workspace context for sync: org=${workspaceContext.organizationId}, ws=${workspaceContext.workspaceId}`
+      );
+
       // Prepare batch sync payload
       const batchPayload = {
         device_uuid: this.getDeviceUUID(),
         device_info: this.getDeviceInfo(),
-        time_logs: unsyncedTimeLogs.map(this.timeLogToDTO),
+        organization_id: workspaceContext.organizationId,
+        workspace_id: workspaceContext.workspaceId,
+        time_logs: unsyncedTimeLogs.map((tl) => this.timeLogToDTO(tl)),
         screenshots: await Promise.all(
           unsyncedScreenshots.map(async (screenshot) => {
             try {
@@ -250,6 +258,26 @@ export class SyncService {
     };
   }
 
+  /**
+   * Get workspace context from stored credentials/settings
+   * This determines which workspace the synced data belongs to
+   */
+  private getWorkspaceContext(): {
+    organizationId?: number;
+    workspaceId?: number;
+  } {
+    try {
+      const credentials = AppConfig.getCredentials();
+      return {
+        organizationId: credentials?.organizationId,
+        workspaceId: credentials?.workspaceId,
+      };
+    } catch (error) {
+      console.error("Error getting workspace context:", error);
+      return {};
+    }
+  }
+
   private timeLogToDTO(timeLog: TimeLog) {
     // Convert milliseconds to seconds for backend
     // Electron stores duration in milliseconds, but backend expects seconds
@@ -263,11 +291,15 @@ export class SyncService {
     console.log(`   Task title: ${timeLog.taskTitle}`);
     console.log(`   Task ID (for manual task): ${timeLog.taskId || "none"}`);
     console.log(`   Task Local ID: ${timeLog.taskLocalId}`);
+    console.log(`   Organization ID: ${timeLog.organizationId || "none"}`);
+    console.log(`   Workspace ID: ${timeLog.workspaceId || "none"}`);
 
     return {
       local_id: timeLog.localId,
       task_id: timeLog.taskId, // For manual tasks - links to existing task ID
       task_local_id: timeLog.taskLocalId, // For all tasks - session UUID
+      organization_id: timeLog.organizationId,
+      workspace_id: timeLog.workspaceId,
       start_time: timeLog.startTime,
       end_time: timeLog.endTime,
       paused_at: timeLog.pausedAt,
@@ -295,6 +327,8 @@ export class SyncService {
       time_log_local_id: timeLogLocalId, // Send LocalID string, not DB ID
       task_id: screenshot.taskId, // Deprecated, kept for backward compatibility
       task_local_id: screenshot.taskLocalId, // Primary task identifier (UUID)
+      organization_id: screenshot.organizationId,
+      workspace_id: screenshot.workspaceId,
       file_name: screenshot.fileName,
       file_size: screenshot.fileSize,
       mime_type: screenshot.mimeType || "image/png",

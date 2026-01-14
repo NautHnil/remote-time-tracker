@@ -1,5 +1,6 @@
 import { formatISO, getTime, parseISO } from "date-fns";
 import { v4 as uuidv4 } from "uuid";
+import { AppConfig } from "../config";
 import { DatabaseService, TimeLog } from "./DatabaseService";
 import { ScreenshotService } from "./ScreenshotService";
 import { SyncService } from "./SyncService";
@@ -80,11 +81,17 @@ export class TimeTrackerService {
             ")"
         );
 
+        // Get workspace context from timeLog or credentials
+        const organizationId = activeTimeLog.organizationId;
+        const workspaceId = activeTimeLog.workspaceId;
+
         // Resume screenshot capturing with taskLocalId and taskId for manual tasks
         await this.screenshotService.startCapturing(
           activeTimeLog.id,
           activeTimeLog.taskLocalId || undefined,
-          this.isManualTask ? activeTimeLog.taskId : undefined
+          this.isManualTask ? activeTimeLog.taskId : undefined,
+          organizationId, // Pass organization context
+          workspaceId // Pass workspace context
         );
 
         // Start timer
@@ -150,10 +157,17 @@ export class TimeTrackerService {
     // For auto-track tasks: taskLocalId is used to create/find task on server
     const taskLocalId = uuidv4();
 
+    // Get current workspace context from credentials
+    const credentials = AppConfig.getCredentials();
+    const organizationId = credentials?.organizationId;
+    const workspaceId = credentials?.workspaceId;
+
     const timeLog: Omit<TimeLog, "id"> = {
       localId,
       taskId, // Store task ID for manual tasks - links to existing task
       taskLocalId, // Generated for BOTH manual and auto-track tasks
+      organizationId, // Store organization context
+      workspaceId, // Store workspace context
       startTime: formatISO(nowMs),
       duration: 0,
       pausedTotal: 0,
@@ -174,14 +188,16 @@ export class TimeTrackerService {
     await this.screenshotService.startCapturing(
       this.currentTimeLog.id,
       taskLocalId,
-      this.isManualTask ? taskId : undefined // Pass taskId for manual tasks
+      this.isManualTask ? taskId : undefined, // Pass taskId for manual tasks
+      organizationId, // Pass organization context
+      workspaceId // Pass workspace context
     );
 
     // Start tracking timer
     this.startTimer();
 
     console.log(
-      `▶️  Time tracking started (Manual: ${this.isManualTask}, TaskID: ${taskId}, TaskLocalID: ${taskLocalId})`
+      `▶️  Time tracking started (Manual: ${this.isManualTask}, TaskID: ${taskId}, TaskLocalID: ${taskLocalId}, WsID: ${workspaceId})`
     );
 
     return this.getStatus();
@@ -318,11 +334,17 @@ export class TimeTrackerService {
     this.currentTimeLog.resumedAt = formatISO(nowMs);
     this.currentTimeLog.pausedTotal = this.totalPausedTime;
 
+    // Get workspace context from currentTimeLog
+    const organizationId = this.currentTimeLog.organizationId;
+    const workspaceId = this.currentTimeLog.workspaceId;
+
     // Resume screenshot capturing with taskLocalId and taskId for manual tasks
     await this.screenshotService.startCapturing(
       this.currentTimeLog.id,
       this.currentTimeLog.taskLocalId || undefined,
-      this.isManualTask ? this.currentTimeLog.taskId : undefined
+      this.isManualTask ? this.currentTimeLog.taskId : undefined,
+      organizationId, // Pass organization context
+      workspaceId // Pass workspace context
     );
 
     // Restart timer

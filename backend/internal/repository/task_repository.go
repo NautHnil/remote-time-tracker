@@ -116,6 +116,8 @@ type TaskWithStatsRow struct {
 	Priority        int       `gorm:"column:priority"`
 	Color           *string   `gorm:"column:color"` // Nullable
 	IsManual        bool      `gorm:"column:is_manual"`
+	OrganizationID  *uint     `gorm:"column:organization_id"` // Nullable
+	WorkspaceID     *uint     `gorm:"column:workspace_id"`    // Nullable
 	CreatedAt       time.Time `gorm:"column:created_at"`
 	UpdatedAt       time.Time `gorm:"column:updated_at"`
 	Duration        int64     `gorm:"column:duration"`
@@ -143,6 +145,8 @@ func (r *taskRepository) FindByUserIDWithStats(userID uint, page, perPage int) (
 			t.priority,
 			t.color,
 			t.is_manual,
+			t.organization_id,
+			t.workspace_id,
 			t.created_at,
 			t.updated_at,
 			COALESCE(
@@ -195,6 +199,8 @@ func (r *taskRepository) FindByUserIDWithStats(userID uint, page, perPage int) (
 			"priority":         row.Priority,
 			"color":            color,
 			"is_manual":        row.IsManual,
+			"organization_id":  row.OrganizationID,
+			"workspace_id":     row.WorkspaceID,
 			"created_at":       row.CreatedAt,
 			"updated_at":       row.UpdatedAt,
 			"duration":         row.Duration,
@@ -216,6 +222,8 @@ func (r *taskRepository) FindActiveByUserIDWithStats(userID uint) ([]map[string]
 			t.priority,
 			t.color,
 			t.is_manual,
+			t.organization_id,
+			t.workspace_id,
 			t.created_at,
 			t.updated_at,
 			COALESCE(
@@ -267,6 +275,8 @@ func (r *taskRepository) FindActiveByUserIDWithStats(userID uint) ([]map[string]
 			"priority":         row.Priority,
 			"color":            color,
 			"is_manual":        row.IsManual,
+			"organization_id":  row.OrganizationID,
+			"workspace_id":     row.WorkspaceID,
 			"created_at":       row.CreatedAt,
 			"updated_at":       row.UpdatedAt,
 			"duration":         row.Duration,

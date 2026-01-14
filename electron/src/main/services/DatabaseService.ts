@@ -8,6 +8,8 @@ export interface TimeLog {
   localId: string;
   taskId?: number; // Deprecated: Use taskLocalId instead
   taskLocalId?: string; // UUID - primary reference to task
+  organizationId?: number; // Organization ID for workspace context
+  workspaceId?: number; // Workspace ID the time log belongs to
   startTime: string;
   endTime?: string;
   pausedAt?: string;
@@ -27,6 +29,8 @@ export interface Screenshot {
   timeLogId?: number;
   taskId?: number; // Deprecated: Use taskLocalId instead
   taskLocalId?: string; // UUID - primary reference to task
+  organizationId?: number; // Organization ID for workspace context
+  workspaceId?: number; // Workspace ID the screenshot belongs to
   filePath: string;
   fileName: string;
   fileSize: number;
@@ -68,6 +72,8 @@ export class DatabaseService {
         local_id TEXT UNIQUE NOT NULL,
         task_id INTEGER,
         task_local_id TEXT,
+        organization_id INTEGER,
+        workspace_id INTEGER,
         start_time TEXT NOT NULL,
         end_time TEXT,
         paused_at TEXT,
@@ -90,6 +96,8 @@ export class DatabaseService {
         time_log_id INTEGER,
         task_id INTEGER,
         task_local_id TEXT,
+        organization_id INTEGER,
+        workspace_id INTEGER,
         file_path TEXT NOT NULL,
         file_name TEXT NOT NULL,
         file_size INTEGER NOT NULL,
@@ -222,6 +230,70 @@ export class DatabaseService {
         CREATE INDEX IF NOT EXISTS idx_screenshots_task_local_id ON screenshots(task_local_id)
       `);
       console.log("✅ Indexes verified");
+
+      // Add organization_id and workspace_id columns to time_logs if missing
+      if (!timeLogsColumns.has("organization_id")) {
+        console.log(
+          "🔄 Running migration: Adding organization_id column to time_logs"
+        );
+        this.db.exec(`
+          ALTER TABLE time_logs ADD COLUMN organization_id INTEGER
+        `);
+        console.log(
+          "✅ Migration completed: organization_id column added to time_logs"
+        );
+      }
+
+      if (!timeLogsColumns.has("workspace_id")) {
+        console.log(
+          "🔄 Running migration: Adding workspace_id column to time_logs"
+        );
+        this.db.exec(`
+          ALTER TABLE time_logs ADD COLUMN workspace_id INTEGER
+        `);
+        this.db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_time_logs_workspace_id ON time_logs(workspace_id)
+        `);
+        console.log(
+          "✅ Migration completed: workspace_id column added to time_logs"
+        );
+      }
+
+      // Add organization_id and workspace_id columns to screenshots if missing
+      if (!existingColumns.has("organization_id")) {
+        console.log(
+          "🔄 Running migration: Adding organization_id column to screenshots"
+        );
+        this.db.exec(`
+          ALTER TABLE screenshots ADD COLUMN organization_id INTEGER
+        `);
+        console.log(
+          "✅ Migration completed: organization_id column added to screenshots"
+        );
+      }
+
+      if (!existingColumns.has("workspace_id")) {
+        console.log(
+          "🔄 Running migration: Adding workspace_id column to screenshots"
+        );
+        this.db.exec(`
+          ALTER TABLE screenshots ADD COLUMN workspace_id INTEGER
+        `);
+        this.db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_screenshots_workspace_id ON screenshots(workspace_id)
+        `);
+        console.log(
+          "✅ Migration completed: workspace_id column added to screenshots"
+        );
+      }
+
+      // Ensure workspace indexes exist
+      this.db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_time_logs_workspace_id ON time_logs(workspace_id)
+      `);
+      this.db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_screenshots_workspace_id ON screenshots(workspace_id)
+      `);
     } catch (error) {
       console.error("Migration error:", error);
       // Don't throw - allow app to continue if migration fails
@@ -234,15 +306,18 @@ export class DatabaseService {
 
     const stmt = this.db.prepare(`
       INSERT INTO time_logs (
-        local_id, task_id, task_local_id, start_time, end_time, paused_at, resumed_at,
+        local_id, task_id, task_local_id, organization_id, workspace_id,
+        start_time, end_time, paused_at, resumed_at,
         duration, paused_total, status, task_title, notes, is_synced, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
       timeLog.localId,
       timeLog.taskId ?? null,
       timeLog.taskLocalId ?? null,
+      timeLog.organizationId ?? null,
+      timeLog.workspaceId ?? null,
       timeLog.startTime,
       timeLog.endTime,
       timeLog.pausedAt,
@@ -360,9 +435,10 @@ export class DatabaseService {
 
     const stmt = this.db.prepare(`
       INSERT INTO screenshots (
-        local_id, time_log_id, task_id, task_local_id, file_path, file_name, file_size,
+        local_id, time_log_id, task_id, task_local_id, organization_id, workspace_id,
+        file_path, file_name, file_size,
         mime_type, captured_at, screen_number, is_encrypted, checksum, is_synced, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -370,6 +446,8 @@ export class DatabaseService {
       screenshot.timeLogId ?? null,
       screenshot.taskId ?? null,
       screenshot.taskLocalId ?? null,
+      screenshot.organizationId ?? null,
+      screenshot.workspaceId ?? null,
       screenshot.filePath,
       screenshot.fileName,
       screenshot.fileSize,
@@ -571,6 +649,8 @@ export class DatabaseService {
       localId: row.local_id,
       taskId: row.task_id,
       taskLocalId: row.task_local_id,
+      organizationId: row.organization_id,
+      workspaceId: row.workspace_id,
       startTime: row.start_time,
       endTime: row.end_time,
       pausedAt: row.paused_at,
@@ -592,6 +672,8 @@ export class DatabaseService {
       timeLogId: row.time_log_id,
       taskId: row.task_id,
       taskLocalId: row.task_local_id,
+      organizationId: row.organization_id,
+      workspaceId: row.workspace_id,
       filePath: row.file_path,
       fileName: row.file_name,
       fileSize: row.file_size,

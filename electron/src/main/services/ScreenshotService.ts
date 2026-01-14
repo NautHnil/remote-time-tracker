@@ -13,6 +13,8 @@ export class ScreenshotService {
   private screenshotTimer: NodeJS.Timeout | null = null;
   private isCapturing = false;
   private currentTaskId?: number; // For manual tasks
+  private currentOrganizationId?: number; // Current organization context
+  private currentWorkspaceId?: number; // Current workspace context
   private imageOptimizer!: ImageOptimizer; // Definite assignment assertion - initialized in initializeOptimizer()
 
   constructor(dbService: DatabaseService) {
@@ -61,7 +63,9 @@ export class ScreenshotService {
   async startCapturing(
     timeLogId?: number,
     taskLocalId?: string,
-    taskId?: number // For manual tasks - link to existing task ID
+    taskId?: number, // For manual tasks - link to existing task ID
+    organizationId?: number, // Organization context
+    workspaceId?: number // Workspace context
   ): Promise<void> {
     if (this.isCapturing) {
       console.log("Screenshot capturing already active");
@@ -70,17 +74,31 @@ export class ScreenshotService {
 
     this.isCapturing = true;
     this.currentTaskId = taskId;
+    this.currentOrganizationId = organizationId;
+    this.currentWorkspaceId = workspaceId;
     console.log(
-      `📸 Starting screenshot capture (TaskLocalID: ${taskLocalId}, TaskID: ${taskId})...`
+      `📸 Starting screenshot capture (TaskLocalID: ${taskLocalId}, TaskID: ${taskId}, WsID: ${workspaceId})...`
     );
 
     // Take first screenshot immediately
-    await this.captureAllScreens(timeLogId, taskLocalId, taskId);
+    await this.captureAllScreens(
+      timeLogId,
+      taskLocalId,
+      taskId,
+      organizationId,
+      workspaceId
+    );
 
     // Setup interval
     const interval = AppConfig.screenshotInterval;
     this.screenshotTimer = setInterval(async () => {
-      await this.captureAllScreens(timeLogId, taskLocalId, this.currentTaskId);
+      await this.captureAllScreens(
+        timeLogId,
+        taskLocalId,
+        this.currentTaskId,
+        this.currentOrganizationId,
+        this.currentWorkspaceId
+      );
     }, interval);
   }
 
@@ -91,6 +109,8 @@ export class ScreenshotService {
     }
     this.isCapturing = false;
     this.currentTaskId = undefined;
+    this.currentOrganizationId = undefined;
+    this.currentWorkspaceId = undefined;
     console.log("📸 Screenshot capture stopped");
   }
 
@@ -132,18 +152,24 @@ export class ScreenshotService {
     isCapturing: boolean;
     hasTimer: boolean;
     currentTaskId?: number;
+    currentOrganizationId?: number;
+    currentWorkspaceId?: number;
   } {
     return {
       isCapturing: this.isCapturing,
       hasTimer: this.screenshotTimer !== null,
       currentTaskId: this.currentTaskId,
+      currentOrganizationId: this.currentOrganizationId,
+      currentWorkspaceId: this.currentWorkspaceId,
     };
   }
 
   private async captureAllScreens(
     timeLogId?: number,
     taskLocalId?: string,
-    taskId?: number
+    taskId?: number,
+    organizationId?: number,
+    workspaceId?: number
   ): Promise<void> {
     try {
       // Ensure screenshots directory exists
@@ -159,7 +185,14 @@ export class ScreenshotService {
 
       // Capture each screen
       for (let i = 0; i < screens.length; i++) {
-        await this.captureScreen(i, timeLogId, taskLocalId, taskId);
+        await this.captureScreen(
+          i,
+          timeLogId,
+          taskLocalId,
+          taskId,
+          organizationId,
+          workspaceId
+        );
       }
     } catch (error) {
       console.error("Error capturing screenshots:", error);
@@ -170,7 +203,9 @@ export class ScreenshotService {
     screenNumber: number,
     timeLogId?: number,
     taskLocalId?: string,
-    taskId?: number
+    taskId?: number,
+    organizationId?: number,
+    workspaceId?: number
   ): Promise<void> {
     try {
       const localId = uuidv4();
@@ -246,6 +281,8 @@ export class ScreenshotService {
         timeLogId,
         taskId, // For manual tasks - link to existing task ID
         taskLocalId,
+        organizationId, // Organization context
+        workspaceId, // Workspace context
         filePath: finalFilePath,
         fileName: finalFileName,
         fileSize,
