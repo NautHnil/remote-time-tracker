@@ -294,6 +294,13 @@ func (s *workspaceService) GetWorkspacesByOrg(orgID, userID uint) ([]dto.Workspa
 		return nil, errors.New("access denied: not a member of this organization")
 	}
 
+	// Get organization for name
+	org, _ := s.orgRepo.GetByID(orgID)
+	var orgName string
+	if org != nil {
+		orgName = org.Name
+	}
+
 	workspaces, err := s.workspaceRepo.GetByOrganizationID(orgID)
 	if err != nil {
 		return nil, err
@@ -308,25 +315,37 @@ func (s *workspaceService) GetWorkspacesByOrg(orgID, userID uint) ([]dto.Workspa
 		// Get user's membership info
 		member, _ := s.workspaceRepo.GetMember(w.ID, userID)
 		var roleName string
+		var workspaceRoleID *uint
 		var joinedAt time.Time
 		if member != nil {
 			roleName = member.RoleName
+			workspaceRoleID = member.WorkspaceRoleID
 			joinedAt = member.JoinedAt
+			// Get role name from WorkspaceRole if RoleName is empty
+			if roleName == "" && member.WorkspaceRole != nil {
+				roleName = member.WorkspaceRole.DisplayName
+				if roleName == "" {
+					roleName = member.WorkspaceRole.Name
+				}
+			}
 		}
 
 		result = append(result, dto.WorkspaceListResponse{
-			ID:             w.ID,
-			OrganizationID: w.OrganizationID,
-			Name:           w.Name,
-			Slug:           w.Slug,
-			Color:          w.Color,
-			Icon:           w.Icon,
-			IsAdmin:        isAdmin,
-			RoleName:       roleName,
-			MemberCount:    memberCount,
-			TaskCount:      taskCount,
-			IsActive:       w.IsActive,
-			JoinedAt:       joinedAt,
+			ID:               w.ID,
+			OrganizationID:   w.OrganizationID,
+			OrganizationName: orgName,
+			Name:             w.Name,
+			Slug:             w.Slug,
+			Description:      w.Description,
+			Color:            w.Color,
+			Icon:             w.Icon,
+			IsAdmin:          isAdmin,
+			WorkspaceRoleID:  workspaceRoleID,
+			RoleName:         roleName,
+			MemberCount:      memberCount,
+			TaskCount:        taskCount,
+			IsActive:         w.IsActive,
+			JoinedAt:         joinedAt,
 		})
 	}
 
@@ -344,19 +363,37 @@ func (s *workspaceService) GetUserWorkspaces(userID uint) ([]dto.WorkspaceListRe
 		memberCount, _ := s.workspaceRepo.GetMemberCount(m.WorkspaceID)
 		taskCount, _ := s.workspaceRepo.GetTaskCount(m.WorkspaceID)
 
+		// Get organization name from preloaded data
+		var orgName string
+		if m.Workspace.Organization.ID != 0 {
+			orgName = m.Workspace.Organization.Name
+		}
+
+		// Get role name - prefer WorkspaceRole if available
+		roleName := m.RoleName
+		if roleName == "" && m.WorkspaceRole != nil {
+			roleName = m.WorkspaceRole.DisplayName
+			if roleName == "" {
+				roleName = m.WorkspaceRole.Name
+			}
+		}
+
 		result = append(result, dto.WorkspaceListResponse{
-			ID:             m.Workspace.ID,
-			OrganizationID: m.Workspace.OrganizationID,
-			Name:           m.Workspace.Name,
-			Slug:           m.Workspace.Slug,
-			Color:          m.Workspace.Color,
-			Icon:           m.Workspace.Icon,
-			IsAdmin:        m.IsAdmin,
-			RoleName:       m.RoleName,
-			MemberCount:    memberCount,
-			TaskCount:      taskCount,
-			IsActive:       m.Workspace.IsActive,
-			JoinedAt:       m.JoinedAt,
+			ID:               m.Workspace.ID,
+			OrganizationID:   m.Workspace.OrganizationID,
+			OrganizationName: orgName,
+			Name:             m.Workspace.Name,
+			Slug:             m.Workspace.Slug,
+			Description:      m.Workspace.Description,
+			Color:            m.Workspace.Color,
+			Icon:             m.Workspace.Icon,
+			IsAdmin:          m.IsAdmin,
+			WorkspaceRoleID:  m.WorkspaceRoleID,
+			RoleName:         roleName,
+			MemberCount:      memberCount,
+			TaskCount:        taskCount,
+			IsActive:         m.Workspace.IsActive,
+			JoinedAt:         m.JoinedAt,
 		})
 	}
 
@@ -369,24 +406,43 @@ func (s *workspaceService) GetUserWorkspacesByOrg(userID, orgID uint) ([]dto.Wor
 		return nil, err
 	}
 
+	// Get organization for name
+	org, _ := s.orgRepo.GetByID(orgID)
+	var orgName string
+	if org != nil {
+		orgName = org.Name
+	}
+
 	result := make([]dto.WorkspaceListResponse, 0, len(memberships))
 	for _, m := range memberships {
 		memberCount, _ := s.workspaceRepo.GetMemberCount(m.WorkspaceID)
 		taskCount, _ := s.workspaceRepo.GetTaskCount(m.WorkspaceID)
 
+		// Get role name - prefer WorkspaceRole if available
+		roleName := m.RoleName
+		if roleName == "" && m.WorkspaceRole != nil {
+			roleName = m.WorkspaceRole.DisplayName
+			if roleName == "" {
+				roleName = m.WorkspaceRole.Name
+			}
+		}
+
 		result = append(result, dto.WorkspaceListResponse{
-			ID:             m.Workspace.ID,
-			OrganizationID: m.Workspace.OrganizationID,
-			Name:           m.Workspace.Name,
-			Slug:           m.Workspace.Slug,
-			Color:          m.Workspace.Color,
-			Icon:           m.Workspace.Icon,
-			IsAdmin:        m.IsAdmin,
-			RoleName:       m.RoleName,
-			MemberCount:    memberCount,
-			TaskCount:      taskCount,
-			IsActive:       m.Workspace.IsActive,
-			JoinedAt:       m.JoinedAt,
+			ID:               m.Workspace.ID,
+			OrganizationID:   m.Workspace.OrganizationID,
+			OrganizationName: orgName,
+			Name:             m.Workspace.Name,
+			Slug:             m.Workspace.Slug,
+			Description:      m.Workspace.Description,
+			Color:            m.Workspace.Color,
+			Icon:             m.Workspace.Icon,
+			IsAdmin:          m.IsAdmin,
+			WorkspaceRoleID:  m.WorkspaceRoleID,
+			RoleName:         roleName,
+			MemberCount:      memberCount,
+			TaskCount:        taskCount,
+			IsActive:         m.Workspace.IsActive,
+			JoinedAt:         m.JoinedAt,
 		})
 	}
 
@@ -513,7 +569,14 @@ func (s *workspaceService) UpdateMember(workspaceID, memberUserID, actorID uint,
 		return nil, err
 	}
 
-	return s.toMemberResponse(member), nil
+	// Reload member with full details to ensure WorkspaceRole is loaded
+	updatedMember, err := s.workspaceRepo.GetMemberWithDetails(workspaceID, memberUserID)
+	if err != nil {
+		// Fallback to current member if reload fails
+		return s.toMemberResponse(member), nil
+	}
+
+	return s.toMemberResponse(updatedMember), nil
 }
 
 func (s *workspaceService) RemoveMember(workspaceID, memberUserID, actorID uint) error {

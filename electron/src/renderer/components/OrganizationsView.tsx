@@ -430,8 +430,7 @@ export default function OrganizationsView() {
           <p className="text-dark-400">@{selectedOrg.slug}</p>
         </div>
         {renderRoleBadge(
-          members.find((m) => m.user_id === selectedOrg.owner_id)?.role ||
-            "owner"
+          members.find((m) => m.user_id === user?.id)?.role || "member"
         )}
       </div>
 

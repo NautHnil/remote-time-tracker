@@ -88,11 +88,16 @@ export interface WorkspaceMember {
   id: number;
   workspace_id: number;
   user_id: number;
-  role_id: number;
-  role?: WorkspaceRole;
+  workspace_role_id: number | null;
+  workspace_role?: WorkspaceRole;
+  role_name?: string;
+  is_admin?: boolean;
+  can_view_reports?: boolean;
+  can_manage_tasks?: boolean;
   user?: User;
   is_active: boolean;
   joined_at: string;
+  added_by?: number;
 }
 
 export interface WorkspaceRole {
@@ -117,7 +122,7 @@ export interface WorkspaceListItem {
   description: string;
   color: string;
   icon: string;
-  role_id: number;
+  workspace_role_id?: number;
   role_name: string;
   is_admin: boolean;
   member_count: number;
@@ -214,11 +219,19 @@ export interface UpdateMemberRequest {
 
 export interface AddWorkspaceMemberRequest {
   user_id: number;
-  role_id: number;
+  workspace_role_id?: number;
+  role_name?: string;
+  is_admin?: boolean;
+  can_view_reports?: boolean;
+  can_manage_tasks?: boolean;
 }
 
 export interface UpdateWorkspaceMemberRequest {
-  role_id: number;
+  workspace_role_id?: number;
+  role_name?: string;
+  is_admin?: boolean;
+  can_view_reports?: boolean;
+  can_manage_tasks?: boolean;
   is_active?: boolean;
 }
 

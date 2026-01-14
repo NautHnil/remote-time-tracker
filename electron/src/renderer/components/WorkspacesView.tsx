@@ -454,9 +454,11 @@ function WorkspaceCard({
               Admin
             </span>
           )}
-          <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded-full">
-            {workspace.role_name}
-          </span>
+          {(workspace.role_name || !workspace.is_admin) && (
+            <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 rounded-full">
+              {workspace.role_name || "Member"}
+            </span>
+          )}
         </div>
       </div>
       {workspace.description && (
@@ -541,11 +543,16 @@ function WorkspaceOverviewTab({
                 <span
                   className="px-2 py-0.5 text-xs rounded-full"
                   style={{
-                    backgroundColor: `${member.role?.color || "#6366f1"}20`,
-                    color: member.role?.color || "#6366f1",
+                    backgroundColor: `${
+                      member.workspace_role?.color || "#6366f1"
+                    }20`,
+                    color: member.workspace_role?.color || "#6366f1",
                   }}
                 >
-                  {member.role?.display_name || member.role?.name || "Member"}
+                  {member.workspace_role?.display_name ||
+                    member.workspace_role?.name ||
+                    member.role_name ||
+                    "Member"}
                 </span>
               </div>
             ))}
@@ -653,13 +660,21 @@ function WorkspaceMembersTab({
 
   const handleUpdateRole = async (userId: number, newRoleId: number) => {
     if (!canManage) return;
+    console.log(
+      "[WorkspaceMembersTab] Updating role for user:",
+      userId,
+      "to roleId:",
+      newRoleId
+    );
     try {
       setUpdating(userId);
-      await workspaceService.updateMember(workspaceId, userId, {
-        role_id: newRoleId,
+      const result = await workspaceService.updateMember(workspaceId, userId, {
+        workspace_role_id: newRoleId,
       });
+      console.log("[WorkspaceMembersTab] Update result:", result);
       onRefresh();
     } catch (err: any) {
+      console.error("[WorkspaceMembersTab] Update failed:", err);
       alert(err.message || "Failed to update member");
     } finally {
       setUpdating(null);
@@ -696,7 +711,7 @@ function WorkspaceMembersTab({
     try {
       await workspaceService.addMember(workspaceId, {
         user_id: userId,
-        role_id: roleId,
+        workspace_role_id: roleId,
       });
       setShowAddModal(false);
       onRefresh();
@@ -748,7 +763,7 @@ function WorkspaceMembersTab({
               <div className="flex items-center gap-2">
                 {canManage ? (
                   <select
-                    value={member.role_id}
+                    value={member.workspace_role_id || ""}
                     onChange={(e) =>
                       handleUpdateRole(member.user_id, parseInt(e.target.value))
                     }
@@ -765,11 +780,16 @@ function WorkspaceMembersTab({
                   <span
                     className="px-2 py-1 text-xs rounded-full"
                     style={{
-                      backgroundColor: `${member.role?.color || "#6366f1"}20`,
-                      color: member.role?.color || "#6366f1",
+                      backgroundColor: `${
+                        member.workspace_role?.color || "#6366f1"
+                      }20`,
+                      color: member.workspace_role?.color || "#6366f1",
                     }}
                   >
-                    {member.role?.display_name || member.role?.name}
+                    {member.workspace_role?.display_name ||
+                      member.workspace_role?.name ||
+                      member.role_name ||
+                      "Member"}
                   </span>
                 )}
                 {canManage && (

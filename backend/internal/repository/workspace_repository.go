@@ -129,7 +129,8 @@ func (r *WorkspaceRepository) AddMember(member *models.WorkspaceMember) error {
 // GetMember gets a member by workspace and user ID
 func (r *WorkspaceRepository) GetMember(workspaceID, userID uint) (*models.WorkspaceMember, error) {
 	var member models.WorkspaceMember
-	err := r.db.Where("workspace_id = ? AND user_id = ?", workspaceID, userID).First(&member).Error
+	err := r.db.Preload("WorkspaceRole").
+		Where("workspace_id = ? AND user_id = ?", workspaceID, userID).First(&member).Error
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +185,16 @@ func (r *WorkspaceRepository) GetUserWorkspacesByOrg(userID, orgID uint) ([]mode
 
 // UpdateMember updates a workspace member
 func (r *WorkspaceRepository) UpdateMember(member *models.WorkspaceMember) error {
-	return r.db.Save(member).Error
+	// Use Updates with Select to explicitly update all fields including pointer fields
+	return r.db.Model(member).Select(
+		"workspace_role_id",
+		"role_name",
+		"is_admin",
+		"can_view_reports",
+		"can_manage_tasks",
+		"is_active",
+		"updated_at",
+	).Updates(member).Error
 }
 
 // RemoveMember removes a member from a workspace (soft delete)

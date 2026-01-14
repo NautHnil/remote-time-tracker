@@ -183,18 +183,21 @@ type WorkspaceResponse struct {
 
 // WorkspaceListResponse represents workspace in list responses
 type WorkspaceListResponse struct {
-	ID             uint      `json:"id"`
-	OrganizationID uint      `json:"organization_id"`
-	Name           string    `json:"name"`
-	Slug           string    `json:"slug"`
-	Color          string    `json:"color"`
-	Icon           string    `json:"icon"`
-	IsAdmin        bool      `json:"is_admin"` // Whether current user is admin of this workspace
-	RoleName       string    `json:"role_name"`
-	MemberCount    int64     `json:"member_count"`
-	TaskCount      int64     `json:"task_count"`
-	IsActive       bool      `json:"is_active"`
-	JoinedAt       time.Time `json:"joined_at"`
+	ID               uint      `json:"id"`
+	OrganizationID   uint      `json:"organization_id"`
+	OrganizationName string    `json:"organization_name,omitempty"` // Organization name for display
+	Name             string    `json:"name"`
+	Slug             string    `json:"slug"`
+	Description      string    `json:"description,omitempty"`
+	Color            string    `json:"color"`
+	Icon             string    `json:"icon"`
+	IsAdmin          bool      `json:"is_admin"` // Whether current user is admin of this workspace
+	WorkspaceRoleID  *uint     `json:"workspace_role_id,omitempty"`
+	RoleName         string    `json:"role_name"`
+	MemberCount      int64     `json:"member_count"`
+	TaskCount        int64     `json:"task_count"`
+	IsActive         bool      `json:"is_active"`
+	JoinedAt         time.Time `json:"joined_at"`
 }
 
 // ============================================================================
