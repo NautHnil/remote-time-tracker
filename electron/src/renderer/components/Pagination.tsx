@@ -105,7 +105,7 @@ const Pagination: React.FC<PaginationProps> = ({
   return (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
       {/* Left side - Items info and page size selector */}
-      <div className="flex items-center gap-4 text-sm text-gray-400">
+      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
         {totalItems !== undefined && (
           <span>
             Showing {startItem}-{endItem} of {totalItems} items
@@ -118,7 +118,7 @@ const Pagination: React.FC<PaginationProps> = ({
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {pageSizeOptions.map((size) => (
                 <option key={size} value={size}>
@@ -138,7 +138,7 @@ const Pagination: React.FC<PaginationProps> = ({
           <button
             onClick={() => onPageChange(1)}
             disabled={currentPage === 1}
-            className="px-3 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+            className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             title="First page"
           >
             <Icons.ChevronsLeft className="w-4 h-4" />
@@ -149,7 +149,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-3 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+          className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           title="Previous page"
         >
           <Icons.ChevronLeft className="w-4 h-4" />
@@ -161,7 +161,7 @@ const Pagination: React.FC<PaginationProps> = ({
             page === "ellipsis" ? (
               <span
                 key={`ellipsis-${index}`}
-                className="px-3 py-2 text-gray-400"
+                className="px-3 py-2 text-gray-500 dark:text-gray-400"
               >
                 ...
               </span>
@@ -172,7 +172,7 @@ const Pagination: React.FC<PaginationProps> = ({
                 className={`px-3 py-2 rounded-lg transition-colors ${
                   currentPage === page
                     ? "bg-blue-600 text-white font-semibold"
-                    : "bg-gray-700 text-white hover:bg-gray-600"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
               >
                 {page}
@@ -185,7 +185,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="px-3 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+          className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
           title="Next page"
         >
           <Icons.ChevronRight className="w-4 h-4" />
@@ -196,7 +196,7 @@ const Pagination: React.FC<PaginationProps> = ({
           <button
             onClick={() => onPageChange(totalPages)}
             disabled={currentPage === totalPages}
-            className="px-3 py-2 bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600 transition-colors"
+            className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             title="Last page"
           >
             <Icons.ChevronsRight className="w-4 h-4" />
@@ -206,7 +206,7 @@ const Pagination: React.FC<PaginationProps> = ({
 
       {/* Right side - Jump to page */}
       {showJumpToPage && (
-        <div className="flex items-center gap-2 text-sm text-gray-400">
+        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
           <span>Go to</span>
           <input
             type="number"
@@ -216,7 +216,7 @@ const Pagination: React.FC<PaginationProps> = ({
             onChange={(e) => setJumpToPageInput(e.target.value)}
             onKeyDown={handleJumpToPageKeyDown}
             placeholder="Page"
-            className="w-16 bg-gray-700 text-white border border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-16 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={handleJumpToPage}

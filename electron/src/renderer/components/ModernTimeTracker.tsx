@@ -439,10 +439,12 @@ function ModernTimeTracker() {
             <div className="flex items-center gap-3">
               <div className={`status-dot ${getStatusDotClass()}`} />
               <div>
-                <h2 className="text-lg font-semibold text-dark-100">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-100">
                   {getStatusTitle()}
                 </h2>
-                <p className="text-sm text-dark-400">{currentTask}</p>
+                <p className="text-sm text-gray-500 dark:text-dark-400">
+                  {currentTask}
+                </p>
               </div>
             </div>
 
@@ -458,7 +460,7 @@ function ModernTimeTracker() {
               {formatTime(status.elapsedTime)}
             </div>
             {status.pausedTime > 0 && (
-              <div className="text-sm text-dark-400 flex items-center justify-center gap-2">
+              <div className="text-sm text-gray-500 dark:text-dark-400 flex items-center justify-center gap-2">
                 <Icons.Pause className="w-4 h-4" />
                 Paused: {formatTime(status.pausedTime)}
               </div>
@@ -467,7 +469,7 @@ function ModernTimeTracker() {
 
           {/* Progress Bar */}
           <div className="mb-8">
-            <div className="flex justify-between text-xs text-dark-400 mb-2">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-dark-400 mb-2">
               <span>Daily Progress</span>
               <span>{getProgress().toFixed(1)}%</span>
             </div>
@@ -482,7 +484,7 @@ function ModernTimeTracker() {
           {/* Task Selector - Only show when stopped */}
           {status.status === "stopped" && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-dark-300 mb-2">
+              <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-2">
                 Select Task (Optional)
               </label>
               <select
@@ -514,7 +516,7 @@ function ModernTimeTracker() {
                     </option>
                   ))}
               </select>
-              <p className="text-xs text-dark-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-dark-500 mt-1">
                 Choose an existing manual task or leave empty to create a new
                 one
               </p>
@@ -578,10 +580,12 @@ function ModernTimeTracker() {
             <Icons.Calendar className="w-8 h-8 text-primary-400 group-hover:scale-110 transition-transform" />
             <span className="badge badge-primary">Today</span>
           </div>
-          <div className="text-2xl font-bold text-dark-100 mb-1">
+          <div className="text-2xl font-bold text-gray-900 dark:text-dark-100 mb-1">
             {formatHoursTracked()}
           </div>
-          <div className="text-xs text-dark-400">Time tracked</div>
+          <div className="text-xs text-gray-500 dark:text-dark-400">
+            Time tracked
+          </div>
         </div>
 
         <div className="stat-card group">
@@ -589,13 +593,13 @@ function ModernTimeTracker() {
             <Icons.Camera className="w-8 h-8 text-accent-400 group-hover:scale-110 transition-transform" />
             <span className="badge badge-success">Live</span>
           </div>
-          <div className="text-2xl font-bold text-dark-100 mb-1">
+          <div className="text-2xl font-bold text-gray-900 dark:text-dark-100 mb-1">
             {calculateScreenshotCount()}
           </div>
-          <div className="text-xs text-dark-400">
+          <div className="text-xs text-gray-500 dark:text-dark-400">
             Screenshots today
             {status.isTracking && getEstimatedScreenshots() > 0 && (
-              <span className="ml-1 text-dark-500">
+              <span className="ml-1 text-gray-400 dark:text-dark-500">
                 (Est: {getEstimatedScreenshots()})
               </span>
             )}
@@ -607,24 +611,26 @@ function ModernTimeTracker() {
             <Icons.Lightning className="w-8 h-8 text-yellow-400 group-hover:scale-110 transition-transform" />
             <span className="badge badge-warning">Active</span>
           </div>
-          <div className="text-2xl font-bold text-dark-100 mb-1">
+          <div className="text-2xl font-bold text-gray-900 dark:text-dark-100 mb-1">
             {getProductivityPercentage()}%
           </div>
-          <div className="text-xs text-dark-400">Productivity</div>
+          <div className="text-xs text-gray-500 dark:text-dark-400">
+            Productivity
+          </div>
         </div>
       </div>
 
       {/* Info Card */}
-      <div className="glass-dark rounded-2xl p-6 border border-dark-700/50">
+      <div className="glass-dark rounded-2xl p-6 border border-gray-200 dark:border-dark-700/50">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-primary-500/10 rounded-xl">
             <Icons.Camera className="w-6 h-6 text-primary-400" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-dark-100 mb-1">
+            <h3 className="font-semibold text-gray-900 dark:text-dark-100 mb-1">
               Auto Screenshot Monitoring
             </h3>
-            <p className="text-sm text-dark-400 leading-relaxed">
+            <p className="text-sm text-gray-500 dark:text-dark-400 leading-relaxed">
               Screenshots are captured every{" "}
               {formatDurationFull(config.screenshotInterval || 300000)} while
               tracking. All data is encrypted and synced securely to your

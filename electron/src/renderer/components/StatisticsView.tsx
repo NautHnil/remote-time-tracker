@@ -206,7 +206,9 @@ export default function StatisticsView() {
           <div className="inline-flex items-center justify-center w-12 h-12 bg-primary-500/20 rounded-xl mb-3 animate-pulse">
             <Icons.Chart className="w-6 h-6 text-primary-400" />
           </div>
-          <div className="text-dark-300">Loading statistics...</div>
+          <div className="text-gray-500 dark:text-dark-300">
+            Loading statistics...
+          </div>
         </div>
       </div>
     );
@@ -215,14 +217,14 @@ export default function StatisticsView() {
   return (
     <div className="space-y-6">
       {/* Time Range Selector */}
-      <div className="glass-dark rounded-xl p-4 border border-dark-800/50">
+      <div className="glass-dark rounded-xl p-4 border border-gray-200 dark:border-dark-800/50">
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() => setTimeRange("today")}
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               timeRange === "today"
                 ? "bg-primary-500 text-white shadow-lg"
-                : "bg-dark-800/50 text-dark-300 hover:bg-dark-800 hover:text-dark-100"
+                : "bg-gray-100 dark:bg-dark-800/50 text-gray-600 dark:text-dark-300 hover:bg-gray-200 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-dark-100"
             }`}
           >
             Today
@@ -232,7 +234,7 @@ export default function StatisticsView() {
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               timeRange === "week"
                 ? "bg-primary-500 text-white shadow-lg"
-                : "bg-dark-800/50 text-dark-300 hover:bg-dark-800 hover:text-dark-100"
+                : "bg-gray-100 dark:bg-dark-800/50 text-gray-600 dark:text-dark-300 hover:bg-gray-200 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-dark-100"
             }`}
           >
             Last 7 Days
@@ -242,7 +244,7 @@ export default function StatisticsView() {
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               timeRange === "month"
                 ? "bg-primary-500 text-white shadow-lg"
-                : "bg-dark-800/50 text-dark-300 hover:bg-dark-800 hover:text-dark-100"
+                : "bg-gray-100 dark:bg-dark-800/50 text-gray-600 dark:text-dark-300 hover:bg-gray-200 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-dark-100"
             }`}
           >
             Last 30 Days
@@ -252,7 +254,7 @@ export default function StatisticsView() {
             className={`px-4 py-2 rounded-lg font-medium transition-all ${
               timeRange === "custom"
                 ? "bg-primary-500 text-white shadow-lg"
-                : "bg-dark-800/50 text-dark-300 hover:bg-dark-800 hover:text-dark-100"
+                : "bg-gray-100 dark:bg-dark-800/50 text-gray-600 dark:text-dark-300 hover:bg-gray-200 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-dark-100"
             }`}
           >
             Custom Range
@@ -262,25 +264,25 @@ export default function StatisticsView() {
         {timeRange === "custom" && (
           <div className="flex gap-3 mt-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-dark-300 mb-2">
+              <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-2">
                 Start Date
               </label>
               <input
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 focus:outline-none focus:border-primary-500"
+                className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg text-gray-900 dark:text-dark-100 focus:outline-none focus:border-primary-500"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium text-dark-300 mb-2">
+              <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-2">
                 End Date
               </label>
               <input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="w-full px-3 py-2 bg-dark-800 border border-dark-700 rounded-lg text-dark-100 focus:outline-none focus:border-primary-500"
+                className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg text-gray-900 dark:text-dark-100 focus:outline-none focus:border-primary-500"
               />
             </div>
           </div>
@@ -289,16 +291,16 @@ export default function StatisticsView() {
 
       {/* Hours Tracker Stats */}
       <div>
-        <h2 className="text-xl font-bold text-dark-100 mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-dark-100 mb-4 flex items-center gap-2">
           <Icons.Clock className="w-5 h-5 text-primary-400" />
           Hours Tracker
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Total Time Card */}
-          <div className="glass rounded-xl p-6 border border-dark-800/50 hover:border-primary-500/30 transition-all">
+          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-primary-300 dark:hover:border-primary-500/30 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-dark-400 text-sm font-medium">
+              <span className="text-gray-500 dark:text-dark-400 text-sm font-medium">
                 Total Time
               </span>
               <div className="w-8 h-8 bg-primary-500/20 rounded-lg flex items-center justify-center">
@@ -308,15 +310,15 @@ export default function StatisticsView() {
             <div className="text-3xl font-bold gradient-text mb-1">
               {formatTotalTimeHMS()}
             </div>
-            <div className="text-sm text-dark-400">
+            <div className="text-sm text-gray-500 dark:text-dark-400">
               {formatHoursDisplay()} hours
             </div>
           </div>
 
           {/* Sessions Count Card */}
-          <div className="glass rounded-xl p-6 border border-dark-800/50 hover:border-accent-500/30 transition-all">
+          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-accent-300 dark:hover:border-accent-500/30 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-dark-400 text-sm font-medium">
+              <span className="text-gray-500 dark:text-dark-400 text-sm font-medium">
                 Sessions
               </span>
               <div className="w-8 h-8 bg-accent-500/20 rounded-lg flex items-center justify-center">
@@ -326,13 +328,15 @@ export default function StatisticsView() {
             <div className="text-3xl font-bold text-accent-400 mb-1">
               {timeStats?.sessionCount || 0}
             </div>
-            <div className="text-sm text-dark-400">tracking sessions</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              tracking sessions
+            </div>
           </div>
 
           {/* Average Session Card */}
-          <div className="glass rounded-xl p-6 border border-dark-800/50 hover:border-success-500/30 transition-all">
+          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-green-300 dark:hover:border-success-500/30 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-dark-400 text-sm font-medium">
+              <span className="text-gray-500 dark:text-dark-400 text-sm font-medium">
                 Avg. Session
               </span>
               <div className="w-8 h-8 bg-success-500/20 rounded-lg flex items-center justify-center">
@@ -342,7 +346,9 @@ export default function StatisticsView() {
             <div className="text-3xl font-bold text-success-400 mb-1">
               {calculateAverageSession()}
             </div>
-            <div className="text-sm text-dark-400">per session</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              per session
+            </div>
           </div>
         </div>
       </div>
@@ -358,7 +364,7 @@ export default function StatisticsView() {
           {/* Total Screenshots Card */}
           <div className="glass rounded-xl p-6 border border-dark-800/50 hover:border-accent-500/30 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-dark-400 text-sm font-medium">
+              <span className="text-gray-500 dark:text-dark-400 text-sm font-medium">
                 Total Screenshots
               </span>
               <div className="w-8 h-8 bg-accent-500/20 rounded-lg flex items-center justify-center">
@@ -368,13 +374,15 @@ export default function StatisticsView() {
             <div className="text-3xl font-bold text-accent-400 mb-1">
               {screenshotStats?.total_count || screenshotStats?.totalCount || 0}
             </div>
-            <div className="text-sm text-dark-400">captured images</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              captured images
+            </div>
           </div>
 
           {/* Storage Used Card */}
-          <div className="glass rounded-xl p-6 border border-dark-800/50 hover:border-primary-500/30 transition-all">
+          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-primary-300 dark:hover:border-primary-500/30 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-dark-400 text-sm font-medium">
+              <span className="text-gray-500 dark:text-dark-400 text-sm font-medium">
                 Storage Used
               </span>
               <div className="w-8 h-8 bg-primary-500/20 rounded-lg flex items-center justify-center">
@@ -386,13 +394,15 @@ export default function StatisticsView() {
                 screenshotStats?.total_size || screenshotStats?.totalSize || 0
               )}
             </div>
-            <div className="text-sm text-dark-400">disk space</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              disk space
+            </div>
           </div>
 
           {/* Avg per Session Card */}
-          <div className="glass rounded-xl p-6 border border-dark-800/50 hover:border-success-500/30 transition-all">
+          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-green-300 dark:hover:border-success-500/30 transition-all">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-dark-400 text-sm font-medium">
+              <span className="text-gray-500 dark:text-dark-400 text-sm font-medium">
                 Avg. per Session
               </span>
               <div className="w-8 h-8 bg-success-500/20 rounded-lg flex items-center justify-center">
@@ -406,23 +416,29 @@ export default function StatisticsView() {
                 0
               ).toFixed(1)}
             </div>
-            <div className="text-sm text-dark-400">screenshots</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              screenshots
+            </div>
           </div>
         </div>
       </div>
 
       {/* Productivity Insights */}
-      <div className="glass rounded-xl p-6 border border-dark-800/50">
-        <h3 className="text-lg font-semibold text-dark-100 mb-4 flex items-center gap-2">
+      <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-100 mb-4 flex items-center gap-2">
           <Icons.Chart className="w-5 h-5 text-primary-400" />
           Productivity Insights
         </h3>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-dark-800/30 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-100 dark:bg-dark-800/30 rounded-lg">
             <div>
-              <div className="text-dark-200 font-medium">Daily Average</div>
-              <div className="text-sm text-dark-400">Time tracked per day</div>
+              <div className="text-gray-700 dark:text-dark-200 font-medium">
+                Daily Average
+              </div>
+              <div className="text-sm text-gray-500 dark:text-dark-400">
+                Time tracked per day
+              </div>
             </div>
             <div className="text-right">
               <div className="text-xl font-bold gradient-text">
@@ -431,10 +447,14 @@ export default function StatisticsView() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-dark-800/30 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-100 dark:bg-dark-800/30 rounded-lg">
             <div>
-              <div className="text-dark-200 font-medium">Screenshot Rate</div>
-              <div className="text-sm text-dark-400">Images per hour</div>
+              <div className="text-gray-700 dark:text-dark-200 font-medium">
+                Screenshot Rate
+              </div>
+              <div className="text-sm text-gray-500 dark:text-dark-400">
+                Images per hour
+              </div>
             </div>
             <div className="text-right">
               <div className="text-xl font-bold text-accent-400">
@@ -443,12 +463,14 @@ export default function StatisticsView() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-dark-800/30 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-gray-100 dark:bg-dark-800/30 rounded-lg">
             <div>
-              <div className="text-dark-200 font-medium">
+              <div className="text-gray-700 dark:text-dark-200 font-medium">
                 Most Productive Day
               </div>
-              <div className="text-sm text-dark-400">Based on tracked time</div>
+              <div className="text-sm text-gray-500 dark:text-dark-400">
+                Based on tracked time
+              </div>
             </div>
             <div className="text-right">
               <div className="text-xl font-bold text-success-400">
@@ -460,14 +482,14 @@ export default function StatisticsView() {
       </div>
 
       {/* Date Range Info */}
-      <div className="glass-dark rounded-xl p-4 border border-dark-800/50 text-center">
-        <div className="text-sm text-dark-400">
+      <div className="glass-dark rounded-xl p-4 border border-gray-200 dark:border-dark-800/50 text-center">
+        <div className="text-sm text-gray-500 dark:text-dark-400">
           Showing statistics from{" "}
-          <span className="text-primary-400 font-medium">
+          <span className="text-primary-500 dark:text-primary-400 font-medium">
             {timeStats?.startDate}
           </span>{" "}
           to{" "}
-          <span className="text-primary-400 font-medium">
+          <span className="text-primary-500 dark:text-primary-400 font-medium">
             {timeStats?.endDate}
           </span>
         </div>

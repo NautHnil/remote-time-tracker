@@ -134,9 +134,9 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
       return (
         <div
           ref={imgRef}
-          className={`${className} flex items-center justify-center bg-gray-700`}
+          className={`${className} flex items-center justify-center bg-gray-200 dark:bg-gray-700`}
         >
-          <div className="text-gray-400 text-xs">⏳</div>
+          <div className="text-gray-500 dark:text-gray-400 text-xs">⏳</div>
         </div>
       );
     }
@@ -145,9 +145,11 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
       return (
         <div
           ref={imgRef}
-          className={`${className} flex items-center justify-center bg-gray-700`}
+          className={`${className} flex items-center justify-center bg-gray-200 dark:bg-gray-700`}
         >
-          <div className="text-gray-400 text-xs animate-pulse">Loading...</div>
+          <div className="text-gray-500 dark:text-gray-400 text-xs animate-pulse">
+            Loading...
+          </div>
         </div>
       );
     }
@@ -155,9 +157,11 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
     if (error || !src) {
       return (
         <div
-          className={`${className} flex items-center justify-center bg-gray-700`}
+          className={`${className} flex items-center justify-center bg-gray-200 dark:bg-gray-700`}
         >
-          <div className="text-gray-500 text-xs">❌ Failed</div>
+          <div className="text-gray-500 dark:text-gray-500 text-xs">
+            ❌ Failed
+          </div>
         </div>
       );
     }

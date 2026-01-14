@@ -1,5 +1,6 @@
 import { format, parseISO } from "date-fns";
 import { useEffect, useState } from "react";
+import { useTheme } from "../contexts/ThemeContext";
 import { formatDurationFull, formatDurationMinimal } from "../utils/timeFormat";
 import {
   AlertDialog,
@@ -227,29 +228,40 @@ function Settings() {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="space-y-6">
+        {/* Theme Settings */}
+        <ThemeSection />
+
         {/* Sync Status */}
-        <div className="bg-gray-800 rounded-xl p-6">
-          <h3 className="text-xl font-semibold mb-4">Sync Status</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-transparent shadow-sm dark:shadow-none">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+            Sync Status
+          </h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Status:</span>
+              <span className="text-gray-600 dark:text-gray-400">Status:</span>
               <span
                 className={
-                  syncStatus.isSyncing ? "text-yellow-400" : "text-green-400"
+                  syncStatus.isSyncing
+                    ? "text-yellow-600 dark:text-yellow-400"
+                    : "text-green-600 dark:text-green-400"
                 }
               >
                 {syncStatus.isSyncing ? "🔄 Syncing..." : "✅ Idle"}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Last Sync:</span>
-              <span className="text-white">
+              <span className="text-gray-600 dark:text-gray-400">
+                Last Sync:
+              </span>
+              <span className="text-gray-900 dark:text-white">
                 {formatDate(syncStatus.lastSyncTime)}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Auto-Sync:</span>
-              <span className="text-white">
+              <span className="text-gray-600 dark:text-gray-400">
+                Auto-Sync:
+              </span>
+              <span className="text-gray-900 dark:text-white">
                 {syncStatus.autoSyncEnabled ? "✅ Enabled" : "❌ Disabled"}
               </span>
             </div>
@@ -265,23 +277,25 @@ function Settings() {
         </div>
 
         {/* Configuration */}
-        <div className="bg-gray-800 rounded-xl p-6">
-          <h3 className="text-xl font-semibold mb-4">Configuration</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-transparent shadow-sm dark:shadow-none">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+            Configuration
+          </h3>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                 API URL
               </label>
               <input
                 type="text"
                 value={config.apiUrl || ""}
                 onChange={(e) => updateConfig("apiUrl", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                 Screenshot Interval (ms)
               </label>
               <input
@@ -290,7 +304,7 @@ function Settings() {
                 onChange={(e) =>
                   updateConfig("screenshotInterval", parseInt(e.target.value))
                 }
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Current:{" "}
@@ -300,7 +314,7 @@ function Settings() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                 Sync Interval (ms)
               </label>
               <input
@@ -309,7 +323,7 @@ function Settings() {
                 onChange={(e) =>
                   updateConfig("syncInterval", parseInt(e.target.value))
                 }
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Current: {formatDurationMinimal(config.syncInterval || 60000)}{" "}
@@ -320,18 +334,22 @@ function Settings() {
         </div>
 
         {/* Storage Management */}
-        <div className="bg-gray-800 rounded-xl p-6">
-          <h3 className="text-xl font-semibold mb-4">Storage Management</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-transparent shadow-sm dark:shadow-none">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+            Storage Management
+          </h3>
 
           <div className="space-y-4">
-            <div className="flex justify-between items-center p-4 bg-gray-700 rounded-lg">
+            <div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
               <div>
-                <p className="text-white font-medium">Local Storage Used</p>
-                <p className="text-sm text-gray-400">
+                <p className="text-gray-900 dark:text-white font-medium">
+                  Local Storage Used
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Screenshot files on disk
                 </p>
               </div>
-              <p className="text-2xl font-bold text-blue-400">
+              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {formatBytes(storageSize)}
               </p>
             </div>
@@ -345,7 +363,7 @@ function Settings() {
                 <Icons.Trash className="w-5 h-5" />
                 {cleaningUp ? "Cleaning..." : "Delete All Synced Screenshots"}
               </button>
-              <p className="text-xs text-gray-400 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                 Removes all synced screenshots from local storage.
                 <br />
                 They are already backed up on the server.
@@ -359,7 +377,7 @@ function Settings() {
                 <Icons.Clock className="w-5 h-5" />
                 {cleaningUp ? "Deleting..." : "Delete Old Screenshots"}
               </button>
-              <p className="text-xs text-gray-400 text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                 Permanently delete SYNCED screenshots older than specified days.
                 <br />
                 Unsynced screenshots are kept to prevent data loss.
@@ -369,29 +387,33 @@ function Settings() {
         </div>
 
         {/* Info */}
-        <div className="bg-gray-800 rounded-xl p-6">
-          <h3 className="text-xl font-semibold mb-4">Information</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-transparent shadow-sm dark:shadow-none">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+            Information
+          </h3>
           <div className="space-y-2 text-sm">
-            <p className="text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400">
               • Screenshots are captured automatically while time tracking is
               active
             </p>
-            <p className="text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400">
               • Data is stored locally and synced to the backend automatically
             </p>
-            <p className="text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400">
               • Synced screenshots are automatically deleted after sync to save
               disk space
             </p>
-            <p className="text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400">
               • The app works offline and syncs when connection is restored
             </p>
           </div>
         </div>
 
         {/* Updates */}
-        <div className="bg-gray-800 rounded-xl p-6">
-          <h3 className="text-xl font-semibold mb-4">Updates</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-transparent shadow-sm dark:shadow-none">
+          <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+            Updates
+          </h3>
           <UpdateSection />
         </div>
       </div>
@@ -402,6 +424,172 @@ function Settings() {
       <PromptDialog {...promptDialog.state} onCancel={promptDialog.close} />
 
       <AlertDialog {...alertDialog.state} onClose={alertDialog.close} />
+    </div>
+  );
+}
+
+// ============================================================================
+// THEME SECTION
+// ============================================================================
+
+function ThemeSection() {
+  const { theme, setTheme, isDark } = useTheme();
+  const [isSystemTheme, setIsSystemTheme] = useState(() => {
+    return !localStorage.getItem("app-theme");
+  });
+
+  const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
+    if (newTheme === "system") {
+      localStorage.removeItem("app-theme");
+      setIsSystemTheme(true);
+      // Detect and apply system preference
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      setTheme(prefersDark ? "dark" : "light");
+    } else {
+      setIsSystemTheme(false);
+      setTheme(newTheme);
+    }
+  };
+
+  const getCurrentSelection = () => {
+    if (isSystemTheme) return "system";
+    return theme;
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-transparent shadow-sm dark:shadow-none">
+      <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+        Appearance
+      </h3>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        Customize how the application looks on your device.
+      </p>
+
+      <div className="grid grid-cols-3 gap-3">
+        {/* Light Theme */}
+        <button
+          onClick={() => handleThemeChange("light")}
+          className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
+            getCurrentSelection() === "light"
+              ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+          }`}
+        >
+          <div className="flex flex-col items-center gap-3">
+            {/* Preview */}
+            <div className="w-full h-16 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+              <div className="h-3 bg-gray-100 border-b border-gray-200" />
+              <div className="p-1 space-y-1">
+                <div className="h-1.5 w-8 bg-gray-300 rounded" />
+                <div className="h-1.5 w-12 bg-gray-200 rounded" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Icons.Sun className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                Light
+              </span>
+            </div>
+          </div>
+          {getCurrentSelection() === "light" && (
+            <div className="absolute top-2 right-2">
+              <Icons.Check className="w-5 h-5 text-primary-500" />
+            </div>
+          )}
+        </button>
+
+        {/* Dark Theme */}
+        <button
+          onClick={() => handleThemeChange("dark")}
+          className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
+            getCurrentSelection() === "dark"
+              ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+          }`}
+        >
+          <div className="flex flex-col items-center gap-3">
+            {/* Preview */}
+            <div className="w-full h-16 bg-gray-900 border border-gray-700 rounded-lg shadow-sm overflow-hidden">
+              <div className="h-3 bg-gray-800 border-b border-gray-700" />
+              <div className="p-1 space-y-1">
+                <div className="h-1.5 w-8 bg-gray-600 rounded" />
+                <div className="h-1.5 w-12 bg-gray-700 rounded" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Icons.Moon className="w-4 h-4 text-indigo-400" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                Dark
+              </span>
+            </div>
+          </div>
+          {getCurrentSelection() === "dark" && (
+            <div className="absolute top-2 right-2">
+              <Icons.Check className="w-5 h-5 text-primary-500" />
+            </div>
+          )}
+        </button>
+
+        {/* System Theme */}
+        <button
+          onClick={() => handleThemeChange("system")}
+          className={`relative p-4 rounded-xl border-2 transition-all duration-200 ${
+            getCurrentSelection() === "system"
+              ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+          }`}
+        >
+          <div className="flex flex-col items-center gap-3">
+            {/* Preview - Split light/dark */}
+            <div className="w-full h-16 rounded-lg shadow-sm overflow-hidden flex">
+              <div className="w-1/2 bg-white border-l border-t border-b border-gray-200">
+                <div className="h-3 bg-gray-100 border-b border-gray-200" />
+                <div className="p-1 space-y-1">
+                  <div className="h-1.5 w-4 bg-gray-300 rounded" />
+                  <div className="h-1.5 w-6 bg-gray-200 rounded" />
+                </div>
+              </div>
+              <div className="w-1/2 bg-gray-900 border-r border-t border-b border-gray-700">
+                <div className="h-3 bg-gray-800 border-b border-gray-700" />
+                <div className="p-1 space-y-1">
+                  <div className="h-1.5 w-4 bg-gray-600 rounded" />
+                  <div className="h-1.5 w-6 bg-gray-700 rounded" />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Icons.Monitor className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                System
+              </span>
+            </div>
+          </div>
+          {getCurrentSelection() === "system" && (
+            <div className="absolute top-2 right-2">
+              <Icons.Check className="w-5 h-5 text-primary-500" />
+            </div>
+          )}
+        </button>
+      </div>
+
+      {/* Current theme info */}
+      <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          {isSystemTheme ? (
+            <>
+              <span className="font-medium">System preference:</span> Using your
+              device's {isDark ? "dark" : "light"} mode setting
+            </>
+          ) : (
+            <>
+              <span className="font-medium">Manual selection:</span> Always use{" "}
+              {theme} mode
+            </>
+          )}
+        </p>
+      </div>
     </div>
   );
 }
@@ -559,23 +747,23 @@ function UpdateSection() {
   const getStatusColor = (): string => {
     switch (step) {
       case "idle":
-        return "text-gray-400";
+        return "text-gray-500 dark:text-gray-400";
       case "checking":
       case "downloading":
       case "installing":
-        return "text-yellow-400";
+        return "text-yellow-600 dark:text-yellow-400";
       case "available":
-        return "text-blue-400";
+        return "text-blue-600 dark:text-blue-400";
       case "downloaded":
-        return "text-green-400";
+        return "text-green-600 dark:text-green-400";
       case "up-to-date":
-        return "text-green-400";
+        return "text-green-600 dark:text-green-400";
       case "manual-install":
-        return "text-orange-400";
+        return "text-orange-600 dark:text-orange-400";
       case "error":
-        return "text-red-400";
+        return "text-red-600 dark:text-red-400";
       default:
-        return "text-gray-400";
+        return "text-gray-500 dark:text-gray-400";
     }
   };
 
@@ -672,13 +860,15 @@ function UpdateSection() {
   return (
     <div className="space-y-4">
       {/* Version Info */}
-      <div className="flex justify-between items-center p-4 bg-gray-700 rounded-lg">
+      <div className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
         <div>
-          <p className="text-white font-medium">Current Version</p>
-          <p className="text-gray-400 text-sm">v{version}</p>
+          <p className="text-gray-900 dark:text-white font-medium">
+            Current Version
+          </p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">v{version}</p>
         </div>
         <div className="text-right">
-          <p className="text-white font-medium">Status</p>
+          <p className="text-gray-900 dark:text-white font-medium">Status</p>
           <p className={`text-sm ${getStatusColor()}`}>{getStatusText()}</p>
         </div>
       </div>
@@ -686,13 +876,13 @@ function UpdateSection() {
       {/* Progress Bar (only show during download) */}
       {step === "downloading" && (
         <div>
-          <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
+          <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
             <div
               className="bg-green-500 h-3 transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          <p className="text-xs text-gray-400 mt-1 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
             {progress}% downloaded
           </p>
         </div>

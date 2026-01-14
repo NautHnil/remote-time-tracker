@@ -310,12 +310,14 @@ function AppContent() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-dark-950">
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-dark-950">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl mb-4 shadow-glow animate-pulse">
             <Icons.Clock className="w-8 h-8 text-white" />
           </div>
-          <div className="text-dark-200 text-lg font-medium">Loading...</div>
+          <div className="text-gray-700 dark:text-dark-200 text-lg font-medium">
+            Loading...
+          </div>
         </div>
       </div>
     );
@@ -366,7 +368,7 @@ function AppContent() {
         onCancel={handleCancelQuit}
       />
 
-      <div className="flex h-screen bg-dark-950 overflow-hidden">
+      <div className="flex h-screen bg-gray-100 dark:bg-dark-950 overflow-hidden">
         {/* Sidebar with Org Rail */}
         <Sidebar
           currentView={currentView}
@@ -377,22 +379,26 @@ function AppContent() {
         {/* Main Content */}
         <main className="flex-1 flex flex-col overflow-hidden relative">
           {/* Top Header Bar */}
-          <header className="flex-shrink-0 h-14 bg-dark-900/50 backdrop-blur-xl border-b border-dark-800/30 flex items-center px-6">
+          <header className="flex-shrink-0 h-14 bg-white/50 dark:bg-dark-900/50 backdrop-blur-xl border-b border-gray-200 dark:border-dark-800/30 flex items-center px-6">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm">
               {currentOrg && (
                 <>
-                  <span className="text-dark-400">{currentOrg.name}</span>
-                  <Icons.ChevronRight className="w-4 h-4 text-dark-600" />
+                  <span className="text-gray-500 dark:text-dark-400">
+                    {currentOrg.name}
+                  </span>
+                  <Icons.ChevronRight className="w-4 h-4 text-gray-400 dark:text-dark-600" />
                 </>
               )}
               {currentWorkspace && (
                 <>
-                  <span className="text-dark-400">{currentWorkspace.name}</span>
-                  <Icons.ChevronRight className="w-4 h-4 text-dark-600" />
+                  <span className="text-gray-500 dark:text-dark-400">
+                    {currentWorkspace.name}
+                  </span>
+                  <Icons.ChevronRight className="w-4 h-4 text-gray-400 dark:text-dark-600" />
                 </>
               )}
-              <span className="text-dark-100 font-medium">
+              <span className="text-gray-800 dark:text-dark-100 font-medium">
                 {pageInfo.title}
               </span>
             </div>
@@ -400,17 +406,19 @@ function AppContent() {
             {/* Right side actions */}
             <div className="ml-auto flex items-center gap-3">
               {/* Notifications (placeholder) */}
-              <button className="p-2 rounded-lg hover:bg-dark-800/50 transition-colors relative">
-                <Icons.Bell className="w-5 h-5 text-dark-400" />
+              <button className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-800/50 transition-colors relative">
+                <Icons.Bell className="w-5 h-5 text-gray-500 dark:text-dark-400" />
                 {/* Notification badge */}
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
               </button>
 
               {/* Quick search (placeholder) */}
-              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-dark-800/50 border border-dark-700/50 hover:border-dark-600/50 transition-colors">
-                <Icons.Search className="w-4 h-4 text-dark-400" />
-                <span className="text-sm text-dark-400">Search...</span>
-                <kbd className="text-xs text-dark-500 bg-dark-700/50 px-1.5 py-0.5 rounded">
+              <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-dark-800/50 border border-gray-200 dark:border-dark-700/50 hover:border-gray-300 dark:hover:border-dark-600/50 transition-colors">
+                <Icons.Search className="w-4 h-4 text-gray-500 dark:text-dark-400" />
+                <span className="text-sm text-gray-500 dark:text-dark-400">
+                  Search...
+                </span>
+                <kbd className="text-xs text-gray-400 dark:text-dark-500 bg-gray-200 dark:bg-dark-700/50 px-1.5 py-0.5 rounded">
                   ⌘K
                 </kbd>
               </button>
@@ -422,10 +430,10 @@ function AppContent() {
             <div className="p-6 lg:p-8">
               {/* Page Header */}
               <div className="mb-6">
-                <h1 className="text-2xl lg:text-3xl font-bold text-dark-50 mb-1">
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-dark-50 mb-1">
                   {pageInfo.title}
                 </h1>
-                <p className="text-dark-400 text-sm lg:text-base">
+                <p className="text-gray-500 dark:text-dark-400 text-sm lg:text-base">
                   {pageInfo.description}
                 </p>
               </div>
@@ -495,12 +503,14 @@ function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-dark-950">
+      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-dark-950">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-accent-500 rounded-2xl mb-4 shadow-glow animate-pulse">
             <Icons.Clock className="w-8 h-8 text-white" />
           </div>
-          <div className="text-dark-200 text-lg font-medium">Loading...</div>
+          <div className="text-gray-700 dark:text-dark-200 text-lg font-medium">
+            Loading...
+          </div>
         </div>
       </div>
     );

@@ -40,33 +40,37 @@ function TimeFormatDemo() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Time Format Utilities Demo</h2>
-        <p className="text-gray-400">
+        <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+          Time Format Utilities Demo
+        </h2>
+        <p className="text-gray-500 dark:text-gray-400">
           Interactive playground để test time formatting functions
         </p>
       </div>
 
       {/* Input Section */}
-      <div className="bg-gray-800 rounded-xl p-6 space-y-4">
-        <h3 className="text-xl font-semibold mb-4">Input</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-transparent">
+        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          Input
+        </h3>
 
         {/* Milliseconds Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
             Milliseconds
           </label>
           <input
             type="number"
             value={milliseconds}
             onChange={(e) => setMilliseconds(parseInt(e.target.value) || 0)}
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
             step="1000"
           />
         </div>
 
         {/* Presets */}
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
             Quick Presets
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -77,7 +81,7 @@ function TimeFormatDemo() {
                 className={`px-3 py-2 rounded-lg text-sm transition ${
                   milliseconds === preset.value
                     ? "bg-blue-600 text-white"
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
               >
                 {preset.label}
@@ -89,13 +93,13 @@ function TimeFormatDemo() {
         {/* Format Options */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">
+            <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
               Format
             </label>
             <select
               value={format}
               onChange={(e) => setFormat(e.target.value as DurationFormat)}
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
             >
               <option value="short">Short (5 min)</option>
               <option value="full">Full (5 minutes)</option>
@@ -104,13 +108,13 @@ function TimeFormatDemo() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-400 mb-2">
+            <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
               Max Units
             </label>
             <select
               value={maxUnits}
               onChange={(e) => setMaxUnits(parseInt(e.target.value))}
-              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
             >
               <option value="1">1 unit</option>
               <option value="2">2 units</option>
@@ -121,8 +125,10 @@ function TimeFormatDemo() {
       </div>
 
       {/* Output Section */}
-      <div className="bg-gray-800 rounded-xl p-6 space-y-4">
-        <h3 className="text-xl font-semibold mb-4">Output</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-transparent">
+        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          Output
+        </h3>
 
         <div className="space-y-3">
           <OutputRow
@@ -157,18 +163,20 @@ function TimeFormatDemo() {
       </div>
 
       {/* Parse Duration Section */}
-      <div className="bg-gray-800 rounded-xl p-6 space-y-4">
-        <h3 className="text-xl font-semibold mb-4">Parse Duration String</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 space-y-4 border border-gray-200 dark:border-transparent">
+        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          Parse Duration String
+        </h3>
 
         <div>
-          <label className="block text-sm font-medium text-gray-400 mb-2">
+          <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
             Input String (e.g., "5m", "1h30m", "5 minutes")
           </label>
           <input
             type="text"
             value={parseInput}
             onChange={(e) => setParseInput(e.target.value)}
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
             placeholder="5m"
           />
         </div>
@@ -184,8 +192,10 @@ function TimeFormatDemo() {
       </div>
 
       {/* Examples Section */}
-      <div className="bg-gray-800 rounded-xl p-6">
-        <h3 className="text-xl font-semibold mb-4">Common Use Cases</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-transparent">
+        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          Common Use Cases
+        </h3>
 
         <div className="space-y-4">
           <ExampleCard
@@ -219,10 +229,12 @@ function TimeFormatDemo() {
       </div>
 
       {/* Code Examples */}
-      <div className="bg-gray-800 rounded-xl p-6">
-        <h3 className="text-xl font-semibold mb-4">Code Example</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-transparent">
+        <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+          Code Example
+        </h3>
 
-        <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
+        <pre className="bg-gray-100 dark:bg-gray-900 text-green-600 dark:text-green-400 p-4 rounded-lg overflow-x-auto text-sm">
           <code>{`import { formatDurationShort } from './utils/timeFormat';
 
 // In your component:
@@ -246,13 +258,17 @@ function OutputRow({ label, value }: { label: string; value: string }) {
   };
 
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-      <span className="text-sm text-gray-400 font-mono">{label}</span>
+    <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <span className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+        {label}
+      </span>
       <div className="flex items-center gap-2">
-        <span className="text-white font-semibold">{value}</span>
+        <span className="text-gray-900 dark:text-white font-semibold">
+          {value}
+        </span>
         <button
           onClick={copyToClipboard}
-          className="text-gray-400 hover:text-white transition"
+          className="text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-white transition"
           title="Copy to clipboard"
         >
           <Icons.Copy className="w-4 h-4" />
@@ -272,14 +288,20 @@ function ExampleCard({
   outputs: Array<{ label: string; value: string }>;
 }) {
   return (
-    <div className="border border-gray-700 rounded-lg p-4">
-      <h4 className="font-semibold text-white mb-2">{title}</h4>
-      <p className="text-xs text-gray-500 mb-3">{input}</p>
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+        {title}
+      </h4>
+      <p className="text-xs text-gray-500 dark:text-gray-500 mb-3">{input}</p>
       <div className="space-y-2">
         {outputs.map((output, i) => (
           <div key={i} className="flex justify-between text-sm">
-            <span className="text-gray-400">{output.label}:</span>
-            <span className="text-white font-mono">{output.value}</span>
+            <span className="text-gray-500 dark:text-gray-400">
+              {output.label}:
+            </span>
+            <span className="text-gray-900 dark:text-white font-mono">
+              {output.value}
+            </span>
           </div>
         ))}
       </div>

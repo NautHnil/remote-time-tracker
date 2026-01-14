@@ -249,8 +249,10 @@ export default function OrganizationsView() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-dark-50">My Organizations</h2>
-            <p className="text-sm text-dark-400">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-dark-50">
+              My Organizations
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-dark-400">
               Manage your organizations and teams
             </p>
           </div>
@@ -290,11 +292,11 @@ export default function OrganizationsView() {
         {/* Empty State */}
         {!loading && organizations.length === 0 && (
           <div className="glass rounded-xl p-12 text-center">
-            <Icons.Organization className="w-16 h-16 text-dark-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-dark-200 mb-2">
+            <Icons.Organization className="w-16 h-16 text-gray-400 dark:text-dark-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-700 dark:text-dark-200 mb-2">
               No Organizations
             </h3>
-            <p className="text-dark-400 mb-6">
+            <p className="text-gray-500 dark:text-dark-400 mb-6">
               Create your first organization or join an existing one
             </p>
             <div className="flex justify-center gap-3">
@@ -321,18 +323,20 @@ export default function OrganizationsView() {
               <div
                 key={org.id}
                 onClick={() => handleSelectOrg(org.id)}
-                className="glass rounded-xl p-5 cursor-pointer hover:bg-dark-800/50 transition-colors group"
+                className="glass rounded-xl p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-800/50 transition-colors group"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
                     {org.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-dark-100 truncate group-hover:text-primary-400 transition-colors">
+                    <h3 className="font-semibold text-gray-900 dark:text-dark-100 truncate group-hover:text-primary-400 transition-colors">
                       {org.name}
                     </h3>
-                    <p className="text-sm text-dark-400">@{org.slug}</p>
-                    <div className="mt-2 flex items-center gap-3 text-xs text-dark-500">
+                    <p className="text-sm text-gray-500 dark:text-dark-400">
+                      @{org.slug}
+                    </p>
+                    <div className="mt-2 flex items-center gap-3 text-xs text-gray-400 dark:text-dark-500">
                       <span className="flex items-center gap-1">
                         <Icons.Users className="w-3 h-3" />
                         {org.member_count} members
@@ -424,10 +428,12 @@ export default function OrganizationsView() {
           {selectedOrg.name.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-dark-50">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-50">
             {selectedOrg.name}
           </h2>
-          <p className="text-dark-400">@{selectedOrg.slug}</p>
+          <p className="text-gray-500 dark:text-dark-400">
+            @{selectedOrg.slug}
+          </p>
         </div>
         {renderRoleBadge(
           members.find((m) => m.user_id === user?.id)?.role || "member"
@@ -435,7 +441,7 @@ export default function OrganizationsView() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-dark-800 pb-2 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-dark-800 pb-2 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -443,7 +449,7 @@ export default function OrganizationsView() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-primary-500/20 text-primary-400"
-                : "text-dark-400 hover:text-dark-200 hover:bg-dark-800/50"
+                : "text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-800/50"
             }`}
           >
             <tab.icon className="w-4 h-4" />
@@ -549,47 +555,59 @@ function OverviewTab({
             <div className="text-3xl font-bold gradient-text">
               {members.length}
             </div>
-            <div className="text-sm text-dark-400">Members</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              Members
+            </div>
           </div>
           <div className="glass rounded-xl p-4 text-center">
             <div className="text-3xl font-bold gradient-text">
               {workspaces.length}
             </div>
-            <div className="text-sm text-dark-400">Workspaces</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              Workspaces
+            </div>
           </div>
           <div className="glass rounded-xl p-4 text-center">
             <div className="text-3xl font-bold gradient-text">
               {org.max_members || "∞"}
             </div>
-            <div className="text-sm text-dark-400">Max Members</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              Max Members
+            </div>
           </div>
         </div>
 
         {/* Description */}
         {org.description && (
           <div className="glass rounded-xl p-5">
-            <h4 className="font-medium text-dark-200 mb-2">Description</h4>
-            <p className="text-dark-400">{org.description}</p>
+            <h4 className="font-medium text-gray-700 dark:text-dark-200 mb-2">
+              Description
+            </h4>
+            <p className="text-gray-500 dark:text-dark-400">
+              {org.description}
+            </p>
           </div>
         )}
 
         {/* Recent Members */}
         <div className="glass rounded-xl p-5">
-          <h4 className="font-medium text-dark-200 mb-3">Recent Members</h4>
+          <h4 className="font-medium text-gray-700 dark:text-dark-200 mb-3">
+            Recent Members
+          </h4>
           <div className="space-y-2">
             {members.slice(0, 5).map((member) => (
               <div
                 key={member.id}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-800/50"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-800/50"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-accent-400 rounded-full flex items-center justify-center text-white text-sm font-medium">
                   {member.user?.email?.charAt(0).toUpperCase() || "?"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-dark-200 truncate">
+                  <div className="text-sm text-gray-700 dark:text-dark-200 truncate">
                     {member.user?.first_name} {member.user?.last_name}
                   </div>
-                  <div className="text-xs text-dark-500 truncate">
+                  <div className="text-xs text-gray-400 dark:text-dark-500 truncate">
                     {member.user?.email}
                   </div>
                 </div>
@@ -607,7 +625,7 @@ function OverviewTab({
         {/* Invite Code & Link - only show if invite_code is available */}
         {org.allow_invite_link && org.invite_code && (
           <div className="glass rounded-xl p-5">
-            <h4 className="font-medium text-dark-200 mb-3 flex items-center gap-2">
+            <h4 className="font-medium text-gray-700 dark:text-dark-200 mb-3 flex items-center gap-2">
               <Icons.Link className="w-4 h-4" />
               Invite
             </h4>
@@ -615,11 +633,11 @@ function OverviewTab({
             {/* Invite Code */}
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-dark-400 block mb-1">
+                <label className="text-xs text-gray-500 dark:text-dark-400 block mb-1">
                   Invite Code
                 </label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-dark-900 px-3 py-2 rounded-lg text-primary-400 text-sm font-mono truncate">
+                  <code className="flex-1 bg-gray-100 dark:bg-dark-900 px-3 py-2 rounded-lg text-primary-500 dark:text-primary-400 text-sm font-mono truncate">
                     {org.invite_code}
                   </code>
                   <button
@@ -634,11 +652,11 @@ function OverviewTab({
 
               {/* Invite Link */}
               <div>
-                <label className="text-xs text-dark-400 block mb-1">
+                <label className="text-xs text-gray-500 dark:text-dark-400 block mb-1">
                   Invite Link
                 </label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-dark-900 px-3 py-2 rounded-lg text-primary-400 text-xs font-mono truncate">
+                  <code className="flex-1 bg-gray-100 dark:bg-dark-900 px-3 py-2 rounded-lg text-primary-500 dark:text-primary-400 text-xs font-mono truncate">
                     {`${window.location.origin}/join/${org.invite_code}`}
                   </code>
                   <button
@@ -657,7 +675,7 @@ function OverviewTab({
               </div>
             </div>
 
-            <p className="text-xs text-dark-500 mt-3">
+            <p className="text-xs text-gray-400 dark:text-dark-500 mt-3">
               Share this code or link with others to invite them to your
               organization.
             </p>
@@ -667,14 +685,14 @@ function OverviewTab({
         {/* Invite enabled but not shared with members */}
         {org.allow_invite_link && !org.invite_code && (
           <div className="glass rounded-xl p-5">
-            <h4 className="font-medium text-dark-200 mb-2 flex items-center gap-2">
-              <Icons.Link className="w-4 h-4 text-dark-500" />
+            <h4 className="font-medium text-gray-700 dark:text-dark-200 mb-2 flex items-center gap-2">
+              <Icons.Link className="w-4 h-4 text-gray-400 dark:text-dark-500" />
               Invite
             </h4>
-            <p className="text-sm text-dark-400">
+            <p className="text-sm text-gray-500 dark:text-dark-400">
               Invite sharing is restricted to admins only.
             </p>
-            <p className="text-xs text-dark-500 mt-1">
+            <p className="text-xs text-gray-400 dark:text-dark-500 mt-1">
               Contact your organization admin if you need to invite others.
             </p>
           </div>
@@ -683,11 +701,11 @@ function OverviewTab({
         {/* Invite disabled */}
         {!org.allow_invite_link && (
           <div className="glass rounded-xl p-5">
-            <h4 className="font-medium text-dark-200 mb-2 flex items-center gap-2">
-              <Icons.Link className="w-4 h-4 text-dark-500" />
+            <h4 className="font-medium text-gray-700 dark:text-dark-200 mb-2 flex items-center gap-2">
+              <Icons.Link className="w-4 h-4 text-gray-400 dark:text-dark-500" />
               Invite
             </h4>
-            <p className="text-sm text-dark-400">
+            <p className="text-sm text-gray-500 dark:text-dark-400">
               Invite links are disabled for this organization.
             </p>
           </div>
@@ -696,32 +714,40 @@ function OverviewTab({
         {/* Info */}
         <div className="glass rounded-xl p-5 space-y-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-dark-400">Status</span>
+            <span className="text-gray-500 dark:text-dark-400">Status</span>
             <span className={org.is_active ? "text-green-400" : "text-red-400"}>
               {org.is_active ? "Active" : "Inactive"}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-dark-400">Created</span>
-            <span className="text-dark-200">
+            <span className="text-gray-500 dark:text-dark-400">Created</span>
+            <span className="text-gray-700 dark:text-dark-200">
               {format(new Date(org.created_at), "MMM d, yyyy")}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-dark-400">Allow Invite Link</span>
+            <span className="text-gray-500 dark:text-dark-400">
+              Allow Invite Link
+            </span>
             <span
               className={
-                org.allow_invite_link ? "text-green-400" : "text-dark-500"
+                org.allow_invite_link
+                  ? "text-green-400"
+                  : "text-gray-400 dark:text-dark-500"
               }
             >
               {org.allow_invite_link ? "Yes" : "No"}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-dark-400">Share Invite Code</span>
+            <span className="text-gray-500 dark:text-dark-400">
+              Share Invite Code
+            </span>
             <span
               className={
-                org.share_invite_code ? "text-green-400" : "text-dark-500"
+                org.share_invite_code
+                  ? "text-green-400"
+                  : "text-gray-400 dark:text-dark-500"
               }
             >
               {org.share_invite_code ? "Yes" : "No"}
@@ -776,25 +802,25 @@ function MembersTab({
 
   return (
     <div className="glass rounded-xl overflow-hidden">
-      <div className="p-4 border-b border-dark-800 flex items-center justify-between">
-        <h3 className="font-medium text-dark-200">
+      <div className="p-4 border-b border-gray-200 dark:border-dark-800 flex items-center justify-between">
+        <h3 className="font-medium text-gray-700 dark:text-dark-200">
           Members ({members.length})
         </h3>
       </div>
-      <div className="divide-y divide-dark-800">
+      <div className="divide-y divide-gray-100 dark:divide-dark-800">
         {members.map((member) => (
           <div
             key={member.id}
-            className="p-4 flex items-center gap-4 hover:bg-dark-800/30"
+            className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-dark-800/30"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-accent-400 rounded-full flex items-center justify-center text-white font-medium">
               {member.user?.email?.charAt(0).toUpperCase() || "?"}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-dark-100 truncate">
+              <div className="font-medium text-gray-900 dark:text-dark-100 truncate">
                 {member.user?.first_name} {member.user?.last_name}
               </div>
-              <div className="text-sm text-dark-400 truncate">
+              <div className="text-sm text-gray-500 dark:text-dark-400 truncate">
                 {member.user?.email}
               </div>
             </div>
@@ -808,7 +834,7 @@ function MembersTab({
                   disabled={
                     updating === member.user_id || member.role === "owner"
                   }
-                  className="bg-dark-800 border border-dark-700 rounded-lg px-2 py-1 text-sm text-dark-200 disabled:opacity-50"
+                  className="bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-2 py-1 text-sm text-gray-700 dark:text-dark-200 disabled:opacity-50"
                 >
                   <option value="owner">Owner</option>
                   <option value="admin">Admin</option>
@@ -887,11 +913,11 @@ function WorkspacesTab({
 
       {workspaces.length === 0 ? (
         <div className="glass rounded-xl p-12 text-center">
-          <Icons.Folder className="w-16 h-16 text-dark-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-dark-200 mb-2">
+          <Icons.Folder className="w-16 h-16 text-gray-400 dark:text-dark-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-700 dark:text-dark-200 mb-2">
             No Workspaces
           </h3>
-          <p className="text-dark-400">
+          <p className="text-gray-500 dark:text-dark-400">
             Create your first workspace to organize projects
           </p>
         </div>
@@ -900,7 +926,7 @@ function WorkspacesTab({
           {workspaces.map((ws) => (
             <div
               key={ws.id}
-              className="glass rounded-xl p-5 hover:bg-dark-800/30 transition-colors"
+              className="glass rounded-xl p-5 hover:bg-gray-50 dark:hover:bg-dark-800/30 transition-colors"
             >
               <div className="flex items-start gap-4">
                 <div
@@ -914,11 +940,13 @@ function WorkspacesTab({
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-dark-100 truncate">
+                  <h4 className="font-medium text-gray-900 dark:text-dark-100 truncate">
                     {ws.name}
                   </h4>
-                  <p className="text-sm text-dark-400">@{ws.slug}</p>
-                  <div className="mt-2 flex items-center gap-3 text-xs text-dark-500">
+                  <p className="text-sm text-gray-500 dark:text-dark-400">
+                    @{ws.slug}
+                  </p>
+                  <div className="mt-2 flex items-center gap-3 text-xs text-gray-400 dark:text-dark-500">
                     <span className="flex items-center gap-1">
                       <Icons.Users className="w-3 h-3" />
                       {ws.member_count || 0} members
@@ -1025,9 +1053,11 @@ function RolesTab({
 
       {roles.length === 0 ? (
         <div className="glass rounded-xl p-12 text-center">
-          <Icons.Badge className="w-16 h-16 text-dark-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-dark-200 mb-2">No Roles</h3>
-          <p className="text-dark-400">
+          <Icons.Badge className="w-16 h-16 text-gray-400 dark:text-dark-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-700 dark:text-dark-200 mb-2">
+            No Roles
+          </h3>
+          <p className="text-gray-500 dark:text-dark-400">
             Create roles to assign to workspace members
           </p>
         </div>
@@ -1042,10 +1072,12 @@ function RolesTab({
                     style={{ backgroundColor: role.color || "#6366f1" }}
                   />
                   <div>
-                    <h4 className="font-medium text-dark-100">
+                    <h4 className="font-medium text-gray-900 dark:text-dark-100">
                       {role.display_name}
                     </h4>
-                    <p className="text-xs text-dark-500">@{role.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-dark-500">
+                      @{role.name}
+                    </p>
                   </div>
                 </div>
                 {canManage && (
@@ -1058,7 +1090,9 @@ function RolesTab({
                 )}
               </div>
               {role.description && (
-                <p className="mt-2 text-sm text-dark-400">{role.description}</p>
+                <p className="mt-2 text-sm text-gray-500 dark:text-dark-400">
+                  {role.description}
+                </p>
               )}
               {role.is_default && (
                 <span className="mt-2 inline-block px-2 py-0.5 text-xs bg-primary-500/20 text-primary-400 rounded-full">
@@ -1074,12 +1108,12 @@ function RolesTab({
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="glass rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-dark-100 mb-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-dark-100 mb-4">
               Create Role
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-1">
+                <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
                   Display Name
                 </label>
                 <input
@@ -1092,12 +1126,12 @@ function RolesTab({
                       name: e.target.value.toLowerCase().replace(/\s+/g, "_"),
                     })
                   }
-                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+                  className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
                   placeholder="Developer"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-1">
+                <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
                   Description
                 </label>
                 <textarea
@@ -1105,13 +1139,13 @@ function RolesTab({
                   onChange={(e) =>
                     setNewRole({ ...newRole, description: e.target.value })
                   }
-                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+                  className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
                   placeholder="Role description..."
                   rows={2}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-1">
+                <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
                   Color
                 </label>
                 <input
@@ -1120,7 +1154,7 @@ function RolesTab({
                   onChange={(e) =>
                     setNewRole({ ...newRole, color: e.target.value })
                   }
-                  className="w-full h-10 bg-dark-800 border border-dark-700 rounded-lg cursor-pointer"
+                  className="w-full h-10 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg cursor-pointer"
                 />
               </div>
             </div>
@@ -1216,26 +1250,30 @@ function InvitationsTab({
 
       {invitations.length === 0 ? (
         <div className="glass rounded-xl p-12 text-center">
-          <Icons.Mail className="w-16 h-16 text-dark-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-dark-200 mb-2">
+          <Icons.Mail className="w-16 h-16 text-gray-400 dark:text-dark-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-700 dark:text-dark-200 mb-2">
             No Invitations
           </h3>
-          <p className="text-dark-400">Send invitations to add new members</p>
+          <p className="text-gray-500 dark:text-dark-400">
+            Send invitations to add new members
+          </p>
         </div>
       ) : (
         <div className="glass rounded-xl overflow-hidden">
-          <div className="divide-y divide-dark-800">
+          <div className="divide-y divide-gray-100 dark:divide-dark-800">
             {invitations.map((inv) => (
               <div
                 key={inv.id}
-                className="p-4 flex items-center gap-4 hover:bg-dark-800/30"
+                className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-dark-800/30"
               >
-                <Icons.Mail className="w-8 h-8 text-dark-500" />
+                <Icons.Mail className="w-8 h-8 text-gray-400 dark:text-dark-500" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-dark-100 truncate">
+                  <div className="font-medium text-gray-900 dark:text-dark-100 truncate">
                     {inv.email}
                   </div>
-                  <div className="text-sm text-dark-400">Role: {inv.role}</div>
+                  <div className="text-sm text-gray-500 dark:text-dark-400">
+                    Role: {inv.role}
+                  </div>
                 </div>
                 <span
                   className={`px-2 py-0.5 text-xs rounded-full ${getStatusColor(
@@ -1262,12 +1300,12 @@ function InvitationsTab({
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="glass rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-dark-100 mb-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-dark-100 mb-4">
               Send Invitation
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-1">
+                <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
                   Email
                 </label>
                 <input
@@ -1276,12 +1314,12 @@ function InvitationsTab({
                   onChange={(e) =>
                     setNewInvite({ ...newInvite, email: e.target.value })
                   }
-                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+                  className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
                   placeholder="user@example.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-1">
+                <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
                   Role
                 </label>
                 <select
@@ -1289,7 +1327,7 @@ function InvitationsTab({
                   onChange={(e) =>
                     setNewInvite({ ...newInvite, role: e.target.value })
                   }
-                  className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+                  className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
                 >
                   <option value="member">Member</option>
                   <option value="admin">Admin</option>
@@ -1352,36 +1390,40 @@ function SettingsTab({
   return (
     <div className="max-w-2xl space-y-6">
       <div className="glass rounded-xl p-6 space-y-4">
-        <h3 className="font-medium text-dark-200">General Settings</h3>
+        <h3 className="font-medium text-gray-700 dark:text-dark-200">
+          General Settings
+        </h3>
 
         <div>
-          <label className="block text-sm font-medium text-dark-300 mb-1">
+          <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
             Organization Name
           </label>
           <input
             type="text"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+            className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-dark-300 mb-1">
+          <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
             Description
           </label>
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+            className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
             rows={3}
           />
         </div>
 
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-medium text-dark-200">Allow Invite Link</div>
-            <div className="text-sm text-dark-400">
+            <div className="font-medium text-gray-700 dark:text-dark-200">
+              Allow Invite Link
+            </div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
               Let users join with invite code
             </div>
           </div>
@@ -1390,7 +1432,9 @@ function SettingsTab({
               setForm({ ...form, allow_invite_link: !form.allow_invite_link })
             }
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              form.allow_invite_link ? "bg-primary-500" : "bg-dark-700"
+              form.allow_invite_link
+                ? "bg-primary-500"
+                : "bg-gray-300 dark:bg-dark-700"
             }`}
           >
             <span
@@ -1402,12 +1446,12 @@ function SettingsTab({
         </div>
 
         {form.allow_invite_link && (
-          <div className="flex items-center justify-between ml-4 pl-4 border-l-2 border-dark-700">
+          <div className="flex items-center justify-between ml-4 pl-4 border-l-2 border-gray-200 dark:border-dark-700">
             <div>
-              <div className="font-medium text-dark-200">
+              <div className="font-medium text-gray-700 dark:text-dark-200">
                 Share Invite Code with Members
               </div>
-              <div className="text-sm text-dark-400">
+              <div className="text-sm text-gray-500 dark:text-dark-400">
                 Allow all members to see and share the invite code
               </div>
             </div>
@@ -1416,7 +1460,9 @@ function SettingsTab({
                 setForm({ ...form, share_invite_code: !form.share_invite_code })
               }
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                form.share_invite_code ? "bg-primary-500" : "bg-dark-700"
+                form.share_invite_code
+                  ? "bg-primary-500"
+                  : "bg-gray-300 dark:bg-dark-700"
               }`}
             >
               <span
@@ -1438,12 +1484,14 @@ function SettingsTab({
       </div>
 
       <div className="glass rounded-xl p-6 space-y-4">
-        <h3 className="font-medium text-dark-200">Invite Code</h3>
-        <p className="text-sm text-dark-400">
+        <h3 className="font-medium text-gray-700 dark:text-dark-200">
+          Invite Code
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-dark-400">
           Regenerating will invalidate the current invite code.
         </p>
         <div className="flex items-center gap-3">
-          <code className="flex-1 bg-dark-900 px-3 py-2 rounded-lg text-primary-400 font-mono">
+          <code className="flex-1 bg-gray-100 dark:bg-dark-900 px-3 py-2 rounded-lg text-primary-500 dark:text-primary-400 font-mono">
             {org.invite_code}
           </code>
           <button
@@ -1459,7 +1507,7 @@ function SettingsTab({
       {canDelete && (
         <div className="glass rounded-xl p-6 border border-red-500/30">
           <h3 className="font-medium text-red-400">Danger Zone</h3>
-          <p className="text-sm text-dark-400 mt-1 mb-4">
+          <p className="text-sm text-gray-500 dark:text-dark-400 mt-1 mb-4">
             Permanently delete this organization. This action cannot be undone.
           </p>
           <button
@@ -1512,12 +1560,12 @@ function CreateOrganizationModal({
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="glass rounded-xl p-6 w-full max-w-md">
-        <h3 className="text-lg font-bold text-dark-100 mb-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-dark-100 mb-4">
           Create Organization
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Name
             </label>
             <input
@@ -1533,12 +1581,12 @@ function CreateOrganizationModal({
                     .replace(/[^a-z0-9-]/g, ""),
                 })
               }
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+              className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
               placeholder="My Organization"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Slug
             </label>
             <input
@@ -1550,12 +1598,12 @@ function CreateOrganizationModal({
                   slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
                 })
               }
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+              className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
               placeholder="my-organization"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Description (optional)
             </label>
             <textarea
@@ -1563,7 +1611,7 @@ function CreateOrganizationModal({
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+              className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
               rows={2}
             />
           </div>
@@ -1602,19 +1650,19 @@ function JoinOrganizationModal({
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="glass rounded-xl p-6 w-full max-w-md">
-        <h3 className="text-lg font-bold text-dark-100 mb-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-dark-100 mb-4">
           Join Organization
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Invite Code
             </label>
             <input
               type="text"
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 font-mono"
+              className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100 font-mono"
               placeholder="Enter invite code..."
             />
           </div>
@@ -1659,12 +1707,12 @@ function CreateWorkspaceModal({
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="glass rounded-xl p-6 w-full max-w-md">
-        <h3 className="text-lg font-bold text-dark-100 mb-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-dark-100 mb-4">
           Create Workspace
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Name
             </label>
             <input
@@ -1680,12 +1728,12 @@ function CreateWorkspaceModal({
                     .replace(/[^a-z0-9-]/g, ""),
                 })
               }
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+              className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
               placeholder="My Workspace"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Slug
             </label>
             <input
@@ -1697,12 +1745,12 @@ function CreateWorkspaceModal({
                   slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
                 })
               }
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+              className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
               placeholder="my-workspace"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Description (optional)
             </label>
             <textarea
@@ -1710,31 +1758,31 @@ function CreateWorkspaceModal({
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+              className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
               rows={2}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-dark-300 mb-1">
+              <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
                 Color
               </label>
               <input
                 type="color"
                 value={form.color}
                 onChange={(e) => setForm({ ...form, color: e.target.value })}
-                className="w-full h-10 bg-dark-800 border border-dark-700 rounded-lg cursor-pointer"
+                className="w-full h-10 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg cursor-pointer"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-dark-300 mb-1">
+              <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
                 Icon
               </label>
               <input
                 type="text"
                 value={form.icon}
                 onChange={(e) => setForm({ ...form, icon: e.target.value })}
-                className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-center text-xl"
+                className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100 text-center text-xl"
                 maxLength={2}
               />
             </div>

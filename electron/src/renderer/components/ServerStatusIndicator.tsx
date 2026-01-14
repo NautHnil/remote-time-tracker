@@ -49,10 +49,10 @@ export default function ServerStatusIndicator({
       <span
         className={`text-xs font-medium ${
           isChecking
-            ? "text-yellow-400"
+            ? "text-yellow-600 dark:text-yellow-400"
             : isOnline
-            ? "text-green-400"
-            : "text-red-400"
+            ? "text-green-600 dark:text-green-400"
+            : "text-red-600 dark:text-red-400"
         }`}
       >
         {isChecking ? "Checking..." : isOnline ? "Server Online" : "Offline"}
@@ -60,11 +60,11 @@ export default function ServerStatusIndicator({
 
       {/* Details */}
       {showDetails && (
-        <div className="flex items-center gap-2 text-xs text-dark-400">
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-dark-400">
           {lastChecked && <span>• Last: {formatLastChecked(lastChecked)}</span>}
           <button
             onClick={refresh}
-            className="text-primary-400 hover:text-primary-300 hover:underline"
+            className="text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 hover:underline"
             disabled={isChecking}
           >
             Refresh
@@ -77,7 +77,7 @@ export default function ServerStatusIndicator({
         <div className="group relative">
           <button
             onClick={refresh}
-            className="text-dark-500 hover:text-dark-300 transition-colors"
+            className="text-gray-400 dark:text-dark-500 hover:text-gray-600 dark:hover:text-dark-300 transition-colors"
             title="Refresh status"
             disabled={isChecking}
           >
@@ -87,9 +87,9 @@ export default function ServerStatusIndicator({
           </button>
 
           {/* Tooltip */}
-          <div className="invisible group-hover:visible absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-dark-800 rounded whitespace-nowrap z-50 border border-dark-700">
+          <div className="invisible group-hover:visible absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-gray-900 dark:text-white bg-white dark:bg-dark-800 rounded whitespace-nowrap z-50 border border-gray-200 dark:border-dark-700 shadow-lg">
             {message}
-            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-dark-800" />
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-white dark:border-t-dark-800" />
           </div>
         </div>
       )}

@@ -93,9 +93,9 @@ const AuthenticatedImage: React.FC<AuthenticatedImageProps> = memo(
       return (
         <div
           ref={imgRef}
-          className={`${className} flex items-center justify-center bg-gray-700`}
+          className={`${className} flex items-center justify-center bg-gray-200 dark:bg-gray-700`}
         >
-          <div className="text-gray-400 text-xs">⏳</div>
+          <div className="text-gray-500 dark:text-gray-400 text-xs">⏳</div>
         </div>
       );
     }
@@ -103,17 +103,19 @@ const AuthenticatedImage: React.FC<AuthenticatedImageProps> = memo(
     return (
       <div ref={imgRef} className={`${className} relative`}>
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-700">
-            <div className="text-gray-400 text-xs animate-pulse">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+            <div className="text-gray-500 dark:text-gray-400 text-xs animate-pulse">
               Loading...
             </div>
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-700">
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-200 dark:bg-gray-700">
             <div className="text-center">
-              <Icons.AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-2" />
-              <p className="text-gray-400 text-xs">Failed to load</p>
+              <Icons.AlertCircle className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+              <p className="text-gray-500 dark:text-gray-400 text-xs">
+                Failed to load
+              </p>
             </div>
           </div>
         )}

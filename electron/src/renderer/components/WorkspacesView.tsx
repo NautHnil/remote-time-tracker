@@ -154,8 +154,10 @@ export default function WorkspacesView() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-dark-50">My Workspaces</h2>
-            <p className="text-sm text-dark-400">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-dark-50">
+              My Workspaces
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-dark-400">
               View and manage your project workspaces
             </p>
           </div>
@@ -165,7 +167,7 @@ export default function WorkspacesView() {
               onChange={(e) =>
                 setFilterOrgId(e.target.value ? parseInt(e.target.value) : null)
               }
-              className="bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-dark-200"
+              className="bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-dark-200"
             >
               <option value="">All Organizations</option>
               {organizations.map((org) => (
@@ -193,10 +195,12 @@ export default function WorkspacesView() {
                   <Icons.Workspace className="w-5 h-5 text-primary-400" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-dark-50">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-dark-50">
                     {totalWorkspaces}
                   </div>
-                  <div className="text-xs text-dark-400">Total Workspaces</div>
+                  <div className="text-xs text-gray-500 dark:text-dark-400">
+                    Total Workspaces
+                  </div>
                 </div>
               </div>
             </div>
@@ -206,10 +210,12 @@ export default function WorkspacesView() {
                   <Icons.Check className="w-5 h-5 text-green-400" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-dark-50">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-dark-50">
                     {activeWorkspaces}
                   </div>
-                  <div className="text-xs text-dark-400">Active</div>
+                  <div className="text-xs text-gray-500 dark:text-dark-400">
+                    Active
+                  </div>
                 </div>
               </div>
             </div>
@@ -219,10 +225,12 @@ export default function WorkspacesView() {
                   <Icons.Badge className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-dark-50">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-dark-50">
                     {adminWorkspaces}
                   </div>
-                  <div className="text-xs text-dark-400">Admin Role</div>
+                  <div className="text-xs text-gray-500 dark:text-dark-400">
+                    Admin Role
+                  </div>
                 </div>
               </div>
             </div>
@@ -232,10 +240,12 @@ export default function WorkspacesView() {
                   <Icons.Task className="w-5 h-5 text-accent-400" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-dark-50">
+                  <div className="text-2xl font-bold text-gray-900 dark:text-dark-50">
                     {totalTasks}
                   </div>
-                  <div className="text-xs text-dark-400">Total Tasks</div>
+                  <div className="text-xs text-gray-500 dark:text-dark-400">
+                    Total Tasks
+                  </div>
                 </div>
               </div>
             </div>
@@ -260,14 +270,14 @@ export default function WorkspacesView() {
         {/* Empty State */}
         {!loading && workspaces.length === 0 && (
           <div className="glass rounded-xl p-12 text-center">
-            <Icons.Workspace className="w-16 h-16 text-dark-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-dark-200 mb-2">
+            <Icons.Workspace className="w-16 h-16 text-gray-400 dark:text-dark-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-700 dark:text-dark-200 mb-2">
               No Workspaces
             </h3>
-            <p className="text-dark-400">
+            <p className="text-gray-500 dark:text-dark-400">
               You are not a member of any workspaces yet.
             </p>
-            <p className="text-dark-500 text-sm mt-2">
+            <p className="text-gray-400 dark:text-dark-500 text-sm mt-2">
               Ask your organization admin to add you to a workspace.
             </p>
           </div>
@@ -280,11 +290,11 @@ export default function WorkspacesView() {
               ([orgName, orgWorkspaces]) => (
                 <div key={orgName}>
                   <div className="flex items-center gap-2 mb-4">
-                    <Icons.Organization className="w-4 h-4 text-dark-400" />
-                    <h3 className="text-sm font-medium text-dark-400 uppercase tracking-wide">
+                    <Icons.Organization className="w-4 h-4 text-gray-400 dark:text-dark-400" />
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-dark-400 uppercase tracking-wide">
                       {orgName}
                     </h3>
-                    <span className="text-xs text-dark-500">
+                    <span className="text-xs text-gray-400 dark:text-dark-500">
                       ({orgWorkspaces.length})
                     </span>
                   </div>
@@ -346,10 +356,12 @@ export default function WorkspacesView() {
           {selectedWorkspace.icon || <Icons.Folder className="w-7 h-7" />}
         </div>
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-dark-50">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-50">
             {selectedWorkspace.name}
           </h2>
-          <p className="text-dark-400">@{selectedWorkspace.slug}</p>
+          <p className="text-gray-500 dark:text-dark-400">
+            @{selectedWorkspace.slug}
+          </p>
         </div>
         <span
           className={`px-3 py-1 text-sm rounded-full ${
@@ -363,7 +375,7 @@ export default function WorkspacesView() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-dark-800 pb-2">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-dark-800 pb-2">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -371,7 +383,7 @@ export default function WorkspacesView() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               activeTab === tab.id
                 ? "bg-primary-500/20 text-primary-400"
-                : "text-dark-400 hover:text-dark-200 hover:bg-dark-800/50"
+                : "text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-800/50"
             }`}
           >
             <tab.icon className="w-4 h-4" />
@@ -423,7 +435,7 @@ function WorkspaceCard({
   return (
     <div
       onClick={onClick}
-      className="glass rounded-xl p-5 cursor-pointer hover:bg-dark-800/50 transition-colors group"
+      className="glass rounded-xl p-5 cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-800/50 transition-colors group"
     >
       <div className="flex items-start gap-4">
         <div
@@ -433,11 +445,13 @@ function WorkspaceCard({
           {workspace.icon || <Icons.Folder className="w-6 h-6" />}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-dark-100 truncate group-hover:text-primary-400 transition-colors">
+          <h4 className="font-semibold text-gray-900 dark:text-dark-100 truncate group-hover:text-primary-400 transition-colors">
             {workspace.name}
           </h4>
-          <p className="text-sm text-dark-400">@{workspace.slug}</p>
-          <div className="mt-2 flex items-center gap-3 text-xs text-dark-500">
+          <p className="text-sm text-gray-500 dark:text-dark-400">
+            @{workspace.slug}
+          </p>
+          <div className="mt-2 flex items-center gap-3 text-xs text-gray-400 dark:text-dark-500">
             <span className="flex items-center gap-1">
               <Icons.Users className="w-3 h-3" />
               {workspace.member_count} members
@@ -462,7 +476,7 @@ function WorkspaceCard({
         </div>
       </div>
       {workspace.description && (
-        <p className="mt-3 text-sm text-dark-400 line-clamp-2">
+        <p className="mt-3 text-sm text-gray-500 dark:text-dark-400 line-clamp-2">
           {workspace.description}
         </p>
       )}
@@ -486,19 +500,23 @@ function WorkspaceOverviewTab({
             <div className="text-3xl font-bold gradient-text">
               {members.length}
             </div>
-            <div className="text-sm text-dark-400">Members</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              Members
+            </div>
           </div>
           <div className="glass rounded-xl p-4 text-center">
             <div className="text-3xl font-bold gradient-text">
               {workspace.task_count || 0}
             </div>
-            <div className="text-sm text-dark-400">Tasks</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              Tasks
+            </div>
           </div>
           <div className="glass rounded-xl p-4 text-center">
             <div className="text-3xl font-bold gradient-text">
               {workspace.is_billable ? `$${workspace.hourly_rate}/hr` : "N/A"}
             </div>
-            <div className="text-sm text-dark-400">Rate</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">Rate</div>
           </div>
           <div className="glass rounded-xl p-4 text-center">
             <span
@@ -508,35 +526,43 @@ function WorkspaceOverviewTab({
             >
               {workspace.is_active ? "●" : "○"}
             </span>
-            <div className="text-sm text-dark-400">Status</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              Status
+            </div>
           </div>
         </div>
 
         {/* Description */}
         {workspace.description && (
           <div className="glass rounded-xl p-5">
-            <h4 className="font-medium text-dark-200 mb-2">Description</h4>
-            <p className="text-dark-400">{workspace.description}</p>
+            <h4 className="font-medium text-gray-700 dark:text-dark-200 mb-2">
+              Description
+            </h4>
+            <p className="text-gray-500 dark:text-dark-400">
+              {workspace.description}
+            </p>
           </div>
         )}
 
         {/* Team Members */}
         <div className="glass rounded-xl p-5">
-          <h4 className="font-medium text-dark-200 mb-3">Team Members</h4>
+          <h4 className="font-medium text-gray-700 dark:text-dark-200 mb-3">
+            Team Members
+          </h4>
           <div className="space-y-2">
             {members.slice(0, 6).map((member) => (
               <div
                 key={member.id}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-800/50"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-800/50"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-accent-400 rounded-full flex items-center justify-center text-white text-sm font-medium">
                   {member.user?.email?.charAt(0).toUpperCase() || "?"}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-dark-200 truncate">
+                  <div className="text-sm text-gray-700 dark:text-dark-200 truncate">
                     {member.user?.first_name} {member.user?.last_name}
                   </div>
-                  <div className="text-xs text-dark-500 truncate">
+                  <div className="text-xs text-gray-400 dark:text-dark-500 truncate">
                     {member.user?.email}
                   </div>
                 </div>
@@ -557,7 +583,7 @@ function WorkspaceOverviewTab({
               </div>
             ))}
             {members.length > 6 && (
-              <div className="text-center text-sm text-dark-500 py-2">
+              <div className="text-center text-sm text-gray-400 dark:text-dark-500 py-2">
                 +{members.length - 6} more members
               </div>
             )}
@@ -569,13 +595,17 @@ function WorkspaceOverviewTab({
       <div className="space-y-4">
         {/* Info */}
         <div className="glass rounded-xl p-5 space-y-3">
-          <h4 className="font-medium text-dark-200 mb-3">Details</h4>
+          <h4 className="font-medium text-gray-700 dark:text-dark-200 mb-3">
+            Details
+          </h4>
 
           <div className="flex items-center justify-between text-sm">
-            <span className="text-dark-400">Billable</span>
+            <span className="text-gray-500 dark:text-dark-400">Billable</span>
             <span
               className={
-                workspace.is_billable ? "text-green-400" : "text-dark-500"
+                workspace.is_billable
+                  ? "text-green-400"
+                  : "text-gray-400 dark:text-dark-500"
               }
             >
               {workspace.is_billable ? "Yes" : "No"}
@@ -584,15 +614,21 @@ function WorkspaceOverviewTab({
 
           {workspace.is_billable && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-dark-400">Hourly Rate</span>
-              <span className="text-dark-200">${workspace.hourly_rate}/hr</span>
+              <span className="text-gray-500 dark:text-dark-400">
+                Hourly Rate
+              </span>
+              <span className="text-gray-700 dark:text-dark-200">
+                ${workspace.hourly_rate}/hr
+              </span>
             </div>
           )}
 
           {workspace.start_date && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-dark-400">Start Date</span>
-              <span className="text-dark-200">
+              <span className="text-gray-500 dark:text-dark-400">
+                Start Date
+              </span>
+              <span className="text-gray-700 dark:text-dark-200">
                 {format(new Date(workspace.start_date), "MMM d, yyyy")}
               </span>
             </div>
@@ -600,16 +636,16 @@ function WorkspaceOverviewTab({
 
           {workspace.end_date && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-dark-400">End Date</span>
-              <span className="text-dark-200">
+              <span className="text-gray-500 dark:text-dark-400">End Date</span>
+              <span className="text-gray-700 dark:text-dark-200">
                 {format(new Date(workspace.end_date), "MMM d, yyyy")}
               </span>
             </div>
           )}
 
           <div className="flex items-center justify-between text-sm">
-            <span className="text-dark-400">Created</span>
-            <span className="text-dark-200">
+            <span className="text-gray-500 dark:text-dark-400">Created</span>
+            <span className="text-gray-700 dark:text-dark-200">
               {format(new Date(workspace.created_at), "MMM d, yyyy")}
             </span>
           </div>
@@ -618,16 +654,18 @@ function WorkspaceOverviewTab({
         {/* Admin */}
         {workspace.admin && (
           <div className="glass rounded-xl p-5">
-            <h4 className="font-medium text-dark-200 mb-3">Workspace Admin</h4>
+            <h4 className="font-medium text-gray-700 dark:text-dark-200 mb-3">
+              Workspace Admin
+            </h4>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center text-white font-medium">
                 {workspace.admin.email?.charAt(0).toUpperCase() || "?"}
               </div>
               <div>
-                <div className="text-sm font-medium text-dark-200">
+                <div className="text-sm font-medium text-gray-700 dark:text-dark-200">
                   {workspace.admin.first_name} {workspace.admin.last_name}
                 </div>
-                <div className="text-xs text-dark-400">
+                <div className="text-xs text-gray-500 dark:text-dark-400">
                   {workspace.admin.email}
                 </div>
               </div>
@@ -738,25 +776,25 @@ function WorkspaceMembersTab({
       )}
 
       <div className="glass rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-dark-800">
-          <h3 className="font-medium text-dark-200">
+        <div className="p-4 border-b border-gray-200 dark:border-dark-800">
+          <h3 className="font-medium text-gray-700 dark:text-dark-200">
             Members ({members.length})
           </h3>
         </div>
-        <div className="divide-y divide-dark-800">
+        <div className="divide-y divide-gray-100 dark:divide-dark-800">
           {members.map((member) => (
             <div
               key={member.id}
-              className="p-4 flex items-center gap-4 hover:bg-dark-800/30"
+              className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-dark-800/30"
             >
               <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-accent-400 rounded-full flex items-center justify-center text-white font-medium">
                 {member.user?.email?.charAt(0).toUpperCase() || "?"}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-dark-100 truncate">
+                <div className="font-medium text-gray-900 dark:text-dark-100 truncate">
                   {member.user?.first_name} {member.user?.last_name}
                 </div>
-                <div className="text-sm text-dark-400 truncate">
+                <div className="text-sm text-gray-500 dark:text-dark-400 truncate">
                   {member.user?.email}
                 </div>
               </div>
@@ -768,7 +806,7 @@ function WorkspaceMembersTab({
                       handleUpdateRole(member.user_id, parseInt(e.target.value))
                     }
                     disabled={updating === member.user_id}
-                    className="bg-dark-800 border border-dark-700 rounded-lg px-2 py-1 text-sm text-dark-200"
+                    className="bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-2 py-1 text-sm text-gray-700 dark:text-dark-200"
                   >
                     {roles.map((role) => (
                       <option key={role.id} value={role.id}>
@@ -853,53 +891,55 @@ function WorkspaceSettingsTab({
   return (
     <div className="max-w-2xl space-y-6">
       <div className="glass rounded-xl p-6 space-y-4">
-        <h3 className="font-medium text-dark-200">General Settings</h3>
+        <h3 className="font-medium text-gray-700 dark:text-dark-200">
+          General Settings
+        </h3>
 
         <div>
-          <label className="block text-sm font-medium text-dark-300 mb-1">
+          <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
             Workspace Name
           </label>
           <input
             type="text"
             value={form.name || ""}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+            className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-dark-300 mb-1">
+          <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
             Description
           </label>
           <textarea
             value={form.description || ""}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+            className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
             rows={3}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Color
             </label>
             <input
               type="color"
               value={form.color || "#6366f1"}
               onChange={(e) => setForm({ ...form, color: e.target.value })}
-              className="w-full h-10 bg-dark-800 border border-dark-700 rounded-lg cursor-pointer"
+              className="w-full h-10 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg cursor-pointer"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Icon
             </label>
             <input
               type="text"
               value={form.icon || ""}
               onChange={(e) => setForm({ ...form, icon: e.target.value })}
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100 text-center text-xl"
+              className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100 text-center text-xl"
               maxLength={2}
             />
           </div>
@@ -915,19 +955,25 @@ function WorkspaceSettingsTab({
       </div>
 
       <div className="glass rounded-xl p-6 space-y-4">
-        <h3 className="font-medium text-dark-200">Billing Settings</h3>
+        <h3 className="font-medium text-gray-700 dark:text-dark-200">
+          Billing Settings
+        </h3>
 
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-medium text-dark-200">Billable Project</div>
-            <div className="text-sm text-dark-400">
+            <div className="font-medium text-gray-700 dark:text-dark-200">
+              Billable Project
+            </div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
               Track billable hours for this workspace
             </div>
           </div>
           <button
             onClick={() => setForm({ ...form, is_billable: !form.is_billable })}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              form.is_billable ? "bg-primary-500" : "bg-dark-700"
+              form.is_billable
+                ? "bg-primary-500"
+                : "bg-gray-300 dark:bg-dark-700"
             }`}
           >
             <span
@@ -940,7 +986,7 @@ function WorkspaceSettingsTab({
 
         {form.is_billable && (
           <div>
-            <label className="block text-sm font-medium text-dark-300 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
               Hourly Rate ($)
             </label>
             <input
@@ -952,7 +998,7 @@ function WorkspaceSettingsTab({
                   hourly_rate: parseFloat(e.target.value) || 0,
                 })
               }
-              className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+              className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
               min="0"
               step="0.01"
             />
@@ -962,7 +1008,7 @@ function WorkspaceSettingsTab({
 
       <div className="glass rounded-xl p-6 border border-red-500/30">
         <h3 className="font-medium text-red-400">Danger Zone</h3>
-        <p className="text-sm text-dark-400 mt-1 mb-4">
+        <p className="text-sm text-gray-500 dark:text-dark-400 mt-1 mb-4">
           Delete this workspace. This action cannot be undone.
         </p>
         <button
@@ -1008,27 +1054,27 @@ function AddWorkspaceMemberModal({
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="glass rounded-xl p-6 w-full max-w-md">
-        <h3 className="text-lg font-bold text-dark-100 mb-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-dark-100 mb-4">
           Add Member to Workspace
         </h3>
 
         {orgMembers.length === 0 ? (
           <div className="text-center py-8">
-            <Icons.Users className="w-12 h-12 text-dark-500 mx-auto mb-3" />
-            <p className="text-dark-400">
+            <Icons.Users className="w-12 h-12 text-gray-400 dark:text-dark-500 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-dark-400">
               No available organization members to add
             </p>
           </div>
         ) : (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-dark-300 mb-1">
+              <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
                 Select Member
               </label>
               <select
                 value={selectedUserId || ""}
                 onChange={(e) => setSelectedUserId(parseInt(e.target.value))}
-                className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+                className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
               >
                 <option value="">Choose a member...</option>
                 {orgMembers.map((m) => (
@@ -1040,13 +1086,13 @@ function AddWorkspaceMemberModal({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-dark-300 mb-1">
+              <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-1">
                 Role
               </label>
               <select
                 value={selectedRoleId}
                 onChange={(e) => setSelectedRoleId(parseInt(e.target.value))}
-                className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-dark-100"
+                className="w-full bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg px-3 py-2 text-gray-900 dark:text-dark-100"
               >
                 {roles.map((role) => (
                   <option key={role.id} value={role.id}>

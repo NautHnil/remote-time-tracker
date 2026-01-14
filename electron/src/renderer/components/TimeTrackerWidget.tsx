@@ -114,24 +114,24 @@ function TimeTrackerWidget() {
   };
 
   return (
-    <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-2xl mx-auto">
       {/* Status Indicator */}
       <div className="flex items-center justify-center mb-8">
         <div
           className={`w-4 h-4 rounded-full ${getStatusColor()} mr-3 animate-pulse`}
         />
-        <span className="text-xl font-semibold text-gray-300">
+        <span className="text-xl font-semibold text-gray-600 dark:text-gray-300">
           {getStatusText()}
         </span>
       </div>
 
       {/* Time Display */}
       <div className="text-center mb-8">
-        <div className="text-6xl font-mono font-bold text-white mb-2">
+        <div className="text-6xl font-mono font-bold text-gray-900 dark:text-white mb-2">
           {formatTime(status.elapsedTime)}
         </div>
         {status.pausedTime > 0 && (
-          <div className="text-sm text-gray-400">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             Paused: {formatTime(status.pausedTime)}
           </div>
         )}
@@ -178,7 +178,7 @@ function TimeTrackerWidget() {
       </div>
 
       {/* Info */}
-      <div className="mt-8 text-center text-sm text-gray-400">
+      <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
         <p>Screenshots are being captured automatically while tracking</p>
       </div>
     </div>

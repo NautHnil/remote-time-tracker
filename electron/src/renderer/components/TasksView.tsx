@@ -295,7 +295,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-dark-400">Loading tasks...</p>
+          <p className="text-gray-500 dark:text-dark-400">Loading tasks...</p>
         </div>
       </div>
     );
@@ -308,10 +308,10 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
           <div className="text-red-400 mb-4">
             <Icons.X className="w-12 h-12 mx-auto" />
           </div>
-          <h3 className="text-xl font-semibold text-dark-200 mb-2">
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-dark-200 mb-2">
             Failed to Load Tasks
           </h3>
-          <p className="text-dark-400 mb-4">{error}</p>
+          <p className="text-gray-500 dark:text-dark-400 mb-4">{error}</p>
           <button onClick={loadTasks} className="btn btn-primary">
             Retry
           </button>
@@ -322,7 +322,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
 
   return (
     <div className="space-y-6">
-      <div className="glass-dark rounded-xl p-4 border border-dark-800/50">
+      <div className="glass-dark rounded-xl p-4 border border-gray-200 dark:border-dark-800/50">
         <div className="flex flex-wrap gap-3 justify-between">
           <div></div>
           <button
@@ -373,27 +373,29 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
         ].map((stat, idx) => (
           <div
             key={idx}
-            className="glass-dark rounded-xl p-4 border border-dark-800/50"
+            className="glass-dark rounded-xl p-4 border border-gray-200 dark:border-dark-800/50"
           >
             <div className="flex items-center justify-between mb-2">
               <stat.icon className={`w-5 h-5 text-${stat.color}-400`} />
-              <span className="text-2xl font-bold text-dark-50">
+              <span className="text-2xl font-bold text-gray-900 dark:text-dark-50">
                 {stat.value}
               </span>
             </div>
-            <div className="text-sm text-dark-400">{stat.label}</div>
+            <div className="text-sm text-gray-500 dark:text-dark-400">
+              {stat.label}
+            </div>
           </div>
         ))}
       </div>
 
       {/* Tasks List */}
       {tasks.length === 0 ? (
-        <div className="glass-dark rounded-2xl p-12 text-center border border-dark-800/50">
-          <Icons.Task className="w-16 h-16 text-dark-600 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-dark-200 mb-2">
+        <div className="glass-dark rounded-2xl p-12 text-center border border-gray-200 dark:border-dark-800/50">
+          <Icons.Task className="w-16 h-16 text-gray-400 dark:text-dark-600 mx-auto mb-4" />
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-dark-200 mb-2">
             No tasks yet
           </h3>
-          <p className="text-dark-400 mb-6">
+          <p className="text-gray-500 dark:text-dark-400 mb-6">
             Create your first task to start tracking
           </p>
           <button
@@ -404,42 +406,42 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
           </button>
         </div>
       ) : (
-        <div className="glass-dark rounded-2xl border border-dark-800/50 overflow-hidden">
+        <div className="glass-dark rounded-2xl border border-gray-200 dark:border-dark-800/50 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="border-b border-dark-800/50 bg-dark-900/50">
+              <thead className="border-b border-gray-200 dark:border-dark-800/50 bg-gray-50 dark:bg-dark-900/50">
                 <tr>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-dark-300">
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600 dark:text-dark-300">
                     Task
                   </th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-dark-300">
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600 dark:text-dark-300">
                     Type
                   </th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-dark-300">
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600 dark:text-dark-300">
                     Status
                   </th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-dark-300">
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600 dark:text-dark-300">
                     Priority
                   </th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-dark-300">
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600 dark:text-dark-300">
                     Duration
                   </th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-dark-300">
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600 dark:text-dark-300">
                     Screenshots
                   </th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-dark-300">
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600 dark:text-dark-300">
                     Created
                   </th>
-                  <th className="text-right px-6 py-4 text-sm font-semibold text-dark-300">
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-gray-600 dark:text-dark-300">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-dark-800/50">
+              <tbody className="divide-y divide-gray-100 dark:divide-dark-800/50">
                 {tasks.map((task) => (
                   <tr
                     key={task.id}
-                    className="hover:bg-dark-800/30 transition-colors cursor-pointer"
+                    className="hover:bg-gray-50 dark:hover:bg-dark-800/30 transition-colors cursor-pointer"
                     onClick={() => handleViewDetails(task)}
                   >
                     <td
@@ -475,11 +477,11 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                       ) : (
                         <div className="flex items-center gap-2 group">
                           <div className="flex-1">
-                            <div className="font-medium text-dark-100">
+                            <div className="font-medium text-gray-900 dark:text-dark-100">
                               {task.title}
                             </div>
                             {task.description && (
-                              <div className="text-sm text-dark-400 mt-1">
+                              <div className="text-sm text-gray-500 dark:text-dark-400 mt-1">
                                 {task.description}
                               </div>
                             )}
@@ -524,13 +526,13 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                         {task.priority}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-dark-300">
+                    <td className="px-6 py-4 text-gray-600 dark:text-dark-300">
                       {formatDuration(task.duration)}
                     </td>
-                    <td className="px-6 py-4 text-dark-300">
+                    <td className="px-6 py-4 text-gray-600 dark:text-dark-300">
                       {task.screenshot_count || 0}
                     </td>
-                    <td className="px-6 py-4 text-sm text-dark-400">
+                    <td className="px-6 py-4 text-sm text-gray-500 dark:text-dark-400">
                       {formatDate(task.created_at)}
                     </td>
                     <td
@@ -622,15 +624,15 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
       {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 !my-0">
-          <div className="glass-dark rounded-2xl border border-dark-800/50 w-full max-w-md animate-scale-up">
-            <div className="p-6 border-b border-dark-800/50">
-              <h3 className="text-xl font-semibold text-dark-50">
+          <div className="glass-dark rounded-2xl border border-gray-200 dark:border-dark-800/50 w-full max-w-md animate-scale-up">
+            <div className="p-6 border-b border-gray-200 dark:border-dark-800/50">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-50">
                 Create New Task
               </h3>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">
+                <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-2">
                   Title *
                 </label>
                 <input
@@ -643,7 +645,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">
+                <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-2">
                   Description
                 </label>
                 <textarea
@@ -654,7 +656,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-dark-300 mb-2">
+                <label className="block text-sm font-medium text-gray-600 dark:text-dark-300 mb-2">
                   Priority
                 </label>
                 <select
@@ -671,7 +673,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                 </select>
               </div>
             </div>
-            <div className="p-6 border-t border-dark-800/50 flex items-center justify-end gap-3">
+            <div className="p-6 border-t border-gray-200 dark:border-dark-800/50 flex items-center justify-end gap-3">
               <button
                 onClick={() => {
                   setShowCreateModal(false);
@@ -867,62 +869,72 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 !my-0">
-      <div className="glass-dark rounded-2xl border border-dark-800/50 w-full max-w-6xl max-h-[90vh] overflow-hidden animate-scale-up flex flex-col">
+      <div className="glass-dark rounded-2xl border border-gray-200 dark:border-dark-800/50 w-full max-w-6xl max-h-[90vh] overflow-hidden animate-scale-up flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-dark-800/50 flex items-start justify-between">
+        <div className="p-6 border-b border-gray-200 dark:border-dark-800/50 flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="text-2xl font-semibold text-dark-50 mb-2">
+            <h3 className="text-2xl font-semibold text-gray-900 dark:text-dark-50 mb-2">
               {task.title}
             </h3>
             {task.description && (
-              <p className="text-dark-400">{task.description}</p>
+              <p className="text-gray-500 dark:text-dark-400">
+                {task.description}
+              </p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-dark-400 hover:text-dark-200 transition-colors"
+            className="p-2 text-gray-400 dark:text-dark-400 hover:text-gray-600 dark:hover:text-dark-200 transition-colors"
           >
             <Icons.X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Task Info */}
-        <div className="p-6 border-b border-dark-800/50 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="p-6 border-b border-gray-200 dark:border-dark-800/50 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <div className="text-sm text-dark-400 mb-1">Status</div>
-            <div className="text-dark-100 font-medium capitalize">
+            <div className="text-sm text-gray-500 dark:text-dark-400 mb-1">
+              Status
+            </div>
+            <div className="text-gray-900 dark:text-dark-100 font-medium capitalize">
               {task.status.replace("_", " ")}
             </div>
           </div>
           <div>
-            <div className="text-sm text-dark-400 mb-1">Priority</div>
-            <div className="text-dark-100 font-medium capitalize">
+            <div className="text-sm text-gray-500 dark:text-dark-400 mb-1">
+              Priority
+            </div>
+            <div className="text-gray-900 dark:text-dark-100 font-medium capitalize">
               {task.priority}
             </div>
           </div>
           <div>
-            <div className="text-sm text-dark-400 mb-1">Duration</div>
-            <div className="text-dark-100 font-medium">
+            <div className="text-sm text-gray-500 dark:text-dark-400 mb-1">
+              Duration
+            </div>
+            <div className="text-gray-900 dark:text-dark-100 font-medium">
               {formatDuration(task.duration)}
             </div>
           </div>
           <div>
-            <div className="text-sm text-dark-400 mb-1">Created</div>
-            <div className="text-dark-100 font-medium text-sm">
+            <div className="text-sm text-gray-500 dark:text-dark-400 mb-1">
+              Created
+            </div>
+            <div className="text-gray-900 dark:text-dark-100 font-medium text-sm">
               {formatDate(task.created_at)}
             </div>
           </div>
         </div>
 
         {/* Screenshots Controls */}
-        <div className="p-4 border-b border-dark-800/50 flex items-center justify-between">
+        <div className="p-4 border-b border-gray-200 dark:border-dark-800/50 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h4 className="text-lg font-semibold text-dark-50">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-dark-50">
               Screenshots ({screenshots.length})
             </h4>
 
             {/* Source Toggle */}
-            <div className="flex gap-1 bg-dark-800 rounded-lg p-1">
+            <div className="flex gap-1 bg-gray-100 dark:bg-dark-800 rounded-lg p-1">
               <button
                 onClick={() => {
                   setViewSource("local");
@@ -931,7 +943,7 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
                 className={`px-3 py-1 rounded text-sm transition-colors ${
                   viewSource === "local"
                     ? "bg-blue-600 text-white"
-                    : "text-dark-400 hover:text-white"
+                    : "text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-white"
                 }`}
               >
                 Local
@@ -944,7 +956,7 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
                 className={`px-3 py-1 rounded text-sm transition-colors ${
                   viewSource === "server"
                     ? "bg-green-600 text-white"
-                    : "text-dark-400 hover:text-white"
+                    : "text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-white"
                 }`}
               >
                 Server
@@ -953,13 +965,13 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
           </div>
 
           {/* View Mode Toggle */}
-          <div className="flex gap-1 bg-dark-800 rounded-lg p-1">
+          <div className="flex gap-1 bg-gray-100 dark:bg-dark-800 rounded-lg p-1">
             <button
               onClick={() => setViewMode("grid")}
               className={`px-3 py-1 rounded text-sm transition-colors ${
                 viewMode === "grid"
                   ? "bg-primary-600 text-white"
-                  : "text-dark-400 hover:text-white"
+                  : "text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-white"
               }`}
             >
               <Icons.Grid className="w-4 h-4" />
@@ -969,7 +981,7 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
               className={`px-3 py-1 rounded text-sm transition-colors ${
                 viewMode === "list"
                   ? "bg-primary-600 text-white"
-                  : "text-dark-400 hover:text-white"
+                  : "text-gray-500 dark:text-dark-400 hover:text-gray-700 dark:hover:text-white"
               }`}
             >
               <Icons.List className="w-4 h-4" />
@@ -983,7 +995,9 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-dark-400">Loading screenshots...</p>
+                <p className="text-gray-500 dark:text-dark-400">
+                  Loading screenshots...
+                </p>
               </div>
             </div>
           ) : error ? (
@@ -991,7 +1005,7 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
               <div className="text-red-400 mb-4">
                 <Icons.X className="w-12 h-12 mx-auto" />
               </div>
-              <p className="text-dark-400 mb-4">{error}</p>
+              <p className="text-gray-500 dark:text-dark-400 mb-4">{error}</p>
               <button
                 onClick={loadScreenshots}
                 className="btn btn-primary text-sm"
@@ -1001,8 +1015,10 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
             </div>
           ) : screenshots.length === 0 ? (
             <div className="text-center py-12">
-              <Icons.Camera className="w-16 h-16 text-dark-600 mx-auto mb-4" />
-              <p className="text-dark-400">No screenshots for this task</p>
+              <Icons.Camera className="w-16 h-16 text-gray-400 dark:text-dark-600 mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-dark-400">
+                No screenshots for this task
+              </p>
             </div>
           ) : (
             <>
@@ -1052,7 +1068,7 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-dark-800/50 flex items-center justify-end">
+        <div className="p-6 border-t border-gray-200 dark:border-dark-800/50 flex items-center justify-end">
           <button onClick={onClose} className="btn btn-primary">
             Close
           </button>

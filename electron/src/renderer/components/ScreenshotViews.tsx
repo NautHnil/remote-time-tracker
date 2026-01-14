@@ -83,11 +83,11 @@ const ScreenshotGridItem: React.FC<{
 
     return (
       <div
-        className="group relative bg-dark-800/80 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary-500/70 hover:bg-dark-800 transition-all duration-200 shadow-sm hover:shadow-lg border border-dark-700/50"
+        className="group relative bg-white dark:bg-dark-800/80 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary-500/70 hover:bg-gray-50 dark:hover:bg-dark-800 transition-all duration-200 shadow-sm hover:shadow-lg border border-gray-200 dark:border-dark-700/50"
         onClick={handleClick}
       >
         {/* Thumbnail */}
-        <div className="aspect-video bg-dark-700/50 flex items-center justify-center relative">
+        <div className="aspect-video bg-gray-100 dark:bg-dark-700/50 flex items-center justify-center relative">
           {isServerMode ? (
             <ImageComponent
               screenshotId={screenshot.id}
@@ -116,11 +116,11 @@ const ScreenshotGridItem: React.FC<{
 
         {/* Info */}
         <div className="p-2.5">
-          <div className="flex items-center gap-1.5 text-dark-300 text-xs">
+          <div className="flex items-center gap-1.5 text-gray-600 dark:text-dark-300 text-xs">
             <Icons.Clock className="w-3 h-3 text-primary-400" />
             <span>{formatDate(screenshot.capturedAt, "HH:mm:ss")}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-dark-500 text-xs mt-1">
+          <div className="flex items-center gap-1.5 text-gray-400 dark:text-dark-500 text-xs mt-1">
             <Icons.Database className="w-3 h-3" />
             <span>{formatFileSize(screenshot.fileSize)}</span>
           </div>
@@ -162,9 +162,9 @@ const ScreenshotList: React.FC<ScreenshotGridProps> = memo(
     isServerMode = false,
   }) => {
     return (
-      <div className="bg-dark-800/50 rounded-xl overflow-hidden border border-dark-700/50">
+      <div className="bg-white dark:bg-dark-800/50 rounded-xl overflow-hidden border border-gray-200 dark:border-dark-700/50">
         {/* Table header */}
-        <div className="grid grid-cols-12 gap-3 px-4 py-2.5 bg-dark-800 border-b border-dark-700/50 text-xs text-dark-400 font-medium uppercase tracking-wide">
+        <div className="grid grid-cols-12 gap-3 px-4 py-2.5 bg-gray-50 dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700/50 text-xs text-gray-500 dark:text-dark-400 font-medium uppercase tracking-wide">
           <div className="col-span-1 flex items-center gap-1.5">
             <Icons.Image className="w-3.5 h-3.5" />
           </div>
@@ -188,7 +188,7 @@ const ScreenshotList: React.FC<ScreenshotGridProps> = memo(
         </div>
 
         {/* Table body */}
-        <div className="divide-y divide-dark-700/30">
+        <div className="divide-y divide-gray-100 dark:divide-dark-700/30">
           {screenshots.map((screenshot) => (
             <ScreenshotListItem
               key={screenshot.id}
@@ -236,12 +236,12 @@ const ScreenshotListItem: React.FC<{
 
     return (
       <div
-        className="group grid grid-cols-12 gap-3 px-4 py-2 items-center hover:bg-dark-700/30 cursor-pointer transition-colors duration-150"
+        className="group grid grid-cols-12 gap-3 px-4 py-2 items-center hover:bg-gray-50 dark:hover:bg-dark-700/30 cursor-pointer transition-colors duration-150"
         onClick={handleClick}
       >
         {/* Thumbnail */}
         <div className="col-span-1">
-          <div className="w-14 h-9 bg-dark-700/50 rounded-md overflow-hidden relative group-hover:ring-2 group-hover:ring-primary-500/50 transition-all">
+          <div className="w-14 h-9 bg-gray-100 dark:bg-dark-700/50 rounded-md overflow-hidden relative group-hover:ring-2 group-hover:ring-primary-500/50 transition-all">
             {isServerMode ? (
               <ImageComponent
                 screenshotId={screenshot.id}
@@ -264,14 +264,14 @@ const ScreenshotListItem: React.FC<{
 
         {/* Filename */}
         <div className="col-span-4 min-w-0">
-          <p className="text-dark-200 text-sm font-medium truncate group-hover:text-white transition-colors">
+          <p className="text-gray-700 dark:text-dark-200 text-sm font-medium truncate group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
             {screenshot.fileName}
           </p>
         </div>
 
         {/* Screen */}
         <div className="col-span-2">
-          <span className="inline-flex items-center gap-1.5 bg-dark-700/50 text-dark-300 text-xs px-2 py-1 rounded-md">
+          <span className="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-dark-700/50 text-gray-600 dark:text-dark-300 text-xs px-2 py-1 rounded-md">
             <Icons.Monitor className="w-3 h-3 text-primary-400" />
             <span>Screen {screenshot.screenNumber + 1}</span>
           </span>
@@ -279,7 +279,7 @@ const ScreenshotListItem: React.FC<{
 
         {/* Captured time */}
         <div className="col-span-3">
-          <div className="flex items-center gap-1.5 text-dark-400 text-sm">
+          <div className="flex items-center gap-1.5 text-gray-500 dark:text-dark-400 text-sm">
             <Icons.Clock className="w-3.5 h-3.5 text-green-400" />
             <span>{formatDate(screenshot.capturedAt, "MMM dd, HH:mm:ss")}</span>
           </div>
@@ -287,7 +287,7 @@ const ScreenshotListItem: React.FC<{
 
         {/* Size */}
         <div className="col-span-1">
-          <span className="text-dark-500 text-xs font-mono">
+          <span className="text-gray-400 dark:text-dark-500 text-xs font-mono">
             {formatFileSize(screenshot.fileSize)}
           </span>
         </div>
@@ -299,7 +299,7 @@ const ScreenshotListItem: React.FC<{
               e.stopPropagation();
               onSelect(screenshot);
             }}
-            className="p-1.5 rounded-md text-dark-400 hover:text-primary-400 hover:bg-primary-500/10 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1.5 rounded-md text-gray-400 dark:text-dark-400 hover:text-primary-400 hover:bg-primary-500/10 transition-colors opacity-0 group-hover:opacity-100"
             aria-label="View screenshot"
             title="View"
           >
@@ -307,7 +307,7 @@ const ScreenshotListItem: React.FC<{
           </button>
           <button
             onClick={handleDelete}
-            className="p-1.5 rounded-md text-dark-400 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
+            className="p-1.5 rounded-md text-gray-400 dark:text-dark-400 hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100"
             aria-label="Delete screenshot"
             title="Delete"
           >

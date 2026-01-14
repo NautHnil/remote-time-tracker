@@ -225,7 +225,7 @@ export function DialogContent({
           aria-modal="true"
           className={`
             relative z-50 w-full ${sizeClasses[size]}
-            bg-dark-900 rounded-2xl shadow-2xl border border-dark-700/50
+            bg-white dark:bg-dark-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-dark-700/50
             animate-in fade-in-0 zoom-in-95 duration-200
             ${className}
           `}
@@ -236,7 +236,7 @@ export function DialogContent({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="absolute right-4 top-4 rounded-md p-1 text-dark-400 hover:text-dark-200 hover:bg-dark-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="absolute right-4 top-4 rounded-md p-1 text-gray-400 dark:text-dark-400 hover:text-gray-600 dark:hover:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <svg
                 className="h-5 w-5"
@@ -325,7 +325,7 @@ export function DialogTitle({
 }: DialogTitleProps) {
   return (
     <h2
-      className={`text-xl font-bold text-white leading-none tracking-tight ${className}`}
+      className={`text-xl font-bold text-gray-900 dark:text-white leading-none tracking-tight ${className}`}
       {...props}
     >
       {children}
@@ -349,7 +349,10 @@ export function DialogDescription({
   ...props
 }: DialogDescriptionProps) {
   return (
-    <p className={`text-sm text-dark-400 ${className}`} {...props}>
+    <p
+      className={`text-sm text-gray-500 dark:text-dark-400 ${className}`}
+      {...props}
+    >
       {children}
     </p>
   );
@@ -448,9 +451,13 @@ export function DialogIconHeader({
         {icon}
       </div>
       <div>
-        <h3 className="text-xl font-bold text-white">{title}</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          {title}
+        </h3>
         {description && (
-          <p className="text-sm text-dark-400 mt-0.5">{description}</p>
+          <p className="text-sm text-gray-500 dark:text-dark-400 mt-0.5">
+            {description}
+          </p>
         )}
       </div>
     </div>
@@ -476,28 +483,28 @@ const alertVariantClasses: Record<
   { bg: string; border: string; text: string; title: string }
 > = {
   warning: {
-    bg: "bg-yellow-500/10",
-    border: "border-yellow-500/30",
-    text: "text-yellow-200/70",
-    title: "text-yellow-200",
+    bg: "bg-yellow-50 dark:bg-yellow-500/10",
+    border: "border-yellow-200 dark:border-yellow-500/30",
+    text: "text-yellow-700 dark:text-yellow-200/70",
+    title: "text-yellow-800 dark:text-yellow-200",
   },
   error: {
-    bg: "bg-red-500/10",
-    border: "border-red-500/30",
-    text: "text-red-200/70",
-    title: "text-red-200",
+    bg: "bg-red-50 dark:bg-red-500/10",
+    border: "border-red-200 dark:border-red-500/30",
+    text: "text-red-700 dark:text-red-200/70",
+    title: "text-red-800 dark:text-red-200",
   },
   success: {
-    bg: "bg-green-500/10",
-    border: "border-green-500/30",
-    text: "text-green-200/70",
-    title: "text-green-200",
+    bg: "bg-green-50 dark:bg-green-500/10",
+    border: "border-green-200 dark:border-green-500/30",
+    text: "text-green-700 dark:text-green-200/70",
+    title: "text-green-800 dark:text-green-200",
   },
   info: {
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/30",
-    text: "text-blue-200/70",
-    title: "text-blue-200",
+    bg: "bg-blue-50 dark:bg-blue-500/10",
+    border: "border-blue-200 dark:border-blue-500/30",
+    text: "text-blue-700 dark:text-blue-200/70",
+    title: "text-blue-800 dark:text-blue-200",
   },
 };
 
@@ -550,18 +557,20 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const buttonVariantClasses: Record<ButtonVariant, string> = {
-  default: "bg-dark-800 text-dark-200 hover:bg-dark-700 border border-dark-700",
+  default:
+    "bg-gray-100 dark:bg-dark-800 text-gray-700 dark:text-dark-200 hover:bg-gray-200 dark:hover:bg-dark-700 border border-gray-300 dark:border-dark-700",
   primary:
     "bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700",
   secondary:
-    "bg-dark-700 text-dark-100 hover:bg-dark-600 border border-dark-600",
+    "bg-gray-200 dark:bg-dark-700 text-gray-800 dark:text-dark-100 hover:bg-gray-300 dark:hover:bg-dark-600 border border-gray-300 dark:border-dark-600",
   danger:
     "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700",
   warning:
     "bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600",
-  ghost: "text-dark-300 hover:bg-dark-800 hover:text-dark-100",
+  ghost:
+    "text-gray-600 dark:text-dark-300 hover:bg-gray-100 dark:hover:bg-dark-800 hover:text-gray-900 dark:hover:text-dark-100",
   outline:
-    "border border-dark-600 text-dark-200 hover:bg-dark-800 hover:border-dark-500",
+    "border border-gray-300 dark:border-dark-600 text-gray-700 dark:text-dark-200 hover:bg-gray-100 dark:hover:bg-dark-800 hover:border-gray-400 dark:hover:border-dark-500",
 };
 
 const buttonSizeClasses: Record<ButtonSize, string> = {
@@ -585,7 +594,7 @@ export function Button({
     <button
       className={`
         inline-flex items-center justify-center gap-2 font-medium rounded-lg
-        transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-dark-900
+        transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-dark-900
         disabled:opacity-50 disabled:cursor-not-allowed
         ${buttonVariantClasses[variant]}
         ${buttonSizeClasses[size]}

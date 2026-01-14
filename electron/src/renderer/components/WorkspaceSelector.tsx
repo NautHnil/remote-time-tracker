@@ -109,7 +109,9 @@ const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
   if (isLoading) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <span className="text-sm text-gray-500">Loading...</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          Loading...
+        </span>
       </div>
     );
   }
@@ -124,14 +126,14 @@ const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
       {/* Organization Selector */}
       <div className="flex flex-col gap-1">
         {showLabel && (
-          <label className="text-xs font-medium text-gray-500">
+          <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
             Organization
           </label>
         )}
         <select
           value={selectedOrgId || ""}
           onChange={handleOrgChange}
-          className="px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-2 py-1.5 text-sm border border-gray-300 dark:border-dark-600 rounded-md bg-white dark:bg-dark-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">All Organizations</option>
           {organizations.map((org) => (
@@ -146,14 +148,14 @@ const WorkspaceSelector: React.FC<WorkspaceSelectorProps> = ({
       {filteredWorkspaces.length > 0 && (
         <div className="flex flex-col gap-1">
           {showLabel && (
-            <label className="text-xs font-medium text-gray-500">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
               Workspace
             </label>
           )}
           <select
             value={selectedWorkspaceId || ""}
             onChange={handleWorkspaceChange}
-            className="px-2 py-1.5 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-2 py-1.5 text-sm border border-gray-300 dark:border-dark-600 rounded-md bg-white dark:bg-dark-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="" disabled>
               Select a workspace...

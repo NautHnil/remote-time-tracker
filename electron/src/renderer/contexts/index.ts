@@ -11,3 +11,6 @@ export type {
   UserPermissions,
   UserWorkspace,
 } from "./AuthContext";
+
+export { ThemeContext, ThemeProvider, useTheme } from "./ThemeContext";
+export type { Theme } from "./ThemeContext";

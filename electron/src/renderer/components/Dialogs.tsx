@@ -54,7 +54,9 @@ export function ConfirmDialog({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <p className="text-dark-300 whitespace-pre-line">{message}</p>
+          <p className="text-gray-600 dark:text-dark-300 whitespace-pre-line">
+            {message}
+          </p>
         </DialogBody>
         <DialogFooter>
           <Button variant="default" onClick={onCancel} disabled={isLoading}>
@@ -147,7 +149,7 @@ export function PromptDialog({
                 setError(null);
               }}
               placeholder={placeholder}
-              className="w-full px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
               autoFocus
               disabled={isLoading}
             />
@@ -229,7 +231,9 @@ export function AlertDialog({
       <DialogContent size="md">
         <DialogIconHeader icon={icon} title={title} variant={variant} />
         <DialogBody className="pt-0">
-          <p className="text-dark-300 whitespace-pre-line">{message}</p>
+          <p className="text-gray-600 dark:text-dark-300 whitespace-pre-line">
+            {message}
+          </p>
         </DialogBody>
         <DialogFooter>
           <Button variant={buttonVariant} onClick={onClose}>
@@ -320,19 +324,21 @@ export function LogoutConfirmDialog({
                 cancel to resume tracking.
               </AlertBox>
 
-              <div className="bg-dark-800/50 rounded-xl p-4 space-y-3">
+              <div className="bg-gray-100 dark:bg-dark-800/50 rounded-xl p-4 space-y-3">
                 {isManualTask ? (
                   // For manual tasks, show the task title as read-only
                   <div className="flex items-center justify-between">
-                    <span className="text-dark-400 text-sm">Current Task</span>
-                    <span className="text-white font-medium text-sm truncate max-w-[200px]">
+                    <span className="text-gray-500 dark:text-dark-400 text-sm">
+                      Current Task
+                    </span>
+                    <span className="text-gray-900 dark:text-white font-medium text-sm truncate max-w-[200px]">
                       {taskTitle || "Untitled Task"}
                     </span>
                   </div>
                 ) : (
                   // For auto-track tasks, show an input to save task title
                   <div className="space-y-2">
-                    <label className="text-dark-400 text-sm">
+                    <label className="text-gray-500 dark:text-dark-400 text-sm">
                       Task Title (optional)
                     </label>
                     <input
@@ -340,23 +346,27 @@ export function LogoutConfirmDialog({
                       value={inputTaskTitle}
                       onChange={(e) => setInputTaskTitle(e.target.value)}
                       placeholder="Enter a title for this work session..."
-                      className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      className="w-full px-3 py-2 bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                       disabled={isLoading}
                       autoFocus
                     />
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-dark-400 text-sm">Time Tracked</span>
-                  <span className="text-primary-400 font-mono font-semibold">
+                  <span className="text-gray-500 dark:text-dark-400 text-sm">
+                    Time Tracked
+                  </span>
+                  <span className="text-primary-600 dark:text-primary-400 font-mono font-semibold">
                     {formatDuration(elapsedTime)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-dark-400 text-sm">Status</span>
+                  <span className="text-gray-500 dark:text-dark-400 text-sm">
+                    Status
+                  </span>
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 bg-yellow-500 rounded-full" />
-                    <span className="text-yellow-400 text-sm font-medium">
+                    <span className="text-yellow-600 dark:text-yellow-400 text-sm font-medium">
                       Paused
                     </span>
                   </span>
@@ -364,7 +374,7 @@ export function LogoutConfirmDialog({
               </div>
             </div>
           ) : (
-            <p className="text-dark-300">
+            <p className="text-gray-600 dark:text-dark-300">
               Are you sure you want to sign out? You will need to log in again
               to access your account.
             </p>
@@ -476,19 +486,21 @@ export function QuitAppConfirmDialog({
                 cancel to resume tracking.
               </AlertBox>
 
-              <div className="bg-dark-800/50 rounded-xl p-4 space-y-3">
+              <div className="bg-gray-100 dark:bg-dark-800/50 rounded-xl p-4 space-y-3">
                 {isManualTask ? (
                   // For manual tasks, show the task title as read-only
                   <div className="flex items-center justify-between">
-                    <span className="text-dark-400 text-sm">Current Task</span>
-                    <span className="text-white font-medium text-sm truncate max-w-[200px]">
+                    <span className="text-gray-500 dark:text-dark-400 text-sm">
+                      Current Task
+                    </span>
+                    <span className="text-gray-900 dark:text-white font-medium text-sm truncate max-w-[200px]">
                       {taskTitle || "Untitled Task"}
                     </span>
                   </div>
                 ) : (
                   // For auto-track tasks, show an input to save task title
                   <div className="space-y-2">
-                    <label className="text-dark-400 text-sm">
+                    <label className="text-gray-500 dark:text-dark-400 text-sm">
                       Task Title (optional)
                     </label>
                     <input
@@ -496,23 +508,27 @@ export function QuitAppConfirmDialog({
                       value={inputTaskTitle}
                       onChange={(e) => setInputTaskTitle(e.target.value)}
                       placeholder="Enter a title for this work session..."
-                      className="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      className="w-full px-3 py-2 bg-white dark:bg-dark-700 border border-gray-300 dark:border-dark-600 rounded-lg text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                       disabled={isLoading}
                       autoFocus
                     />
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-dark-400 text-sm">Time Tracked</span>
-                  <span className="text-primary-400 font-mono font-semibold">
+                  <span className="text-gray-500 dark:text-dark-400 text-sm">
+                    Time Tracked
+                  </span>
+                  <span className="text-primary-600 dark:text-primary-400 font-mono font-semibold">
                     {formatDuration(elapsedTime)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-dark-400 text-sm">Status</span>
+                  <span className="text-gray-500 dark:text-dark-400 text-sm">
+                    Status
+                  </span>
                   <span className="flex items-center gap-1.5">
                     <span className="w-2 h-2 bg-yellow-500 rounded-full" />
-                    <span className="text-yellow-400 text-sm font-medium">
+                    <span className="text-yellow-600 dark:text-yellow-400 text-sm font-medium">
                       Paused
                     </span>
                   </span>
@@ -520,7 +536,7 @@ export function QuitAppConfirmDialog({
               </div>
             </div>
           ) : (
-            <p className="text-dark-300">
+            <p className="text-gray-600 dark:text-dark-300">
               Are you sure you want to quit the application? The app will
               continue running in the system tray.
             </p>

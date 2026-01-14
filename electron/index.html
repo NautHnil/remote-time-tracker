@@ -1,9 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>Remote Time Tracker</title>
+    <script>
+      // Set initial theme before page loads to prevent flash
+      (function () {
+        const savedTheme = localStorage.getItem("app-theme");
+        if (savedTheme) {
+          document.documentElement.classList.remove("light", "dark");
+          document.documentElement.classList.add(savedTheme);
+        } else if (
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+        ) {
+          document.documentElement.classList.remove("light");
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
