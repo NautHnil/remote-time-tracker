@@ -247,8 +247,8 @@ export function AuthProvider({
         if (existingCreds) {
           await window.electronAPI.auth.setCredentials({
             ...existingCreds,
-            organizationId: selectedOrgId,
-            workspaceId: selectedWsId,
+            organizationId: selectedOrgId ?? undefined,
+            workspaceId: selectedWsId ?? undefined,
           });
         }
       } catch (error) {
@@ -441,8 +441,8 @@ export function AuthProvider({
         if (existingCreds) {
           await window.electronAPI.auth.setCredentials({
             ...existingCreds,
-            organizationId: orgId,
-            workspaceId: newWorkspaceId,
+            organizationId: orgId ?? undefined,
+            workspaceId: newWorkspaceId ?? undefined,
           });
         }
       } catch (error) {
@@ -471,7 +471,7 @@ export function AuthProvider({
         if (existingCreds) {
           await window.electronAPI.auth.setCredentials({
             ...existingCreds,
-            workspaceId: workspaceId,
+            workspaceId: workspaceId ?? undefined,
           });
         }
       } catch (error) {

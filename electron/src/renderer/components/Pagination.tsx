@@ -118,7 +118,7 @@ const Pagination: React.FC<PaginationProps> = ({
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="input-sm !w-auto !py-1"
             >
               {pageSizeOptions.map((size) => (
                 <option key={size} value={size}>
@@ -216,7 +216,7 @@ const Pagination: React.FC<PaginationProps> = ({
             onChange={(e) => setJumpToPageInput(e.target.value)}
             onKeyDown={handleJumpToPageKeyDown}
             placeholder="Page"
-            className="w-16 bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="input-sm !w-16 !py-1"
           />
           <button
             onClick={handleJumpToPage}

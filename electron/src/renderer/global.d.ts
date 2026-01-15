@@ -5,6 +5,8 @@ interface Credentials {
   refreshToken: string;
   userId: number;
   email: string;
+  organizationId?: number;
+  workspaceId?: number;
 }
 
 interface TimeTrackerStatus {

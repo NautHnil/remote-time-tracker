@@ -9,7 +9,7 @@ import {
   useAlertDialog,
   useConfirmDialog,
   usePromptDialog,
-} from "./Dialogs";
+} from "./dialogs/index";
 import { Icons } from "./Icons";
 
 function Settings() {
@@ -282,7 +282,7 @@ function Settings() {
             Configuration
           </h3>
           <div className="space-y-4">
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                 API URL
               </label>
@@ -290,9 +290,9 @@ function Settings() {
                 type="text"
                 value={config.apiUrl || ""}
                 onChange={(e) => updateConfig("apiUrl", e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input"
               />
-            </div>
+            </div> */}
 
             <div>
               <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
@@ -304,7 +304,7 @@ function Settings() {
                 onChange={(e) =>
                   updateConfig("screenshotInterval", parseInt(e.target.value))
                 }
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Current:{" "}
@@ -323,7 +323,7 @@ function Settings() {
                 onChange={(e) =>
                   updateConfig("syncInterval", parseInt(e.target.value))
                 }
-                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="input"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Current: {formatDurationMinimal(config.syncInterval || 60000)}{" "}

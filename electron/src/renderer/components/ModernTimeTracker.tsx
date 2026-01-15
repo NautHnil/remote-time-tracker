@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { useEffect, useState } from "react";
 import { formatDurationFull } from "../utils/timeFormat";
-import { PromptDialog, usePromptDialog } from "./Dialogs";
+import { PromptDialog, usePromptDialog } from "./dialogs/index";
 import { Icons } from "./Icons";
 
 interface TimeTrackerStatus {
@@ -429,7 +429,7 @@ function ModernTimeTracker() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Main Timer Card */}
-      <div className="glass-dark rounded-3xl p-8 shadow-2xl border border-dark-700/50 relative overflow-hidden">
+      <div className="glass-dark rounded-3xl p-8 shadow-2xl stat-card border border-gray-200 dark:border-dark-700/50 relative overflow-hidden">
         {/* Background gradient glow */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-accent-500/5 opacity-50" />
 
@@ -621,7 +621,7 @@ function ModernTimeTracker() {
       </div>
 
       {/* Info Card */}
-      <div className="glass-dark rounded-2xl p-6 border border-gray-200 dark:border-dark-700/50">
+      <div className="glass-dark rounded-2xl p-6 stat-card border border-gray-200 dark:border-dark-700/50">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-primary-500/10 rounded-xl">
             <Icons.Camera className="w-6 h-6 text-primary-400" />

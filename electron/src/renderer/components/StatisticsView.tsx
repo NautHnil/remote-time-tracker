@@ -271,7 +271,7 @@ export default function StatisticsView() {
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg text-gray-900 dark:text-dark-100 focus:outline-none focus:border-primary-500"
+                className="input-sm"
               />
             </div>
             <div className="flex-1">
@@ -282,7 +282,7 @@ export default function StatisticsView() {
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-700 rounded-lg text-gray-900 dark:text-dark-100 focus:outline-none focus:border-primary-500"
+                className="input-sm"
               />
             </div>
           </div>
@@ -334,16 +334,16 @@ export default function StatisticsView() {
           </div>
 
           {/* Average Session Card */}
-          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-green-300 dark:hover:border-success-500/30 transition-all">
+          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-green-300 hover:dark:border-green-500/30 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-gray-500 dark:text-dark-400 text-sm font-medium">
                 Avg. Session
               </span>
-              <div className="w-8 h-8 bg-success-500/20 rounded-lg flex items-center justify-center">
-                <Icons.Chart className="w-4 h-4 text-success-400" />
+              <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <Icons.Chart className="w-4 h-4 text-green-400" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-success-400 mb-1">
+            <div className="text-3xl font-bold text-green-400 mb-1">
               {calculateAverageSession()}
             </div>
             <div className="text-sm text-gray-500 dark:text-dark-400">
@@ -355,14 +355,14 @@ export default function StatisticsView() {
 
       {/* Screenshot Stats */}
       <div>
-        <h2 className="text-xl font-bold text-dark-100 mb-4 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-dark-100 mb-4 flex items-center gap-2">
           <Icons.Camera className="w-5 h-5 text-accent-400" />
           Screenshot Statistics
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Total Screenshots Card */}
-          <div className="glass rounded-xl p-6 border border-dark-800/50 hover:border-accent-500/30 transition-all">
+          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-accent-300 hover:dark:border-accent-500/30 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-gray-500 dark:text-dark-400 text-sm font-medium">
                 Total Screenshots
@@ -400,16 +400,16 @@ export default function StatisticsView() {
           </div>
 
           {/* Avg per Session Card */}
-          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-green-300 dark:hover:border-success-500/30 transition-all">
+          <div className="glass rounded-xl p-6 border border-gray-200 dark:border-dark-800/50 hover:border-green-300 hover:dark:border-green-500/30 transition-all">
             <div className="flex items-center justify-between mb-2">
               <span className="text-gray-500 dark:text-dark-400 text-sm font-medium">
                 Avg. per Session
               </span>
-              <div className="w-8 h-8 bg-success-500/20 rounded-lg flex items-center justify-center">
-                <Icons.Chart className="w-4 h-4 text-success-400" />
+              <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                <Icons.Chart className="w-4 h-4 text-green-400" />
               </div>
             </div>
-            <div className="text-3xl font-bold text-success-400 mb-1">
+            <div className="text-3xl font-bold text-green-400 mb-1">
               {(
                 screenshotStats?.avg_per_session ||
                 screenshotStats?.avgPerSession ||

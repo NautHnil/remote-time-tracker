@@ -63,7 +63,7 @@ function TimeFormatDemo() {
             type="number"
             value={milliseconds}
             onChange={(e) => setMilliseconds(parseInt(e.target.value) || 0)}
-            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+            className="input"
             step="1000"
           />
         </div>
@@ -99,7 +99,7 @@ function TimeFormatDemo() {
             <select
               value={format}
               onChange={(e) => setFormat(e.target.value as DurationFormat)}
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              className="input"
             >
               <option value="short">Short (5 min)</option>
               <option value="full">Full (5 minutes)</option>
@@ -114,7 +114,7 @@ function TimeFormatDemo() {
             <select
               value={maxUnits}
               onChange={(e) => setMaxUnits(parseInt(e.target.value))}
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+              className="input"
             >
               <option value="1">1 unit</option>
               <option value="2">2 units</option>
@@ -176,7 +176,7 @@ function TimeFormatDemo() {
             type="text"
             value={parseInput}
             onChange={(e) => setParseInput(e.target.value)}
-            className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+            className="input"
             placeholder="5m"
           />
         </div>

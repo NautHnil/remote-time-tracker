@@ -5,17 +5,17 @@ import {
   QuitAppConfirmDialog,
   useLogoutConfirmDialog,
   useQuitAppConfirmDialog,
-} from "./components/Dialogs";
+} from "./components/dialogs";
 import { Icons } from "./components/Icons";
 import { Sidebar, View } from "./components/layout";
 import LoginForm from "./components/LoginForm";
 import ModernTimeTracker from "./components/ModernTimeTracker";
-import OrganizationsView from "./components/OrganizationsView";
+import { OrganizationsView } from "./components/organizations";
 import ScreenshotViewer from "./components/ScreenshotViewer";
 import Settings from "./components/Settings";
 import StatisticsView from "./components/StatisticsView";
 import TasksView from "./components/TasksView";
-import WorkspacesView from "./components/WorkspacesView";
+import { WorkspacesView } from "./components/workspaces";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // Main app content with auth context
@@ -162,7 +162,6 @@ function AppContent() {
 
   // Handle quit app request from renderer (if needed)
   // If tracking is active, pause it first before showing dialog
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleQuitAppRequest = useCallback(async () => {
     try {
       const status = await window.electronAPI.timeTracker.getStatus();
@@ -269,9 +268,23 @@ function AppContent() {
 
   // Listen for quit request from main process
   useEffect(() => {
-    // This could be used for IPC events from main process
+    // Wire up handleQuitAppRequest for future IPC events from main process
     // For example, when user clicks "Quit" from system tray
-  }, []);
+    // Exposing to window for potential external triggers
+    (
+      window as unknown as {
+        __handleQuitAppRequest?: typeof handleQuitAppRequest;
+      }
+    ).__handleQuitAppRequest = handleQuitAppRequest;
+
+    return () => {
+      delete (
+        window as unknown as {
+          __handleQuitAppRequest?: typeof handleQuitAppRequest;
+        }
+      ).__handleQuitAppRequest;
+    };
+  }, [handleQuitAppRequest]);
 
   // Get page title and description
   const getPageInfo = () => {

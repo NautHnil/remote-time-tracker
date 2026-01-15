@@ -221,13 +221,13 @@ const ScreenshotViewer: React.FC<ScreenshotViewerProps> = ({
           )}
 
           {/* Date filter */}
-          <div className="flex items-center gap-2 bg-gray-100 dark:bg-dark-800/80 border border-gray-200 dark:border-dark-700/50 rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-2 bg-white dark:bg-dark-800 border border-gray-300 dark:border-dark-600 rounded-lg px-3 py-1.5 hover:border-gray-400 dark:hover:border-dark-500 transition-all focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500">
             <Icons.Calendar className="w-4 h-4 text-gray-400 dark:text-dark-400" />
             <input
               type="date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="bg-transparent text-gray-700 dark:text-dark-200 text-sm focus:outline-none"
+              className="bg-transparent text-gray-700 dark:text-dark-200 text-sm focus:outline-none cursor-pointer"
             />
             {dateFilter && (
               <button

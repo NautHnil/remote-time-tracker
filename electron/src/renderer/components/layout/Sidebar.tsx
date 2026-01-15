@@ -865,7 +865,7 @@ interface ThemeToggleButtonProps {
 const ThemeToggleButton: React.FC<ThemeToggleButtonProps> = ({
   isCollapsed,
 }) => {
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   return (
     <button

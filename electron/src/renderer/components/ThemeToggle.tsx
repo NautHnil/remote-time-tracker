@@ -15,7 +15,7 @@ export function ThemeToggle({
   className = "",
   showLabel = false,
 }: ThemeToggleProps) {
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   return (
     <button
@@ -56,7 +56,7 @@ interface ThemeSelectorProps {
 }
 
 export function ThemeSelector({ className = "" }: ThemeSelectorProps) {
-  const { theme, setTheme, isDark } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   const handleSystemTheme = () => {
     // Remove saved preference to use system theme
