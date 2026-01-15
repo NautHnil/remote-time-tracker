@@ -119,7 +119,8 @@
       {
         "provider": "github",
         "owner": "NautHnil",
-        "repo": "remote-time-tracker"
+        "repo": "remote-time-tracker",
+        "private": true
       }
     ]
   }

@@ -9,12 +9,20 @@ autoUpdater.logger = log;
 log.transports.file.level = "info";
 
 // ============================================================
-// LOCAL TESTING MODE - Set to true to test with local server
-// Make sure to run: http-server ~/update-server -p 8081 --cors
-// IMPORTANT: Set to false before production release!
+// Configuration for update server
+// Read from environment variables or use defaults
 // ============================================================
-const USE_LOCAL_UPDATE_SERVER = false; // ← Change to false for production
-const LOCAL_UPDATE_SERVER_URL = "http://localhost:8081";
+const USE_LOCAL_UPDATE_SERVER = process.env.USE_LOCAL_UPDATE_SERVER === "true";
+const LOCAL_UPDATE_SERVER_URL =
+  process.env.LOCAL_UPDATE_SERVER_URL || "http://localhost:8081";
+
+// GitHub token for private repos
+// Priority: 1. Environment variable, 2. Build-time token
+// For production builds, set GH_TOKEN during build process
+const GH_TOKEN = process.env.GH_TOKEN || "";
+
+// Log token status (not the actual token for security)
+log.info(`GH_TOKEN available: ${GH_TOKEN ? "Yes" : "No"}`);
 
 export type UpdateEvent =
   | { type: "checking-for-update" }
@@ -56,13 +64,27 @@ export class UpdateService {
     autoUpdater.autoInstallOnAppQuit = true; // Install on quit
 
     // Override update server for local testing
-    console.log(USE_LOCAL_UPDATE_SERVER);
+    log.info(`USE_LOCAL_UPDATE_SERVER: ${USE_LOCAL_UPDATE_SERVER}`);
     if (USE_LOCAL_UPDATE_SERVER) {
       log.info(`Using local update server: ${LOCAL_UPDATE_SERVER_URL}`);
       autoUpdater.setFeedURL({
         provider: "generic",
         url: LOCAL_UPDATE_SERVER_URL,
       });
+    } else {
+      // For GitHub releases (including private repos)
+      log.info("Using GitHub releases for updates");
+      if (GH_TOKEN) {
+        log.info("GitHub token detected - private repo support enabled");
+        // Set token in request headers for private repos
+        autoUpdater.requestHeaders = {
+          Authorization: `token ${GH_TOKEN}`,
+        };
+      } else {
+        log.info(
+          "No GitHub token - only public repos will work. Set GH_TOKEN env for private repos."
+        );
+      }
     }
 
     autoUpdater.on("checking-for-update", () => {
