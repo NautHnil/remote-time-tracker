@@ -8,7 +8,7 @@ import {
   DialogContent,
   DialogFooter,
   DialogIconHeader,
-} from "../ui/Dialog";
+} from "./Dialog";
 
 interface QuitAppConfirmDialogProps {
   isOpen: boolean;

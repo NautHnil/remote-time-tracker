@@ -27,4 +27,4 @@ export {
   DialogIconHeader,
   DialogTitle,
   useDialog,
-} from "../ui/Dialog";
+} from "./Dialog";

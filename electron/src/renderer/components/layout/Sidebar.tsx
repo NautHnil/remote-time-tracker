@@ -362,7 +362,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const {
     user,
-    permissions,
     organizations,
     workspaces,
     currentOrgId,

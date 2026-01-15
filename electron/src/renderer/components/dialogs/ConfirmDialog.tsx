@@ -6,7 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/Dialog";
+} from "./Dialog";
 
 interface ConfirmDialogProps {
   isOpen: boolean;

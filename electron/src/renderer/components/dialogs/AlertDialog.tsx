@@ -6,7 +6,7 @@ import {
   DialogContent,
   DialogFooter,
   DialogIconHeader,
-} from "../ui/Dialog";
+} from "./Dialog";
 
 interface AlertDialogProps {
   isOpen: boolean;
