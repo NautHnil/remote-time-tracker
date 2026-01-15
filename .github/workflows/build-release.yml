@@ -1,0 +1,196 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: "20.x"
+
+jobs:
+  build:
+    if: github.event.pull_request.draft == false
+    name: Build Desktop App
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: "./electron/package-lock.json"
+
+      - name: Install dependencies
+        working-directory: ./electron
+        run: npm ci
+
+      # Only build without release if it's a pull request
+      - name: Build only (Pull Request)
+        if: github.event_name == 'pull_request'
+        working-directory: ./electron
+        run: npm run build
+
+      # Build and release if it's push to main branch
+      - name: Build and release on macOS
+        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
+        working-directory: ./electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run release:mac
+
+      - name: Build and release on Linux
+        if: startsWith(matrix.os, 'ubuntu') && github.event_name != 'pull_request'
+        working-directory: ./electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run release:linux
+
+      - name: Build and release on Windows
+        if: startsWith(matrix.os, 'windows') && github.event_name != 'pull_request'
+        working-directory: ./electron
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run release:win
+
+  release:
+    name: Publish Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(node -pe "require('./electron/package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_TAG=v$VERSION" >> $GITHUB_ENV
+          echo "📦 Version: v$VERSION"
+
+      - name: Check if version tag already exists
+        run: |
+          VERSION_HASH=$(git rev-parse -q --verify "refs/tags/${{ env.VERSION_TAG }}" || echo "")
+          echo "VERSION_HASH=$VERSION_HASH" >> $GITHUB_ENV
+          if [ -n "$VERSION_HASH" ]; then
+            echo "⚠️ Tag ${{ env.VERSION_TAG }} already exists, skipping release"
+          else
+            echo "✅ Tag ${{ env.VERSION_TAG }} does not exist, proceeding with release"
+          fi
+
+      - name: Wait for assets to be uploaded
+        if: env.VERSION_HASH == ''
+        run: |
+          echo "⏳ Waiting 30 seconds for all assets to be uploaded..."
+          sleep 30
+
+      - name: Fetch draft release
+        if: env.VERSION_HASH == ''
+        uses: cardinalby/git-get-release-action@v1
+        id: get_draft_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          latest: true
+          draft: true
+          searchLimit: 5
+
+      - name: Generate changelog
+        if: env.VERSION_HASH == '' && steps.get_draft_release.outputs.id != ''
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          echo "📋 Generating changelog..."
+          echo "Previous tag: $PREV_TAG"
+
+          if [ -n "$PREV_TAG" ]; then
+            # Get commits since last tag
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD --no-merges)
+          else
+            # Get last 20 commits if no previous tag
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" -20 --no-merges)
+          fi
+
+          # Save changelog to file for multiline output
+          echo "$CHANGELOG" > /tmp/changelog.txt
+
+          # Use delimiter for multiline output
+          {
+            echo 'CHANGELOG<<EOF'
+            cat /tmp/changelog.txt
+            echo 'EOF'
+          } >> $GITHUB_ENV
+
+          echo "✅ Changelog generated"
+
+      - name: Publish Release
+        if: env.VERSION_HASH == '' && steps.get_draft_release.outputs.id != ''
+        uses: irongut/EditRelease@v1.2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          id: ${{ steps.get_draft_release.outputs.id }}
+          draft: false
+          prerelease: false
+          replacename: true
+          name: ${{ env.VERSION_TAG }}
+          replacebody: true
+          body: |
+            ## 🚀 Remote Time Tracker ${{ env.VERSION_TAG }}
+
+            ### 📝 What's Changed
+            ${{ env.CHANGELOG }}
+
+            ### 📥 Downloads
+            - **Windows**: `Remote Time Tracker Setup ${{ steps.get_version.outputs.VERSION }}.exe` (Installer) or `Remote Time Tracker ${{ steps.get_version.outputs.VERSION }}.exe` (Portable)
+            - **macOS**: `Remote Time Tracker-${{ steps.get_version.outputs.VERSION }}.dmg`
+            - **Linux**: `Remote Time Tracker-${{ steps.get_version.outputs.VERSION }}.AppImage` or `.deb`
+
+            ### 🙏 Thanks
+            Thanks to all contributors! 🏅
+
+            ---
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ env.PREV_TAG }}...${{ env.VERSION_TAG }}
+
+      - name: Create git tag
+        if: env.VERSION_HASH == '' && steps.get_draft_release.outputs.id != ''
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a ${{ env.VERSION_TAG }} -m "Release ${{ env.VERSION_TAG }}"
+          git push origin ${{ env.VERSION_TAG }}
+          echo "✅ Created and pushed tag ${{ env.VERSION_TAG }}"
+
+      - name: Release summary
+        if: always()
+        run: |
+          echo "## 📊 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ env.VERSION_TAG }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag Exists | ${{ env.VERSION_HASH != '' && '✅ Yes' || '❌ No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Draft Release ID | ${{ steps.get_draft_release.outputs.id || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
