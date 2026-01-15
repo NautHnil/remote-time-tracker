@@ -16,5 +16,5 @@ export {
   SidebarHeader,
   UserProfile,
   WorkspaceSwitcher,
-} from "./sidebar-components";
-export type { NavItem } from "./sidebar-components";
+} from "../components/sidebar";
+export type { NavItem } from "../components/sidebar";

@@ -3,7 +3,7 @@
  * Centralized route definitions for the application
  */
 
-import { View } from "../components/layout";
+import { View } from "../layout";
 
 export interface RouteConfig {
   id: View;

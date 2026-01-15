@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import { Icons } from "../../Icons";
+import { Icons } from "../Icons";
 import { NavItem, View } from "./types";
 
 interface NavSectionProps {

@@ -4,8 +4,8 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
-import { UserWorkspace } from "../../../contexts/AuthContext";
-import { Icons } from "../../Icons";
+import { UserWorkspace } from "../../contexts/AuthContext";
+import { Icons } from "../Icons";
 
 interface WorkspaceSwitcherProps {
   workspaces: UserWorkspace[];

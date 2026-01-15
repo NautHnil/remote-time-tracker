@@ -4,8 +4,8 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { formatTimeCompact } from "../../../utils/timeFormat";
-import { Icons } from "../../Icons";
+import { formatTimeCompact } from "../../utils/timeFormat";
+import { Icons } from "../Icons";
 
 interface MiniTrackerStatusProps {
   onClick: () => void;

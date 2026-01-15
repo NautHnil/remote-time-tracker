@@ -9,8 +9,7 @@
  */
 
 import React, { useState } from "react";
-import { useAuth, UserWorkspace } from "../../contexts/AuthContext";
-import { Icons } from "../Icons";
+import { Icons } from "../components/Icons";
 import {
   NavItem,
   NavSection,
@@ -21,10 +20,11 @@ import {
   UserProfile,
   View,
   WorkspaceSwitcher,
-} from "./sidebar-components";
+} from "../components/sidebar";
+import { useAuth, UserWorkspace } from "../contexts/AuthContext";
 
 // Re-export View type for external usage
-export type { View } from "./sidebar-components";
+export type { View } from "../components/sidebar";
 
 // ============================================================================
 // TYPES

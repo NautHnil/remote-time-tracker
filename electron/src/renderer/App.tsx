@@ -12,9 +12,9 @@ import {
   useQuitAppConfirmDialog,
 } from "./components/dialogs";
 import { Icons } from "./components/Icons";
-import { MainLayout, View } from "./components/layout";
 import LoginForm from "./components/LoginForm";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { MainLayout, View } from "./layout";
 import { AppRouter } from "./routes";
 
 // ============================================================================

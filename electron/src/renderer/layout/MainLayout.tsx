@@ -4,9 +4,10 @@
  */
 
 import React from "react";
-import { UserOrganization, UserWorkspace } from "../../contexts/AuthContext";
-import { getRouteConfig } from "../../routes";
-import { Header, Sidebar, View } from "../layout";
+import { UserOrganization, UserWorkspace } from "../contexts/AuthContext";
+import { getRouteConfig } from "../routes";
+import Header from "./Header";
+import Sidebar, { View } from "./Sidebar";
 
 interface MainLayoutProps {
   currentView: View;

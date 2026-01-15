@@ -4,8 +4,8 @@
  */
 
 import React from "react";
-import { useTheme } from "../../contexts/ThemeContext";
-import { Icons } from "../Icons";
+import { Icons } from "../components/Icons";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface HeaderProps {
   /** Breadcrumb items to display */

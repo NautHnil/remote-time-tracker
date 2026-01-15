@@ -4,8 +4,8 @@
  */
 
 import React from "react";
-import { UserOrganization } from "../../../contexts/AuthContext";
-import { Icons } from "../../Icons";
+import { UserOrganization } from "../../contexts/AuthContext";
+import { Icons } from "../Icons";
 import MiniTrackerStatus from "./MiniTrackerStatus";
 
 interface OrgRailProps {

@@ -4,7 +4,6 @@
  */
 
 import React from "react";
-import { View } from "../components/layout";
 import ModernTimeTracker from "../components/ModernTimeTracker";
 import { OrganizationsView } from "../components/organizations";
 import ScreenshotViewer from "../components/ScreenshotViewer";
@@ -12,6 +11,7 @@ import { Settings } from "../components/settings";
 import StatisticsView from "../components/StatisticsView";
 import TasksView from "../components/TasksView";
 import { WorkspacesView } from "../components/workspaces";
+import { View } from "../layout";
 
 interface AppRouterProps {
   currentView: View;
