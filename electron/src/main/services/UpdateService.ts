@@ -13,7 +13,7 @@ log.transports.file.level = "info";
 // Make sure to run: http-server ~/update-server -p 8081 --cors
 // IMPORTANT: Set to false before production release!
 // ============================================================
-const USE_LOCAL_UPDATE_SERVER = true; // ← Change to false for production
+const USE_LOCAL_UPDATE_SERVER = false; // ← Change to false for production
 const LOCAL_UPDATE_SERVER_URL = "http://localhost:8081";
 
 export type UpdateEvent =

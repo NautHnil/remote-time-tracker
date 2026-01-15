@@ -102,8 +102,9 @@
     },
     "publish": [
       {
-        "provider": "generic",
-        "url": "http://localhost:8081"
+        "provider": "github",
+        "owner": "NautHnil",
+        "repo": "remote-time-tracker"
       }
     ]
   }
