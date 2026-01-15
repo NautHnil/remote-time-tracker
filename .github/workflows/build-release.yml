@@ -175,15 +175,6 @@ jobs:
             ---
             **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ env.PREV_TAG }}...${{ env.VERSION_TAG }}
 
-      - name: Create git tag
-        if: env.VERSION_HASH == '' && steps.get_draft_release.outputs.id != ''
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git tag -a ${{ env.VERSION_TAG }} -m "Release ${{ env.VERSION_TAG }}"
-          git push origin ${{ env.VERSION_TAG }}
-          echo "✅ Created and pushed tag ${{ env.VERSION_TAG }}"
-
       - name: Release summary
         if: always()
         run: |
