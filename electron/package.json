@@ -1,6 +1,6 @@
 {
   "name": "remote-time-tracker-desktop",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Desktop time tracking application with screenshot monitoring",
   "main": "dist/main/main.js",
   "author": {

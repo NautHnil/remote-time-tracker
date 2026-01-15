@@ -3,6 +3,7 @@ import log from "electron-log";
 import { autoUpdater, UpdateInfo } from "electron-updater";
 import fs from "fs";
 import path from "path";
+import { BUILD_GH_TOKEN } from "../build-config";
 
 // Route autoUpdater logs to electron-log
 autoUpdater.logger = log;
@@ -17,12 +18,15 @@ const LOCAL_UPDATE_SERVER_URL =
   process.env.LOCAL_UPDATE_SERVER_URL || "http://localhost:8081";
 
 // GitHub token for private repos
-// Priority: 1. Environment variable, 2. Build-time token
-// For production builds, set GH_TOKEN during build process
-const GH_TOKEN = process.env.GH_TOKEN || "";
+// Priority: 1. Environment variable (dev), 2. Build-time token (production)
+const GH_TOKEN = process.env.GH_TOKEN || BUILD_GH_TOKEN || "";
 
 // Log token status (not the actual token for security)
-log.info(`GH_TOKEN available: ${GH_TOKEN ? "Yes" : "No"}`);
+log.info(
+  `GH_TOKEN available: ${
+    GH_TOKEN ? "Yes (length: " + GH_TOKEN.length + ")" : "No"
+  }`
+);
 
 export type UpdateEvent =
   | { type: "checking-for-update" }
