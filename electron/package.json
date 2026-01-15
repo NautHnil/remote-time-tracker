@@ -26,8 +26,8 @@
     "release:mac": "npm run build && electron-builder --mac --publish always",
     "release:win": "npm run build && electron-builder --win --publish always",
     "release:linux": "npm run build && electron-builder --linux --publish always",
-    "postinstall": "electron-builder install-app-deps && npm run rebuild",
-    "rebuild": "electron-rebuild -f -w better-sqlite3 -w sharp"
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild": "npx @electron/rebuild -f -w better-sqlite3 && npx @electron/rebuild -f -w sharp"
   },
   "dependencies": {
     "axios": "^1.6.5",
@@ -54,7 +54,7 @@
     "concurrently": "^8.2.2",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
-    "electron-rebuild": "^3.2.9",
+    "@electron/rebuild": "^3.6.0",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3",
