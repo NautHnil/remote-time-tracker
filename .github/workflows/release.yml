@@ -1,6 +1,12 @@
 name: Release App
 
 on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
   release:
     types: [published]
 
