@@ -1,39 +1,3 @@
-// Load environment variables FIRST before anything else
-import * as fs from "fs";
-import * as path from "path";
-
-// Manual dotenv loading for main process
-function loadEnvFile() {
-  const envPaths = [
-    path.join(__dirname, "../../.env"), // development: dist/main -> ../../.env
-    path.join(__dirname, "../.env"), // alternative path
-    path.join(process.cwd(), ".env"), // cwd
-  ];
-
-  for (const envPath of envPaths) {
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, "utf-8");
-      const lines = envContent.split("\n");
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed && !trimmed.startsWith("#")) {
-          const [key, ...valueParts] = trimmed.split("=");
-          const value = valueParts.join("=");
-          if (key && value !== undefined && !process.env[key]) {
-            process.env[key] = value;
-          }
-        }
-      }
-      console.log(`✅ Loaded .env from: ${envPath}`);
-      return;
-    }
-  }
-  console.log("⚠️ No .env file found");
-}
-
-// Load env before importing other modules that depend on process.env
-loadEnvFile();
-
 import {
   app,
   BrowserWindow,
@@ -44,6 +8,7 @@ import {
   shell,
   Tray,
 } from "electron";
+import path from "path";
 import { AppConfig } from "./config";
 import { BackendUpdateService } from "./services/BackendUpdateService";
 import { DatabaseService } from "./services/DatabaseService";
@@ -51,7 +16,6 @@ import { ScreenshotService } from "./services/ScreenshotService";
 import { SyncService } from "./services/SyncService";
 import { TaskService } from "./services/TaskService";
 import { TimeTrackerService } from "./services/TimeTrackerService";
-// import { UpdateService } from "./services/UpdateService";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;

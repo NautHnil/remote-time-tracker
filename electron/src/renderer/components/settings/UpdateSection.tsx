@@ -89,14 +89,16 @@ export function UpdateSection() {
   };
 
   const handleDownload = async () => {
-    setStep("downloading");
+    // Do not setStep("downloading") here; let event handler control state
     setProgress(0);
+    setErrorMessage("");
     try {
       const res = await window.electronAPI.updates.download();
       if (!res.success) {
         setStep("error");
         setErrorMessage(res.error || "Failed to download update");
       }
+      // If success, wait for event to update UI
     } catch (err: any) {
       setStep("error");
       setErrorMessage(err?.message || String(err));
