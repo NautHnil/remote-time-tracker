@@ -4,6 +4,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 env:
   NODE_VERSION: "20.x"
 
@@ -34,19 +37,19 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         working-directory: ./electron
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build && npx electron-builder --mac --publish always
 
       - name: Build and release on Linux
         if: startsWith(matrix.os, 'ubuntu')
         working-directory: ./electron
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build && npx electron-builder --linux --publish always
 
       - name: Build and release on Windows
         if: startsWith(matrix.os, 'windows')
         working-directory: ./electron
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build && npx electron-builder --win --publish always
