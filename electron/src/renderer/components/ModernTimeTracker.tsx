@@ -436,8 +436,8 @@ function ModernTimeTracker() {
         <div className="relative z-10">
           {/* Status Header */}
           <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className={`status-dot ${getStatusDotClass()}`} />
+            <div className="flex gap-3">
+              <div className={`status-dot mt-3 ${getStatusDotClass()}`} />
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-dark-100">
                   {getStatusTitle()}
