@@ -12,7 +12,7 @@ import LoginForm from "./components/LoginForm";
 import ModernTimeTracker from "./components/ModernTimeTracker";
 import { OrganizationsView } from "./components/organizations";
 import ScreenshotViewer from "./components/ScreenshotViewer";
-import Settings from "./components/Settings";
+import { Settings } from "./components/settings";
 import StatisticsView from "./components/StatisticsView";
 import TasksView from "./components/TasksView";
 import { WorkspacesView } from "./components/workspaces";
@@ -315,7 +315,7 @@ function AppContent() {
       },
       settings: {
         title: "Settings",
-        description: "Configure your preferences",
+        description: "Manage your application preferences and configuration",
       },
     };
     return viewTitles[currentView];

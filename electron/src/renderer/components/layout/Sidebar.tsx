@@ -825,7 +825,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Badges */}
-              <div className="flex flex-wrap gap-1 mt-2">
+              {/* <div className="flex flex-wrap gap-1 mt-2">
                 {permissions.isSystemAdmin && (
                   <span className="px-1.5 py-0.5 text-[9px] font-semibold rounded-full bg-yellow-100 dark:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-500/30">
                     System Admin
@@ -836,7 +836,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     Org Owner
                   </span>
                 )}
-              </div>
+              </div> */}
 
               {/* Logout Button */}
               <button
