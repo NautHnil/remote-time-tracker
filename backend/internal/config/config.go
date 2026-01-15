@@ -19,6 +19,14 @@ type Config struct {
 	Upload   UploadConfig
 	CORS     CORSConfig
 	Log      LogConfig
+	GitHub   GitHubConfig
+}
+
+// GitHubConfig holds GitHub API configuration for auto-updates
+type GitHubConfig struct {
+	Token string // Personal access token for private repos
+	Owner string // Repository owner
+	Repo  string // Repository name
 }
 
 // ServerConfig holds server-related configuration
@@ -104,6 +112,11 @@ func Load() (*Config, error) {
 		Log: LogConfig{
 			Level:  getEnv("LOG_LEVEL", "debug"),
 			Format: getEnv("LOG_FORMAT", "json"),
+		},
+		GitHub: GitHubConfig{
+			Token: getEnv("GITHUB_TOKEN", ""),
+			Owner: getEnv("GITHUB_OWNER", "NautHnil"),
+			Repo:  getEnv("GITHUB_REPO", "remote-time-tracker"),
 		},
 	}
 

@@ -119,6 +119,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
     check: () => ipcRenderer.invoke("update:check"),
     download: () => ipcRenderer.invoke("update:download"),
     install: () => ipcRenderer.invoke("update:install"),
+    // Backend proxy specific methods
+    checkBackend: () => ipcRenderer.invoke("update:check-backend"),
+    downloadBackend: () => ipcRenderer.invoke("update:download-backend"),
+    installBackend: () => ipcRenderer.invoke("update:install-backend"),
+    openDownloads: () => ipcRenderer.invoke("update:open-downloads"),
     onEvent: (callback: (event: any) => void) => {
       const handler = (_: any, payload: any) => callback(payload);
       ipcRenderer.on("update-event", handler);
@@ -207,6 +212,10 @@ export interface ElectronAPI {
     check: () => Promise<any>;
     download: () => Promise<any>;
     install: () => Promise<any>;
+    checkBackend: () => Promise<any>;
+    downloadBackend: () => Promise<any>;
+    installBackend: () => Promise<any>;
+    openDownloads: () => Promise<any>;
     onEvent: (cb: (event: any) => void) => () => void;
   };
 }
