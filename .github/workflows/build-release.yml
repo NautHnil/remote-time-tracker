@@ -166,7 +166,8 @@ jobs:
 
             ### 📥 Downloads
             - **Windows**: `Remote Time Tracker Setup ${{ steps.get_version.outputs.VERSION }}.exe` (Installer) or `Remote Time Tracker ${{ steps.get_version.outputs.VERSION }}.exe` (Portable)
-            - **macOS**: `Remote Time Tracker-${{ steps.get_version.outputs.VERSION }}.dmg`
+            - **macOS (Apple Silicon)**: `Remote Time Tracker-${{ steps.get_version.outputs.VERSION }}-arm64.dmg`
+            - **macOS (Intel)**: `Remote Time Tracker-${{ steps.get_version.outputs.VERSION }}-x64.dmg`
             - **Linux**: `Remote Time Tracker-${{ steps.get_version.outputs.VERSION }}.AppImage` or `.deb`
 
             ### 🙏 Thanks

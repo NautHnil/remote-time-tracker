@@ -33,17 +33,18 @@
     "axios": "^1.6.5",
     "better-sqlite3": "^9.2.2",
     "date-fns": "^3.6.0",
+    "electron-log": "^5.1.4",
     "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.1",
     "node-machine-id": "^1.1.12",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "screenshot-desktop": "^1.15.3",
     "sharp": "^0.33.2",
-    "uuid": "^9.0.1",
-    "electron-updater": "^6.1.1",
-    "electron-log": "^5.1.4"
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
     "@types/better-sqlite3": "^7.6.8",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.47",
@@ -54,7 +55,7 @@
     "concurrently": "^8.2.2",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
-    "@electron/rebuild": "^3.6.0",
+    "png2icons": "^2.0.1",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3",
@@ -71,13 +72,27 @@
       "package.json"
     ],
     "asarUnpack": [
-      "node_modules/sharp/**/*"
+      "node_modules/sharp/**/*",
+      "node_modules/@img/**/*",
+      "node_modules/better-sqlite3/**/*"
     ],
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
       "icon": "assets/icon.png"
     },
