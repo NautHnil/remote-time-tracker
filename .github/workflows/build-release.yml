@@ -3,8 +3,6 @@ name: Build and Release
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 permissions:
   contents: write
@@ -36,12 +34,6 @@ jobs:
       - name: Install dependencies
         working-directory: ./electron
         run: npm ci
-
-      # Only build without release if it's a pull request
-      - name: Build only (Pull Request)
-        if: github.event_name == 'pull_request'
-        working-directory: ./electron
-        run: npm run build
 
       # Build and release if it's push to main branch
       - name: Build and release on macOS
