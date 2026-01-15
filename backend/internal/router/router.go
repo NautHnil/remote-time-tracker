@@ -24,6 +24,9 @@ type RouterConfig struct {
 	InvitationController   *controller.InvitationController
 	AdminController        *controller.AdminController
 
+	// Update controller
+	UpdateController *controller.UpdateController
+
 	// Services for middleware
 	OrganizationService service.OrganizationService
 	WorkspaceService    service.WorkspaceService
@@ -79,6 +82,21 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			{
 				invitations.GET("/:token", cfg.InvitationController.GetByToken)
 				invitations.POST("/accept", cfg.InvitationController.AcceptByBody)
+			}
+		}
+
+		// Public update routes (for checking and downloading updates)
+		// These require JWT auth to prevent unauthorized access
+		if cfg.UpdateController != nil {
+			updates := v1.Group("/updates")
+			updates.Use(middleware.AuthMiddleware())
+			{
+				updates.POST("/check", cfg.UpdateController.CheckForUpdates)
+				updates.GET("/latest", cfg.UpdateController.GetLatestVersion)
+				updates.GET("/download/:version/:filename", cfg.UpdateController.DownloadAsset)
+				updates.GET("/yml/:platform", cfg.UpdateController.GetYMLFile)
+				updates.GET("/notes/:version", cfg.UpdateController.GetReleaseNotes)
+				updates.GET("/notes", cfg.UpdateController.GetReleaseNotes) // Default to latest
 			}
 		}
 

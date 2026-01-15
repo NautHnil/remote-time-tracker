@@ -1,3 +1,39 @@
+// Load environment variables FIRST before anything else
+import * as fs from "fs";
+import * as path from "path";
+
+// Manual dotenv loading for main process
+function loadEnvFile() {
+  const envPaths = [
+    path.join(__dirname, "../../.env"), // development: dist/main -> ../../.env
+    path.join(__dirname, "../.env"), // alternative path
+    path.join(process.cwd(), ".env"), // cwd
+  ];
+
+  for (const envPath of envPaths) {
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, "utf-8");
+      const lines = envContent.split("\n");
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith("#")) {
+          const [key, ...valueParts] = trimmed.split("=");
+          const value = valueParts.join("=");
+          if (key && value !== undefined && !process.env[key]) {
+            process.env[key] = value;
+          }
+        }
+      }
+      console.log(`✅ Loaded .env from: ${envPath}`);
+      return;
+    }
+  }
+  console.log("⚠️ No .env file found");
+}
+
+// Load env before importing other modules that depend on process.env
+loadEnvFile();
+
 import {
   app,
   BrowserWindow,
@@ -8,14 +44,14 @@ import {
   shell,
   Tray,
 } from "electron";
-import path from "path";
 import { AppConfig } from "./config";
+import { BackendUpdateService } from "./services/BackendUpdateService";
 import { DatabaseService } from "./services/DatabaseService";
 import { ScreenshotService } from "./services/ScreenshotService";
 import { SyncService } from "./services/SyncService";
 import { TaskService } from "./services/TaskService";
 import { TimeTrackerService } from "./services/TimeTrackerService";
-import { UpdateService } from "./services/UpdateService";
+// import { UpdateService } from "./services/UpdateService";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -28,7 +64,8 @@ let screenshotService: ScreenshotService;
 let syncService: SyncService;
 let taskService: TaskService;
 let timeTrackerService: TimeTrackerService;
-let updateService: UpdateService | null = null;
+
+let backendUpdateService: BackendUpdateService | null = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -268,10 +305,9 @@ async function initializeServices() {
   syncService.startAutoSync();
   console.log("✅ Background services started");
 
-  // Initialize update service (mainWindow may not exist yet)
-  // We will set the window later after creating the BrowserWindow.
-  updateService = new UpdateService(null);
-  console.log("✅ Update service created");
+  // Initialize backend update service only
+  backendUpdateService = new BackendUpdateService(null);
+  console.log("✅ Backend update service created");
 }
 
 function setupIpcHandlers() {
@@ -566,30 +602,93 @@ function setupIpcHandlers() {
     return true;
   });
 
-  // Updates
+  // Updates - Only backend proxy
   ipcMain.handle("update:check", async () => {
-    if (!updateService)
-      return { success: false, error: "Update service not initialized" };
-    return await updateService.checkForUpdates();
+    if (!backendUpdateService) {
+      return {
+        success: false,
+        error: "Backend update service not initialized",
+      };
+    }
+    const credentials = AppConfig.getCredentials();
+    if (!credentials?.accessToken) {
+      return { success: false, error: "Please login to check for updates" };
+    }
+    return await backendUpdateService.checkForUpdates();
   });
 
   ipcMain.handle("update:download", async () => {
-    if (!updateService)
-      return { success: false, error: "Update service not initialized" };
-    return await updateService.downloadUpdate();
+    if (!backendUpdateService) {
+      return {
+        success: false,
+        error: "Backend update service not initialized",
+      };
+    }
+    const credentials = AppConfig.getCredentials();
+    if (!credentials?.accessToken) {
+      return { success: false, error: "Please login to download updates" };
+    }
+    return await backendUpdateService.downloadUpdate();
   });
 
   ipcMain.handle("update:install", async () => {
-    if (!updateService)
-      return { success: false, error: "Update service not initialized" };
-
-    // Set flag to skip cleanup during update
+    if (!backendUpdateService) {
+      return {
+        success: false,
+        error: "Backend update service not initialized",
+      };
+    }
     isUpdating = true;
-    isQuitting = true; // Also set isQuitting to ensure window can close
+    isQuitting = true;
+    return await backendUpdateService.installAndRestart();
+  });
 
-    console.log("update:install - flags set, calling installAndRestart");
+  // Backend update specific handlers
+  ipcMain.handle("update:check-backend", async () => {
+    if (!backendUpdateService) {
+      return {
+        success: false,
+        error: "Backend update service not initialized",
+      };
+    }
+    const credentials = AppConfig.getCredentials();
+    if (!credentials?.accessToken) {
+      return { success: false, error: "Please login to check for updates" };
+    }
+    return await backendUpdateService.checkForUpdates();
+  });
 
-    return await updateService.installAndRestart();
+  ipcMain.handle("update:download-backend", async () => {
+    if (!backendUpdateService) {
+      return {
+        success: false,
+        error: "Backend update service not initialized",
+      };
+    }
+    const credentials = AppConfig.getCredentials();
+    if (!credentials?.accessToken) {
+      return { success: false, error: "Please login to download updates" };
+    }
+    return await backendUpdateService.downloadUpdate();
+  });
+
+  ipcMain.handle("update:install-backend", async () => {
+    if (!backendUpdateService) {
+      return {
+        success: false,
+        error: "Backend update service not initialized",
+      };
+    }
+    isUpdating = true;
+    isQuitting = true;
+    return await backendUpdateService.installAndRestart();
+  });
+
+  ipcMain.handle("update:open-downloads", async () => {
+    if (backendUpdateService) {
+      await backendUpdateService.openDownloadsFolder();
+    }
+    return { success: true };
   });
 
   // App info
@@ -636,13 +735,10 @@ app.whenReady().then(async () => {
   await initializeServices();
   createWindow();
 
-  // Now that window is available, attach to updateService
-  if (updateService && mainWindow) {
-    updateService.setWindow(mainWindow);
-    // Optionally check for updates on start (non-blocking)
-    updateService
-      .checkForUpdatesAndNotify()
-      .catch((e) => console.error("Update check on start failed:", e));
+  // Attach backend update service to window
+  if (backendUpdateService && mainWindow) {
+    backendUpdateService.setWindow(mainWindow);
+    // Backend updates require auth, so we check later after login
   }
 
   createTray();

@@ -39,7 +39,10 @@ export function UpdateSection() {
             break;
           case "update-available":
             setStep("available");
-            setAvailableVersion(payload.info?.version || null);
+            // Support both direct GitHub (version) and backend proxy (latest_version)
+            setAvailableVersion(
+              payload.info?.latest_version || payload.info?.version || null
+            );
             break;
           case "update-not-available":
             setStep("up-to-date");

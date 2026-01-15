@@ -85,6 +85,7 @@ func main() {
 	workspaceService := service.NewWorkspaceService(workspaceRepo, orgRepo, userRepo)
 	invitationService := service.NewInvitationService(invitationRepo, orgRepo, workspaceRepo, userRepo)
 	roleService := service.NewRoleService(workspaceRepo, orgRepo)
+	updateService := service.NewUpdateService()
 
 	log.Println("✅ Services initialized")
 
@@ -99,6 +100,7 @@ func main() {
 	workspaceController := controller.NewWorkspaceController(workspaceService)
 	invitationController := controller.NewInvitationController(invitationService)
 	adminController := controller.NewAdminController(userRepo, authService)
+	updateController := controller.NewUpdateController(updateService)
 
 	log.Println("✅ Controllers initialized")
 
@@ -114,6 +116,7 @@ func main() {
 		WorkspaceController:    workspaceController,
 		InvitationController:   invitationController,
 		AdminController:        adminController,
+		UpdateController:       updateController,
 		OrganizationService:    organizationService,
 		WorkspaceService:       workspaceService,
 	})
