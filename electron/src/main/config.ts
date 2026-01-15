@@ -27,6 +27,7 @@ interface Config {
   credentials?: Credentials;
   deviceUUID?: string;
   imageOptimization: ImageOptimizationConfig;
+  customScreenshotPath?: string; // Custom path for screenshots, if set
 }
 
 class AppConfigClass {
@@ -92,8 +93,27 @@ class AppConfigClass {
   }
 
   getScreenshotsPath(): string {
-    const screenshotsDir = path.join(this.getAppDataPath(), "screenshots");
-    return screenshotsDir;
+    const customPath = this.store.get("customScreenshotPath");
+    if (customPath) {
+      return customPath;
+    }
+    return this.getDefaultScreenshotsPath();
+  }
+
+  getDefaultScreenshotsPath(): string {
+    return path.join(this.getAppDataPath(), "screenshots");
+  }
+
+  setScreenshotsPath(customPath: string | null): void {
+    if (customPath) {
+      this.store.set("customScreenshotPath", customPath);
+    } else {
+      this.store.delete("customScreenshotPath");
+    }
+  }
+
+  isUsingCustomScreenshotsPath(): boolean {
+    return !!this.store.get("customScreenshotPath");
   }
 
   getDatabasePath(): string {

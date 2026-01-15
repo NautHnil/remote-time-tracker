@@ -10,9 +10,18 @@ import {
 } from "../../dialogs/index";
 import { Card, SectionHeader, StatCard } from "../ui";
 
+interface ScreenshotPathInfo {
+  path: string;
+  isCustom: boolean;
+  defaultPath: string;
+}
+
 export function StorageTab() {
   const [storageSize, setStorageSize] = useState<number>(0);
   const [cleaningUp, setCleaningUp] = useState(false);
+  const [screenshotPath, setScreenshotPath] =
+    useState<ScreenshotPathInfo | null>(null);
+  const [changingPath, setChangingPath] = useState(false);
 
   const confirmDialog = useConfirmDialog();
   const promptDialog = usePromptDialog();
@@ -20,6 +29,7 @@ export function StorageTab() {
 
   useEffect(() => {
     loadStorageSize();
+    loadScreenshotPath();
     const interval = setInterval(loadStorageSize, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -32,6 +42,21 @@ export function StorageTab() {
       }
     } catch (error) {
       console.error("Error loading storage size:", error);
+    }
+  };
+
+  const loadScreenshotPath = async () => {
+    try {
+      const result = await window.electronAPI.storage.getScreenshotPath();
+      if (result.success && result.path) {
+        setScreenshotPath({
+          path: result.path,
+          isCustom: result.isCustom || false,
+          defaultPath: result.defaultPath || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error loading screenshot path:", error);
     }
   };
 
@@ -148,6 +173,121 @@ export function StorageTab() {
     });
   };
 
+  const handleChangeScreenshotFolder = async () => {
+    try {
+      setChangingPath(true);
+      const result = await window.electronAPI.storage.selectScreenshotFolder();
+
+      if (result.canceled) {
+        return;
+      }
+
+      if (result.success && result.path) {
+        confirmDialog.show({
+          title: "Change Screenshot Folder",
+          message: `Change screenshot save location to:\n\n${result.path}\n\nNote: Existing screenshots will remain in the old location.`,
+          confirmText: "Change",
+          onConfirm: async () => {
+            confirmDialog.close();
+            try {
+              const setResult =
+                await window.electronAPI.storage.setScreenshotPath(
+                  result.path!
+                );
+              if (setResult.success) {
+                await loadScreenshotPath();
+                alertDialog.show({
+                  title: "Success",
+                  message: "Screenshot folder changed successfully!",
+                  type: "success",
+                });
+              } else {
+                alertDialog.show({
+                  title: "Failed",
+                  message:
+                    "Failed to change folder: " +
+                    (setResult.error || "Unknown error"),
+                  type: "error",
+                });
+              }
+            } catch (error: any) {
+              alertDialog.show({
+                title: "Failed",
+                message: "Failed to change folder: " + error.message,
+                type: "error",
+              });
+            }
+          },
+        });
+      } else if (result.error) {
+        alertDialog.show({
+          title: "Error",
+          message: "Failed to select folder: " + result.error,
+          type: "error",
+        });
+      }
+    } catch (error: any) {
+      alertDialog.show({
+        title: "Error",
+        message: "Failed to open folder dialog: " + error.message,
+        type: "error",
+      });
+    } finally {
+      setChangingPath(false);
+    }
+  };
+
+  const handleResetToDefault = async () => {
+    if (!screenshotPath?.isCustom) return;
+
+    confirmDialog.show({
+      title: "Reset to Default",
+      message: `Reset screenshot folder to default location?\n\n${screenshotPath.defaultPath}\n\nNote: Existing screenshots will remain in the current location.`,
+      confirmText: "Reset",
+      onConfirm: async () => {
+        confirmDialog.close();
+        try {
+          const result = await window.electronAPI.storage.setScreenshotPath(
+            null
+          );
+          if (result.success) {
+            await loadScreenshotPath();
+            alertDialog.show({
+              title: "Success",
+              message: "Screenshot folder reset to default!",
+              type: "success",
+            });
+          } else {
+            alertDialog.show({
+              title: "Failed",
+              message:
+                "Failed to reset folder: " + (result.error || "Unknown error"),
+              type: "error",
+            });
+          }
+        } catch (error: any) {
+          alertDialog.show({
+            title: "Failed",
+            message: "Failed to reset folder: " + error.message,
+            type: "error",
+          });
+        }
+      },
+    });
+  };
+
+  const handleOpenFolder = async () => {
+    try {
+      await window.electronAPI.storage.openScreenshotFolder();
+    } catch (error: any) {
+      alertDialog.show({
+        title: "Error",
+        message: "Failed to open folder: " + error.message,
+        type: "error",
+      });
+    }
+  };
+
   return (
     <>
       <Card className="p-6">
@@ -164,6 +304,68 @@ export function StorageTab() {
             icon={<Icons.HardDrive className="w-6 h-6" />}
             color="blue"
           />
+        </div>
+
+        {/* Screenshot Folder Location */}
+        <div className="mb-6 p-4 rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <Icons.Folder className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Screenshot Save Location
+                </h4>
+                {screenshotPath?.isCustom && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">
+                    Custom
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                Screenshots are saved to this folder on your computer.
+              </p>
+
+              {/* Path Display */}
+              <div className="mt-3 p-2.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2">
+                  <Icons.Folder className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                  <code className="text-xs text-gray-700 dark:text-gray-300 break-all font-mono">
+                    {screenshotPath?.path || "Loading..."}
+                  </code>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={handleOpenFolder}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-lg transition-colors"
+                >
+                  <Icons.ExternalLink className="w-3.5 h-3.5" />
+                  Open Folder
+                </button>
+                <button
+                  onClick={handleChangeScreenshotFolder}
+                  disabled={changingPath}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+                >
+                  <Icons.FolderOpen className="w-3.5 h-3.5" />
+                  {changingPath ? "Selecting..." : "Change Location"}
+                </button>
+                {screenshotPath?.isCustom && (
+                  <button
+                    onClick={handleResetToDefault}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-lg transition-colors"
+                  >
+                    <Icons.RotateCcw className="w-3.5 h-3.5" />
+                    Reset to Default
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">

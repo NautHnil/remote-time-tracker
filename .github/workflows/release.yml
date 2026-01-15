@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*"
+    branches-ignore:
+      - "**"
 
 env:
   NODE_VERSION: "20.x"

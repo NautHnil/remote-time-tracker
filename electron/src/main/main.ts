@@ -1,4 +1,13 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, Tray } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  nativeImage,
+  shell,
+  Tray,
+} from "electron";
 import path from "path";
 import { AppConfig } from "./config";
 import { DatabaseService } from "./services/DatabaseService";
@@ -451,6 +460,83 @@ function setupIpcHandlers() {
       };
     } catch (error: any) {
       console.error("Delete old screenshots failed:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  // Screenshot path management
+  ipcMain.handle("storage:get-screenshot-path", async () => {
+    try {
+      return {
+        success: true,
+        path: AppConfig.getScreenshotsPath(),
+        isCustom: AppConfig.isUsingCustomScreenshotsPath(),
+        defaultPath: AppConfig.getDefaultScreenshotsPath(),
+      };
+    } catch (error: any) {
+      console.error("Failed to get screenshot path:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle(
+    "storage:set-screenshot-path",
+    async (_, customPath: string | null) => {
+      try {
+        AppConfig.setScreenshotsPath(customPath);
+        // Ensure the new directory exists
+        const fs = require("fs");
+        const newPath = AppConfig.getScreenshotsPath();
+        if (!fs.existsSync(newPath)) {
+          fs.mkdirSync(newPath, { recursive: true });
+        }
+        return {
+          success: true,
+          path: newPath,
+          isCustom: AppConfig.isUsingCustomScreenshotsPath(),
+        };
+      } catch (error: any) {
+        console.error("Failed to set screenshot path:", error);
+        return { success: false, error: error.message };
+      }
+    }
+  );
+
+  ipcMain.handle("storage:select-screenshot-folder", async () => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ["openDirectory", "createDirectory"],
+        title: "Select Screenshot Folder",
+        buttonLabel: "Select Folder",
+        defaultPath: AppConfig.getScreenshotsPath(),
+      });
+
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: false, canceled: true };
+      }
+
+      const selectedPath = result.filePaths[0];
+      return { success: true, path: selectedPath };
+    } catch (error: any) {
+      console.error("Failed to open folder dialog:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("storage:open-screenshot-folder", async () => {
+    try {
+      const screenshotPath = AppConfig.getScreenshotsPath();
+      const fs = require("fs");
+
+      // Ensure directory exists before opening
+      if (!fs.existsSync(screenshotPath)) {
+        fs.mkdirSync(screenshotPath, { recursive: true });
+      }
+
+      await shell.openPath(screenshotPath);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Failed to open screenshot folder:", error);
       return { success: false, error: error.message };
     }
   });

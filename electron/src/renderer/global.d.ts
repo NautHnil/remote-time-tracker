@@ -92,6 +92,26 @@ interface ElectronAPI {
     cleanupSynced: (keepDays?: number) => Promise<any>;
     getSize: () => Promise<any>;
     deleteOld: (daysOld?: number) => Promise<any>;
+    getScreenshotPath: () => Promise<{
+      success: boolean;
+      path?: string;
+      isCustom?: boolean;
+      defaultPath?: string;
+      error?: string;
+    }>;
+    setScreenshotPath: (customPath: string | null) => Promise<{
+      success: boolean;
+      path?: string;
+      isCustom?: boolean;
+      error?: string;
+    }>;
+    selectScreenshotFolder: () => Promise<{
+      success: boolean;
+      path?: string;
+      canceled?: boolean;
+      error?: string;
+    }>;
+    openScreenshotFolder: () => Promise<{ success: boolean; error?: string }>;
   };
   config: {
     get: () => Promise<any>;
