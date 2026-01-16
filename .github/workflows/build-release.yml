@@ -11,9 +11,40 @@ env:
   NODE_VERSION: "20.x"
 
 jobs:
+  prepare:
+    name: Prepare version & clean release
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+      version_tag: ${{ steps.get_version.outputs.VERSION_TAG }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(node -pe "require('./electron/package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_TAG=v$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Version: v$VERSION"
+
+      - name: Delete ALL release assets (force clean)
+        uses: mknejp/delete-release-assets@v1
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          tag: ${{ steps.get_version.outputs.VERSION_TAG }}
+
   build:
     if: github.event.pull_request.draft == false
     name: Build Desktop App
+    needs: prepare
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -43,25 +74,6 @@ jobs:
         working-directory: ./electron
         run: npm run rebuild
 
-      - name: Get version from package.json
-        id: get_version
-        run: |
-          VERSION=$(node -pe "require('./electron/package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "VERSION_TAG=v$VERSION" >> $GITHUB_ENV
-          echo "📦 Version: v$VERSION"
-
-      - name: Delete existing release assets
-        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
-        uses: mknejp/delete-release-assets@v1
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          tag: ${{ env.VERSION_TAG }}
-          assets: |
-            *.dmg
-            *.zip
-            *.blockmap
-
       # Build and release if it's push to main branch
       - name: Build and release on macOS
         if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
@@ -87,8 +99,11 @@ jobs:
   release:
     name: Publish Release
     runs-on: ubuntu-latest
-    needs: build
+    needs: [prepare, build]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
 
     steps:
       - name: Checkout repository
@@ -100,14 +115,6 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Get version from package.json
-        id: get_version
-        run: |
-          VERSION=$(node -pe "require('./electron/package.json').version")
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "VERSION_TAG=v$VERSION" >> $GITHUB_ENV
-          echo "📦 Version: v$VERSION"
 
       - name: Check if version tag already exists
         run: |
