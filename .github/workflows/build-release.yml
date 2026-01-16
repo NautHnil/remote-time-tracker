@@ -38,21 +38,22 @@ jobs:
       - name: Delete existing release assets (all)
         run: |
           set -e
-          # Lấy release ID
-          RELEASE_ID=$(gh release view "${{ steps.get_version.outputs.VERSION_TAG }}" --json id -q ".id" 2>/dev/null || echo "")
+          VERSION_TAG="${{ steps.get_version.outputs.VERSION_TAG }}"
+          echo "🗂️ Version tag: $VERSION_TAG"
+          RELEASE_ID=$(gh release view "$VERSION_TAG" --json id -q ".id" 2>/dev/null || echo "")
           if [ -n "$RELEASE_ID" ]; then
             echo "🗑️ Found release ID $RELEASE_ID, deleting all assets..."
-            ASSET_IDS=$(gh release view "${{ steps.get_version.outputs.VERSION_TAG }}" --json assets -q ".assets[].id")
+            ASSET_IDS=$(gh release view "$VERSION_TAG" --json assets -q ".assets[].id" | tr -d '[:space:]')
             if [ -n "$ASSET_IDS" ]; then
               for ASSET_ID in $ASSET_IDS; do
                 echo "Deleting asset $ASSET_ID"
-                gh release delete-asset $ASSET_ID
+                gh release delete-asset "$ASSET_ID"
               done
             else
               echo "No assets found, skipping delete"
             fi
           else
-            echo "ℹ️ Release for tag ${{ steps.get_version.outputs.VERSION_TAG }} not found, skipping delete"
+            echo "ℹ️ Release for tag $VERSION_TAG not found, skipping delete"
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -197,8 +198,8 @@ jobs:
           draft: false
           prerelease: false
           replacename: true
-          name: ${{ env.VERSION_TAG }}
           replacebody: true
+          name: ${{ env.VERSION_TAG }}
           body: |
             ## 🚀 Remote Time Tracker ${{ env.VERSION_TAG }}
 
