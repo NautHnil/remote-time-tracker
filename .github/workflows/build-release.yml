@@ -47,7 +47,7 @@ jobs:
             if [ ${#ASSET_IDS[@]} -gt 0 ]; then
               for ASSET_ID in "${ASSET_IDS[@]}"; do
                 echo "Deleting asset $ASSET_ID"
-                gh release delete-asset "$ASSET_ID"
+                gh release delete-asset "$VERSION_TAG" "$ASSET_ID"
               done
             else
               echo "No assets found, skipping delete"
