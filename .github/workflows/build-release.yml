@@ -35,11 +35,18 @@ jobs:
           echo "VERSION_TAG=v$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Version: v$VERSION"
 
-      - name: Delete ALL release assets (force clean)
-        uses: mknejp/delete-release-assets@v1
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-          tag: ${{ steps.get_version.outputs.VERSION_TAG }}
+      - name: Delete existing release assets (all)
+        run: |
+          set -e
+          RELEASE_ID=$(gh release view "${{ steps.get_version.outputs.VERSION_TAG }}" --json id -q ".id" 2>/dev/null || echo "")
+          if [ -n "$RELEASE_ID" ]; then
+            echo "🗑️ Found release ID $RELEASE_ID, deleting all assets..."
+            gh release delete-assets "$RELEASE_ID" --yes
+          else
+            echo "ℹ️ Release for tag ${{ steps.get_version.outputs.VERSION_TAG }} not found, skipping delete"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   build:
     if: github.event.pull_request.draft == false
