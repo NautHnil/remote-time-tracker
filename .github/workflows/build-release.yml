@@ -31,29 +31,17 @@ jobs:
           cache: "npm"
           cache-dependency-path: "./electron/package-lock.json"
 
-      - name: Install dependencies x64
-        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
-        working-directory: ./electron
-        run: arch -x86_64 npm ci
-
-      - name: Rebuild native modules for x64
-        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
-        working-directory: ./electron
-        run: arch -x86_64 npm run rebuild
-
-      - name: Build x64 binaries
-        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
-        working-directory: ./electron
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: arch -x86_64 npm run release:mac:x64
-
-      - name: Clean install deps for arm64
+      - name: Install dependencies
         working-directory: ./electron
         shell: bash
         run: |
           rm -rf node_modules
           npm ci
+
+      - name: Rebuild native modules
+        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
+        working-directory: ./electron
+        run: npm run rebuild
 
       # Build and release if it's push to main branch
       - name: Build and release on macOS
@@ -61,7 +49,7 @@ jobs:
         working-directory: ./electron
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run release:mac:arm64
+        run: npm run release:mac
 
       - name: Build and release on Linux
         if: startsWith(matrix.os, 'ubuntu') && github.event_name != 'pull_request'
