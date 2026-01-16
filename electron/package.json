@@ -1,6 +1,6 @@
 {
   "name": "remote-time-tracker-desktop",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Desktop time tracking application with screenshot monitoring",
   "main": "dist/main/main.js",
   "author": {
@@ -43,7 +43,6 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "screenshot-desktop": "^1.15.3",
-    "sharp": "^0.33.2",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
@@ -58,7 +57,6 @@
     "concurrently": "^8.2.2",
     "electron": "^28.1.0",
     "electron-builder": "^24.9.1",
-    "png2icons": "^2.0.1",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3",
