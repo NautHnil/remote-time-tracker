@@ -50,6 +50,7 @@ jobs:
 
       - name: Clean install deps for arm64
         working-directory: ./electron
+        shell: bash
         run: |
           rm -rf node_modules
           npm ci
