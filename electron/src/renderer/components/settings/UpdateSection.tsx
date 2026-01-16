@@ -21,6 +21,10 @@ export function UpdateSection() {
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   useEffect(() => {
+    handleCheck();
+  }, []);
+
+  useEffect(() => {
     let unsub: (() => void) | null = null;
 
     (async () => {
