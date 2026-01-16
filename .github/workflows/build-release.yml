@@ -43,6 +43,25 @@ jobs:
         working-directory: ./electron
         run: npm run rebuild
 
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(node -pe "require('./electron/package.json').version")
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION_TAG=v$VERSION" >> $GITHUB_ENV
+          echo "📦 Version: v$VERSION"
+
+      - name: Delete existing release assets
+        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
+        uses: mknejp/delete-release-assets@v1
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          tag: ${{ env.VERSION_TAG }}
+          assets: |
+            *.dmg
+            *.zip
+            *.blockmap
+
       # Build and release if it's push to main branch
       - name: Build and release on macOS
         if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
