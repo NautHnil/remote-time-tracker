@@ -93,6 +93,10 @@ async function main() {
       });
       console.log("\n✅ Dependencies installed!");
       console.log("💡 Please run again: npm run create-icons\n");
+      execSync("npm run create-icons", {
+        stdio: "inherit",
+        cwd: path.join(__dirname, ".."),
+      });
       process.exit(0);
     } catch (error) {
       console.error("\n❌ Failed to install dependencies");
