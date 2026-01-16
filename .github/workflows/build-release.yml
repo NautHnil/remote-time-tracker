@@ -67,6 +67,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
+        arch: [arm64, x64]
 
     steps:
       - name: Checkout repository
@@ -86,6 +87,12 @@ jobs:
           rm -rf node_modules
           npm ci
 
+      - name: Install sharp for macOS arch
+        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
+        working-directory: ./electron
+        run: |
+          npm install --cpu=${{ matrix.arch }} --os=darwin sharp
+
       - name: Rebuild native modules
         if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
         working-directory: ./electron
@@ -97,7 +104,20 @@ jobs:
         working-directory: ./electron
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run release:mac
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            npm run release:mac:arm64
+          else
+            npm run release:mac:x64
+          fi
+
+      - name: Build and release macOS Universal
+        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request' && matrix.arch == 'arm64'
+        working-directory: ./electron
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          npm run release:mac:universal
 
       - name: Build and release on Linux
         if: startsWith(matrix.os, 'ubuntu') && github.event_name != 'pull_request'
