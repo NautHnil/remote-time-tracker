@@ -3,6 +3,13 @@ name: Build and Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_release:
+        description: "Skip publishing release (build only)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -11,19 +18,22 @@ env:
   NODE_VERSION: "20.x"
 
 jobs:
+  # ============================================
+  # Job 1: Prepare - Get version, check release
+  # ============================================
   prepare:
-    name: Prepare version & clean release
+    name: Prepare Release
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
     outputs:
       version: ${{ steps.get_version.outputs.VERSION }}
       version_tag: ${{ steps.get_version.outputs.VERSION_TAG }}
+      should_release: ${{ steps.check_release.outputs.should_release }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -35,46 +45,85 @@ jobs:
           echo "VERSION_TAG=v$VERSION" >> $GITHUB_OUTPUT
           echo "📦 Version: v$VERSION"
 
-      - name: Delete existing release assets (all)
+      - name: Check if should release
+        id: check_release
         run: |
-          set -e
           VERSION_TAG="${{ steps.get_version.outputs.VERSION_TAG }}"
-          echo "🗂️ Version tag: $VERSION_TAG"
-          RELEASE_ID=$(gh release view "$VERSION_TAG" --json id -q ".id" 2>/dev/null || echo "")
-          if [ -n "$RELEASE_ID" ]; then
-            echo "🗑️ Found release ID $RELEASE_ID, deleting all assets..."
-            mapfile -t ASSET_IDS < <(gh release view "$VERSION_TAG" --json assets -q ".assets[].id")
-            if [ ${#ASSET_IDS[@]} -gt 0 ]; then
-              for ASSET_ID in "${ASSET_IDS[@]}"; do
-                echo "Deleting asset $ASSET_ID"
-                gh release delete-asset "$VERSION_TAG" "$ASSET_ID" || echo "⚠️ Asset $ASSET_ID not exist, skip"
-              done
-            else
-              echo "No assets found, skipping delete"
-            fi
+          if git rev-parse "refs/tags/$VERSION_TAG" >/dev/null 2>&1; then
+            echo "⚠️ Tag $VERSION_TAG already exists"
+            echo "should_release=false" >> $GITHUB_OUTPUT
           else
-            echo "ℹ️ Release for tag $VERSION_TAG not found, skipping delete"
+            echo "✅ Tag $VERSION_TAG does not exist, will release"
+            echo "should_release=true" >> $GITHUB_OUTPUT
           fi
+
+      - name: Delete existing draft release
+        if: steps.check_release.outputs.should_release == 'true'
+        run: |
+          VERSION_TAG="${{ steps.get_version.outputs.VERSION_TAG }}"
+          echo "🗂️ Checking for existing draft release: $VERSION_TAG"
+
+          # Delete existing draft release if exists
+          gh release delete "$VERSION_TAG" --yes 2>/dev/null || true
+
+          # Also delete any draft releases with same tag
+          DRAFT_RELEASES=$(gh release list --limit 10 --json tagName,isDraft -q '.[] | select(.isDraft) | .tagName' 2>/dev/null || echo "")
+          for tag in $DRAFT_RELEASES; do
+            if [ "$tag" = "$VERSION_TAG" ]; then
+              echo "🗑️ Deleting draft: $tag"
+              gh release delete "$tag" --yes || true
+            fi
+          done
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
+  # ============================================
+  # Job 2: Build all platforms in parallel
+  # Using matrix strategy for efficiency
+  # ============================================
   build:
-    if: github.event.pull_request.draft == false
-    name: Build Desktop App
+    name: Build ${{ matrix.name }}
     needs: prepare
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        arch: [arm64, x64]
+        include:
+          # macOS ARM64 (Apple Silicon)
+          - name: macOS-arm64
+            os: macos-15
+            platform: mac
+            arch: arm64
+            artifact_name: mac-arm64
+
+          # macOS x64 (Intel) - Cross-compile on ARM64
+          - name: macOS-x64
+            os: macos-15
+            platform: mac
+            arch: x64
+            artifact_name: mac-x64
+
+          # Windows x64
+          - name: Windows-x64
+            os: windows-latest
+            platform: win
+            arch: x64
+            artifact_name: windows
+
+          # Linux x64
+          - name: Linux-x64
+            os: ubuntu-latest
+            platform: linux
+            arch: x64
+            artifact_name: linux
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup NodeJS
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
@@ -87,140 +136,170 @@ jobs:
           rm -rf node_modules
           npm ci
 
-      - name: Install sharp for macOS arch
-        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
+      # ========== macOS specific steps ==========
+      - name: Setup macOS native modules
+        if: matrix.platform == 'mac'
         working-directory: ./electron
+        env:
+          npm_config_arch: ${{ matrix.arch }}
+          npm_config_target_arch: ${{ matrix.arch }}
         run: |
+          echo "🔧 Setting up native modules for macOS ${{ matrix.arch }}..."
+
+          # Remove existing sharp and reinstall for target arch
+          npm uninstall sharp || true
           npm install --cpu=${{ matrix.arch }} --os=darwin sharp
 
-      - name: Rebuild native modules
-        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
-        working-directory: ./electron
-        run: npm run rebuild
+          # Rebuild native modules for target architecture
+          npx @electron/rebuild -f -w better-sqlite3 --arch=${{ matrix.arch }}
+          npx @electron/rebuild -f -w sharp --arch=${{ matrix.arch }}
 
-      # Build and release if it's push to main branch
-      - name: Build and release on macOS
-        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request'
+      # ========== Build steps ==========
+      - name: Build Electron app
         working-directory: ./electron
+        shell: bash
+        run: npm run build
+
+      - name: Package application
+        working-directory: ./electron
+        shell: bash
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          npm_config_arch: ${{ matrix.arch }}
         run: |
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            npm run release:mac:arm64
+          echo "📦 Packaging for ${{ matrix.platform }} ${{ matrix.arch }}..."
+
+          # Build command varies by platform
+          # macOS supports --arm64 and --x64 flags
+          # Windows and Linux don't need arch flag (builds for runner's arch)
+          if [ "${{ matrix.platform }}" = "mac" ]; then
+            npx electron-builder --mac --${{ matrix.arch }} --publish never
           else
-            npm run release:mac:x64
+            npx electron-builder --${{ matrix.platform }} --publish never
           fi
 
-      - name: Build and release macOS Universal
-        if: startsWith(matrix.os, 'macos') && github.event_name != 'pull_request' && matrix.arch == 'arm64'
+      - name: List built files
         working-directory: ./electron
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        shell: bash
         run: |
-          npm run release:mac:universal
+          echo "📦 Built files:"
+          ls -la release/ || true
 
-      - name: Build and release on Linux
-        if: startsWith(matrix.os, 'ubuntu') && github.event_name != 'pull_request'
-        working-directory: ./electron
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run release:linux
+      # ========== Upload artifacts ==========
+      - name: Upload macOS artifacts
+        if: matrix.platform == 'mac'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            electron/release/*.dmg
+            electron/release/*.zip
+            electron/release/*.blockmap
+            electron/release/latest-mac.yml
+          retention-days: 1
+          if-no-files-found: error
 
-      - name: Build and release on Windows
-        if: startsWith(matrix.os, 'windows') && github.event_name != 'pull_request'
-        working-directory: ./electron
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run release:win
+      - name: Upload Windows artifacts
+        if: matrix.platform == 'win'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            electron/release/*.exe
+            electron/release/*.blockmap
+            electron/release/latest.yml
+          retention-days: 1
+          if-no-files-found: error
 
+      - name: Upload Linux artifacts
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            electron/release/*.AppImage
+            electron/release/*.deb
+            electron/release/latest-linux.yml
+          retention-days: 1
+          if-no-files-found: warn
+
+  # ============================================
+  # Job 3: Create Release & Upload All Assets
+  # ============================================
   release:
     name: Publish Release
-    runs-on: ubuntu-latest
     needs: [prepare, build]
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: |
+      always() && 
+      needs.prepare.outputs.should_release == 'true' &&
+      needs.build.result == 'success'
+    runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v5
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          path: artifacts
 
-      - name: Check if version tag already exists
+      - name: List downloaded artifacts
         run: |
-          VERSION_HASH=$(git rev-parse -q --verify "refs/tags/${{ env.VERSION_TAG }}" || echo "")
-          echo "VERSION_HASH=$VERSION_HASH" >> $GITHUB_ENV
-          if [ -n "$VERSION_HASH" ]; then
-            echo "⚠️ Tag ${{ env.VERSION_TAG }} already exists, skipping release"
-          else
-            echo "✅ Tag ${{ env.VERSION_TAG }} does not exist, proceeding with release"
-          fi
+          echo "📦 Downloaded artifacts:"
+          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.zip" -o -name "*.blockmap" \) 2>/dev/null | sort
+          echo ""
+          ls -laR artifacts/ 2>/dev/null | head -100
 
-      - name: Wait for assets to be uploaded
-        if: env.VERSION_HASH == ''
+      - name: Prepare release files
         run: |
-          echo "⏳ Waiting 30 seconds for all assets to be uploaded..."
-          sleep 30
+          mkdir -p release-files
+          VERSION="${{ env.VERSION }}"
 
-      - name: Fetch draft release
-        if: env.VERSION_HASH == ''
-        uses: cardinalby/git-get-release-action@v1
-        id: get_draft_release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          latest: true
-          draft: true
-          searchLimit: 5
+          echo "📦 Collecting release files for version $VERSION..."
+
+          # Copy all artifacts to release-files (including yml files generated by electron-builder)
+          find artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.zip" -o -name "*.blockmap" -o -name "latest*.yml" \) -exec cp {} release-files/ \;
+
+          echo ""
+          echo "📋 Final release files:"
+          ls -la release-files/
 
       - name: Generate changelog
-        if: env.VERSION_HASH == '' && steps.get_draft_release.outputs.id != ''
-        id: changelog
         run: |
-          # Get the previous tag
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
           echo "📋 Generating changelog..."
           echo "Previous tag: $PREV_TAG"
 
           if [ -n "$PREV_TAG" ]; then
-            # Get commits since last tag
-            CHANGELOG=$(git log --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" $PREV_TAG..HEAD --no-merges)
+            CHANGELOG=$(git log --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" $PREV_TAG..HEAD --no-merges | head -50)
           else
-            # Get last 20 commits if no previous tag
             CHANGELOG=$(git log --pretty=format:"- %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" -20 --no-merges)
           fi
 
-          # Save changelog to file for multiline output
           echo "$CHANGELOG" > /tmp/changelog.txt
 
-          # Use delimiter for multiline output
           {
             echo 'CHANGELOG<<EOF'
             cat /tmp/changelog.txt
             echo 'EOF'
           } >> $GITHUB_ENV
 
-          echo "✅ Changelog generated"
+          echo "PREV_TAG=$PREV_TAG" >> $GITHUB_ENV
 
-      - name: Publish Release
-        if: env.VERSION_HASH == '' && steps.get_draft_release.outputs.id != ''
-        uses: irongut/EditRelease@v1.2.0
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          token: ${{ secrets.GH_TOKEN }}
-          id: ${{ steps.get_draft_release.outputs.id }}
+          tag_name: ${{ env.VERSION_TAG }}
+          name: ${{ env.VERSION_TAG }}
           draft: false
           prerelease: false
-          replacename: true
-          replacebody: true
-          name: ${{ env.VERSION_TAG }}
+          generate_release_notes: false
           body: |
             ## 🚀 Remote Time Tracker ${{ env.VERSION_TAG }}
 
@@ -228,24 +307,44 @@ jobs:
             ${{ env.CHANGELOG }}
 
             ### 📥 Downloads
-            - **Windows**: `Remote Time Tracker Setup ${{ steps.get_version.outputs.VERSION }}.exe` (Installer) or `Remote Time Tracker ${{ steps.get_version.outputs.VERSION }}.exe` (Portable)
-            - **macOS (Apple Silicon)**: `Remote Time Tracker-${{ steps.get_version.outputs.VERSION }}-arm64.dmg`
-            - **macOS (Intel)**: `Remote Time Tracker-${{ steps.get_version.outputs.VERSION }}-x64.dmg`
-            - **Linux**: `Remote Time Tracker-${{ steps.get_version.outputs.VERSION }}.AppImage` or `.deb`
+
+            | Platform | Architecture | File |
+            |----------|--------------|------|
+            | **Windows** | x64 | `Remote Time Tracker Setup ${{ env.VERSION }}.exe` |
+            | **macOS** | Apple Silicon (M1/M2/M3) | `Remote Time Tracker-${{ env.VERSION }}-arm64.dmg` |
+            | **macOS** | Intel | `Remote Time Tracker-${{ env.VERSION }}-x64.dmg` |
+            | **Linux** | x64 | `Remote Time Tracker-${{ env.VERSION }}.AppImage` |
+
+            ### 🔄 Auto-Update
+            Existing installations will automatically update to this version.
 
             ### 🙏 Thanks
             Thanks to all contributors! 🏅
 
             ---
             **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ env.PREV_TAG }}...${{ env.VERSION_TAG }}
+          files: |
+            release-files/*.dmg
+            release-files/*.exe
+            release-files/*.AppImage
+            release-files/*.deb
+            release-files/*.zip
+            release-files/*.blockmap
+            release-files/latest*.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Release summary
         if: always()
         run: |
           echo "## 📊 Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Item | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Version | ${{ env.VERSION_TAG }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tag Exists | ${{ env.VERSION_HASH != '' && '✅ Yes' || '❌ No' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Draft Release ID | ${{ steps.get_draft_release.outputs.id || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Result | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Release Files" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          ls -la release-files/ 2>/dev/null || echo "No files"
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

@@ -1,6 +1,6 @@
 {
   "name": "remote-time-tracker-desktop",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Desktop time tracking application with screenshot monitoring",
   "main": "dist/main/main.js",
   "author": {
@@ -70,6 +70,7 @@
   "build": {
     "appId": "com.rtt.desktop",
     "productName": "Remote Time Tracker",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
     "directories": {
       "output": "release"
     },
@@ -89,9 +90,17 @@
       "entitlementsInherit": "entitlements.mac.plist",
       "gatekeeperAssess": false,
       "identity": null,
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
           "arch": [
             "x64",
             "arm64"
@@ -101,11 +110,14 @@
       "icon": "assets/icon.png",
       "compression": "maximum"
     },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        "nsis"
       ],
+      "artifactName": "${productName} Setup ${version}.${ext}",
       "icon": "assets/icon.png",
       "compression": "maximum"
     },
