@@ -104,18 +104,16 @@ jobs:
             arch: x64
             artifact_name: mac-x64
 
-          # Windows x64
-          - name: Windows-x64
+          # Windows
+          - name: Windows
             os: windows-latest
             platform: win
-            arch: x64
             artifact_name: windows
 
-          # Linux x64
-          - name: Linux-x64
+          # Linux
+          - name: Linux
             os: ubuntu-latest
             platform: linux
-            arch: x64
             artifact_name: linux
 
     steps:
@@ -163,16 +161,14 @@ jobs:
       - name: Package application
         working-directory: ./electron
         shell: bash
-        env:
-          npm_config_arch: ${{ matrix.arch }}
         run: |
-          echo "📦 Packaging for ${{ matrix.platform }} ${{ matrix.arch }}..."
+          echo "📦 Packaging for ${{ matrix.platform }}..."
 
           # Build command varies by platform
-          # macOS supports --arm64 and --x64 flags
-          # Windows and Linux don't need arch flag (builds for runner's arch)
+          # macOS needs explicit --arm64 or --x64 flag
+          # Windows and Linux build for runner's native architecture
           if [ "${{ matrix.platform }}" = "mac" ]; then
-            npx electron-builder --mac --${{ matrix.arch }} --publish never
+            npm_config_arch=${{ matrix.arch }} npx electron-builder --mac --${{ matrix.arch }} --publish never
           else
             npx electron-builder --${{ matrix.platform }} --publish never
           fi
@@ -308,12 +304,14 @@ jobs:
 
             ### 📥 Downloads
 
-            | Platform | Architecture | File |
-            |----------|--------------|------|
-            | **Windows** | x64 | `Remote Time Tracker Setup ${{ env.VERSION }}.exe` |
+            | Platform | Type | File |
+            |----------|------|------|
+            | **Windows** | Installer | `Remote Time Tracker Setup ${{ env.VERSION }}.exe` |
+            | **Windows** | Portable | `Remote Time Tracker ${{ env.VERSION }}.exe` |
             | **macOS** | Apple Silicon (M1/M2/M3) | `Remote Time Tracker-${{ env.VERSION }}-arm64.dmg` |
-            | **macOS** | Intel | `Remote Time Tracker-${{ env.VERSION }}-x64.dmg` |
-            | **Linux** | x64 | `Remote Time Tracker-${{ env.VERSION }}.AppImage` |
+            | **macOS** | Intel (x64) | `Remote Time Tracker-${{ env.VERSION }}-x64.dmg` |
+            | **Linux** | AppImage | `Remote Time Tracker-${{ env.VERSION }}.AppImage` |
+            | **Linux** | Debian | `Remote Time Tracker-${{ env.VERSION }}.deb` |
 
             ### 🔄 Auto-Update
             Existing installations will automatically update to this version.
