@@ -32,8 +32,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getAll: () => ipcRenderer.invoke("time-logs:get-all"),
     getByDateRange: (startDate: string, endDate: string) =>
       ipcRenderer.invoke("time-logs:get-by-date-range", startDate, endDate),
-    getTodayTotalDuration: () =>
-      ipcRenderer.invoke("time-logs:get-today-total-duration"),
+    getTodayTotalDuration: (userId: number) =>
+      ipcRenderer.invoke("time-logs:get-today-total-duration", userId),
   },
 
   // Screenshots APIs
@@ -158,7 +158,7 @@ export interface ElectronAPI {
   timeLogs: {
     getAll: () => Promise<any[]>;
     getByDateRange: (startDate: string, endDate: string) => Promise<any[]>;
-    getTodayTotalDuration: () => Promise<number>;
+    getTodayTotalDuration: (userId: number) => Promise<number>;
   };
   screenshots: {
     getAll: () => Promise<any[]>;

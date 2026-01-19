@@ -14,6 +14,7 @@ export { API_BASE_URL, API_ENDPOINTS } from "./config";
 export { authService } from "./authService";
 export { commonService } from "./commonService";
 export { organizationService, workspaceService } from "./organizationService";
+export { presenceService } from "./presenceService";
 export { screenshotService } from "./screenshotService";
 export { syncService } from "./syncService";
 export { taskService } from "./taskService";
@@ -49,6 +50,7 @@ export {
   organizationService as organizationAPI,
   workspaceService as workspaceAPI,
 } from "./organizationService";
+export { presenceService as presenceAPI } from "./presenceService";
 export { screenshotService as screenshotAPI } from "./screenshotService";
 export { syncService as syncAPI } from "./syncService";
 export { taskService as taskAPI } from "./taskService";

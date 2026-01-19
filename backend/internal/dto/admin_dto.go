@@ -29,6 +29,9 @@ type AdminUserResponse struct {
 	SystemRole      string     `json:"system_role"`
 	IsActive        bool       `json:"is_active"`
 	LastLoginAt     *time.Time `json:"last_login_at"`
+	PresenceStatus  string     `json:"presence_status"`
+	LastPresenceAt  *time.Time `json:"last_presence_at"`
+	LastWorkingAt   *time.Time `json:"last_working_at"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
 	OrgsCount       int64      `json:"orgs_count"`

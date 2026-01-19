@@ -20,6 +20,7 @@ type Config struct {
 	CORS     CORSConfig
 	Log      LogConfig
 	GitHub   GitHubConfig
+	Presence PresenceConfig
 }
 
 // GitHubConfig holds GitHub API configuration for auto-updates
@@ -72,6 +73,12 @@ type LogConfig struct {
 	Format string
 }
 
+// PresenceConfig holds presence/heartbeat configuration
+type PresenceConfig struct {
+	HeartbeatInterval time.Duration
+	StaleAfter        time.Duration
+}
+
 var AppConfig *Config
 
 // Load loads configuration from environment variables
@@ -117,6 +124,10 @@ func Load() (*Config, error) {
 			Token: getEnv("GITHUB_TOKEN", ""),
 			Owner: getEnv("GITHUB_OWNER", "NautHnil"),
 			Repo:  getEnv("GITHUB_REPO", "remote-time-tracker"),
+		},
+		Presence: PresenceConfig{
+			HeartbeatInterval: parseDuration(getEnv("PRESENCE_HEARTBEAT_INTERVAL", "15s")),
+			StaleAfter:        parseDuration(getEnv("PRESENCE_STALE_AFTER", "45s")),
 		},
 	}
 

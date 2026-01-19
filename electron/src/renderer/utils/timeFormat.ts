@@ -54,7 +54,7 @@ interface TimeUnit {
  */
 export function formatDuration(
   milliseconds: number,
-  options: FormatDurationOptions = {}
+  options: FormatDurationOptions = {},
 ): string {
   const {
     format = "short",
@@ -70,8 +70,8 @@ export function formatDuration(
     return format === "short"
       ? "0 sec"
       : format === "full"
-      ? "0 seconds"
-      : "0s";
+        ? "0 seconds"
+        : "0s";
   }
 
   // Calculate time units
@@ -109,8 +109,8 @@ export function formatDuration(
         format === "short"
           ? unit.short
           : format === "full"
-          ? unit.full
-          : unit.minimal;
+            ? unit.full
+            : unit.minimal;
 
       parts.push(`${unit.value}${format === "minimal" ? "" : " "}${label}`);
 
@@ -163,7 +163,7 @@ export function formatDurationMinimal(milliseconds: number): string {
  */
 export function formatDurationDetailed(
   milliseconds: number,
-  format: DurationFormat = "short"
+  format: DurationFormat = "short",
 ): string {
   return formatDuration(milliseconds, { format, maxUnits: 3 });
 }
@@ -240,7 +240,7 @@ export function formatTimeHMS(milliseconds: number): string {
 
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
     2,
-    "0"
+    "0",
   )}:${String(secs).padStart(2, "0")}`;
 }
 
@@ -277,7 +277,7 @@ export function formatTimeCompact(milliseconds: number): string {
  */
 export function formatDurationSmart(
   milliseconds: number,
-  format: DurationFormat = "short"
+  format: DurationFormat = "short",
 ): string {
   const seconds = milliseconds / 1000;
   const minutes = seconds / 60;

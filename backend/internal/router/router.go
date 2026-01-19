@@ -19,12 +19,14 @@ type RouterConfig struct {
 	ScreenshotController *controller.ScreenshotController
 	TaskController       *controller.TaskController
 	SystemController     *controller.SystemController
+	PresenceController   *controller.PresenceController
 
 	// New organization/workspace controllers
-	OrganizationController *controller.OrganizationController
-	WorkspaceController    *controller.WorkspaceController
-	InvitationController   *controller.InvitationController
-	AdminController        *controller.AdminController
+	OrganizationController  *controller.OrganizationController
+	WorkspaceController     *controller.WorkspaceController
+	InvitationController    *controller.InvitationController
+	AdminController         *controller.AdminController
+	AdminPresenceController *controller.AdminPresenceController
 
 	// Update controller
 	UpdateController *controller.UpdateController
@@ -137,6 +139,14 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 		{
 			// Auth
 			protected.GET("/auth/me", cfg.AuthController.Me)
+
+			// Presence
+			if cfg.PresenceController != nil {
+				presence := protected.Group("/presence")
+				{
+					presence.POST("/heartbeat", cfg.PresenceController.Heartbeat)
+				}
+			}
 
 			// User invitations
 			if cfg.InvitationController != nil {
@@ -294,6 +304,11 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 						users.PUT("/:id/activate", cfg.AdminController.ActivateUser)
 						users.PUT("/:id/role", cfg.AdminController.ChangeUserRole)
 						users.PUT("/:id/system-role", cfg.AdminController.ChangeUserSystemRole)
+					}
+
+					// Presence stream
+					if cfg.AdminPresenceController != nil {
+						admin.GET("/presence/stream", cfg.AdminPresenceController.Stream)
 					}
 
 					// Organization management

@@ -70,4 +70,9 @@ export const API_ENDPOINTS = {
   SYNC: {
     BATCH: "/sync/batch",
   },
+
+  // Presence
+  PRESENCE: {
+    HEARTBEAT: "/presence/heartbeat",
+  },
 } as const;

@@ -25,16 +25,19 @@ type TimeLogService interface {
 type timeLogService struct {
 	timeLogRepo repository.TimeLogRepository
 	deviceRepo  repository.DeviceRepository
+	userRepo    repository.UserRepository
 }
 
 // NewTimeLogService creates a new time log service
 func NewTimeLogService(
 	timeLogRepo repository.TimeLogRepository,
 	deviceRepo repository.DeviceRepository,
+	userRepo repository.UserRepository,
 ) TimeLogService {
 	return &timeLogService{
 		timeLogRepo: timeLogRepo,
 		deviceRepo:  deviceRepo,
+		userRepo:    userRepo,
 	}
 }
 
@@ -63,6 +66,15 @@ func (s *timeLogService) Start(userID uint, req *dto.StartTimeLogRequest) (*mode
 	if err := s.timeLogRepo.Create(timeLog); err != nil {
 		return nil, errors.New("failed to start time tracking")
 	}
+
+	now := time.Now().UTC()
+	_ = s.userRepo.UpdatePresence(userID, models.UserPresenceWorking, now, &now)
+	PresenceBroadcaster.Broadcast(PresenceEvent{
+		UserID:         userID,
+		Status:         models.UserPresenceWorking,
+		LastPresenceAt: now,
+		LastWorkingAt:  &now,
+	})
 
 	// Update device last seen
 	if req.DeviceID != nil {
@@ -121,6 +133,14 @@ func (s *timeLogService) Stop(userID uint, req *dto.StopTimeLogRequest) (*models
 		return nil, errors.New("failed to stop time tracking")
 	}
 
+	_ = s.userRepo.UpdatePresence(userID, models.UserPresenceIdle, now, nil)
+	PresenceBroadcaster.Broadcast(PresenceEvent{
+		UserID:         userID,
+		Status:         models.UserPresenceIdle,
+		LastPresenceAt: now,
+		LastWorkingAt:  nil,
+	})
+
 	return timeLog, nil
 }
 
@@ -157,6 +177,14 @@ func (s *timeLogService) Pause(userID uint, req *dto.PauseTimeLogRequest) (*mode
 	if err := s.timeLogRepo.Update(timeLog); err != nil {
 		return nil, errors.New("failed to pause time tracking")
 	}
+
+	_ = s.userRepo.UpdatePresence(userID, models.UserPresenceIdle, now, nil)
+	PresenceBroadcaster.Broadcast(PresenceEvent{
+		UserID:         userID,
+		Status:         models.UserPresenceIdle,
+		LastPresenceAt: now,
+		LastWorkingAt:  nil,
+	})
 
 	return timeLog, nil
 }
@@ -202,6 +230,14 @@ func (s *timeLogService) Resume(userID uint, req *dto.ResumeTimeLogRequest) (*mo
 	if err := s.timeLogRepo.Update(timeLog); err != nil {
 		return nil, errors.New("failed to resume time tracking")
 	}
+
+	_ = s.userRepo.UpdatePresence(userID, models.UserPresenceWorking, now, &now)
+	PresenceBroadcaster.Broadcast(PresenceEvent{
+		UserID:         userID,
+		Status:         models.UserPresenceWorking,
+		LastPresenceAt: now,
+		LastWorkingAt:  &now,
+	})
 
 	return timeLog, nil
 }
