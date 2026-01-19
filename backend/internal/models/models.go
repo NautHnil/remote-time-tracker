@@ -13,14 +13,17 @@ type User struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 
-	Email        string     `gorm:"uniqueIndex;not null" json:"email"`
-	PasswordHash string     `gorm:"not null" json:"-"`
-	FirstName    string     `gorm:"size:100" json:"first_name"`
-	LastName     string     `gorm:"size:100" json:"last_name"`
-	Role         string     `gorm:"size:20;default:'user'" json:"role"`                // admin, manager, user (legacy)
-	SystemRole   string     `gorm:"size:20;default:'member';index" json:"system_role"` // admin, member (system-level) - indexed for admin queries
-	IsActive     bool       `gorm:"default:true" json:"is_active"`
-	LastLoginAt  *time.Time `json:"last_login_at"`
+	Email          string     `gorm:"uniqueIndex;not null" json:"email"`
+	PasswordHash   string     `gorm:"not null" json:"-"`
+	FirstName      string     `gorm:"size:100" json:"first_name"`
+	LastName       string     `gorm:"size:100" json:"last_name"`
+	Role           string     `gorm:"size:20;default:'user'" json:"role"`                // admin, manager, user (legacy)
+	SystemRole     string     `gorm:"size:20;default:'member';index" json:"system_role"` // admin, member (system-level) - indexed for admin queries
+	IsActive       bool       `gorm:"default:true" json:"is_active"`
+	LastLoginAt    *time.Time `json:"last_login_at"`
+	PresenceStatus string     `gorm:"size:20;default:'idle';index" json:"presence_status"` // working, idle
+	LastPresenceAt *time.Time `gorm:"index" json:"last_presence_at"`
+	LastWorkingAt  *time.Time `gorm:"index" json:"last_working_at"`
 
 	// Relations
 	Tasks               []Task               `gorm:"foreignKey:UserID" json:"tasks,omitempty"`
@@ -31,6 +34,13 @@ type User struct {
 	OrganizationMembers []OrganizationMember `gorm:"foreignKey:UserID" json:"organization_members,omitempty"`
 	WorkspaceMembers    []WorkspaceMember    `gorm:"foreignKey:UserID" json:"workspace_members,omitempty"`
 }
+
+// User presence status constants
+const (
+	UserPresenceWorking = "working"
+	UserPresenceIdle    = "idle"
+	UserPresenceStale   = "stale"
+)
 
 // IsSystemAdmin checks if user has system admin role
 func (u *User) IsSystemAdmin() bool {

@@ -35,6 +35,9 @@ export interface AdminUser {
   system_role: string;
   is_active: boolean;
   last_login_at: string | null;
+  presence_status?: string;
+  last_presence_at?: string | null;
+  last_working_at?: string | null;
   created_at: string;
   updated_at: string;
   orgs_count?: number;

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { presenceService } from "../services/presenceService";
 
 interface TimeTrackerStatus {
   isTracking: boolean;
@@ -35,6 +36,7 @@ function TimeTrackerWidget() {
     try {
       setLoading(true);
       await window.electronAPI.timeTracker.start();
+      await presenceService.heartbeat("working");
       await loadStatus();
     } catch (error: any) {
       alert(error.message || "Failed to start tracking");
@@ -47,6 +49,7 @@ function TimeTrackerWidget() {
     try {
       setLoading(true);
       await window.electronAPI.timeTracker.pause();
+      await presenceService.heartbeat("idle");
       await loadStatus();
     } catch (error: any) {
       alert(error.message || "Failed to pause tracking");
@@ -59,6 +62,7 @@ function TimeTrackerWidget() {
     try {
       setLoading(true);
       await window.electronAPI.timeTracker.resume();
+      await presenceService.heartbeat("working");
       await loadStatus();
     } catch (error: any) {
       alert(error.message || "Failed to resume tracking");
@@ -71,6 +75,7 @@ function TimeTrackerWidget() {
     try {
       setLoading(true);
       await window.electronAPI.timeTracker.stop();
+      await presenceService.heartbeat("idle");
       await loadStatus();
     } catch (error: any) {
       alert(error.message || "Failed to stop tracking");
@@ -87,7 +92,7 @@ function TimeTrackerWidget() {
 
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
       2,
-      "0"
+      "0",
     )}:${String(secs).padStart(2, "0")}`;
   };
 

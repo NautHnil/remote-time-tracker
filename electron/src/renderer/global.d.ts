@@ -59,7 +59,7 @@ interface ElectronAPI {
   timeLogs: {
     getAll: () => Promise<any[]>;
     getByDateRange: (startDate: string, endDate: string) => Promise<any[]>;
-    getTodayTotalDuration: () => Promise<number>;
+    getTodayTotalDuration: (userId: number) => Promise<number>;
   };
   screenshots: {
     getAll: () => Promise<any[]>;
@@ -73,7 +73,7 @@ interface ElectronAPI {
     }>;
     getOptimizationSettings: () => Promise<ImageOptimizationSettings>;
     updateOptimizationSettings: (
-      settings: Partial<ImageOptimizationSettings>
+      settings: Partial<ImageOptimizationSettings>,
     ) => Promise<ImageOptimizationSettings>;
   };
   tasks: {

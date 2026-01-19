@@ -27,13 +27,14 @@ export class TimeTrackerService {
   private frozenDuration = 0; // Duration at pause moment
   private isManualTask = false; // Track if current task is a manual task
   private manualTaskTitle = ""; // Store manual task title
+  private lastPersistAt = 0;
 
   private trackingTimer: NodeJS.Timeout | null = null;
 
   constructor(
     dbService: DatabaseService,
     screenshotService: ScreenshotService,
-    syncService: SyncService
+    syncService: SyncService,
   ) {
     this.dbService = dbService;
     this.screenshotService = screenshotService;
@@ -55,7 +56,7 @@ export class TimeTrackerService {
       }
 
       console.log(
-        `🔍 Found active session: ${activeTimeLog.status} (ID: ${activeTimeLog.id})`
+        `🔍 Found active session: ${activeTimeLog.status} (ID: ${activeTimeLog.id})`,
       );
 
       this.currentTimeLog = activeTimeLog;
@@ -78,7 +79,7 @@ export class TimeTrackerService {
             this.formatDuration(activeTimeLog.duration) +
             ", manual: " +
             this.isManualTask +
-            ")"
+            ")",
         );
 
         // Get workspace context from timeLog or credentials
@@ -91,7 +92,7 @@ export class TimeTrackerService {
           activeTimeLog.taskLocalId || undefined,
           this.isManualTask ? activeTimeLog.taskId : undefined,
           organizationId, // Pass organization context
-          workspaceId // Pass workspace context
+          workspaceId, // Pass workspace context
         );
 
         // Start timer
@@ -103,17 +104,17 @@ export class TimeTrackerService {
 
         console.log(
           `⏸️  Loaded paused session (duration: ${this.formatDuration(
-            activeTimeLog.duration
+            activeTimeLog.duration,
           )}, paused: ${this.formatDuration(this.totalPausedTime)}, manual: ${
             this.isManualTask
-          })`
+          })`,
         );
 
         // Don't start timer or screenshots when paused
       } else {
         // Invalid state - should not happen
         console.warn(
-          `⚠️  Invalid session state: ${activeTimeLog.status}, clearing...`
+          `⚠️  Invalid session state: ${activeTimeLog.status}, clearing...`,
         );
         this.currentTimeLog = null;
         this.startTimestamp = null;
@@ -139,7 +140,7 @@ export class TimeTrackerService {
   async start(taskId?: number, notes?: string): Promise<TimeTrackerStatus> {
     if (this.currentTimeLog && this.currentTimeLog.status !== "stopped") {
       throw new Error(
-        "Time tracking already active. Stop current session first."
+        "Time tracking already active. Stop current session first.",
       );
     }
 
@@ -161,6 +162,7 @@ export class TimeTrackerService {
     const credentials = AppConfig.getCredentials();
     const organizationId = credentials?.organizationId;
     const workspaceId = credentials?.workspaceId;
+    const userId = credentials?.userId;
 
     const timeLog: Omit<TimeLog, "id"> = {
       localId,
@@ -168,6 +170,7 @@ export class TimeTrackerService {
       taskLocalId, // Generated for BOTH manual and auto-track tasks
       organizationId, // Store organization context
       workspaceId, // Store workspace context
+      userId, // Store user context
       startTime: formatISO(nowMs),
       duration: 0,
       pausedTotal: 0,
@@ -183,6 +186,7 @@ export class TimeTrackerService {
     this.pauseTimestamp = null;
     this.totalPausedTime = 0;
     this.frozenDuration = 0;
+    this.lastPersistAt = nowMs;
 
     // Start screenshot capturing with taskLocalId and taskId (for manual tasks)
     await this.screenshotService.startCapturing(
@@ -190,14 +194,14 @@ export class TimeTrackerService {
       taskLocalId,
       this.isManualTask ? taskId : undefined, // Pass taskId for manual tasks
       organizationId, // Pass organization context
-      workspaceId // Pass workspace context
+      workspaceId, // Pass workspace context
     );
 
     // Start tracking timer
     this.startTimer();
 
     console.log(
-      `▶️  Time tracking started (Manual: ${this.isManualTask}, TaskID: ${taskId}, TaskLocalID: ${taskLocalId}, WsID: ${workspaceId})`
+      `▶️  Time tracking started (Manual: ${this.isManualTask}, TaskID: ${taskId}, TaskLocalID: ${taskLocalId}, WsID: ${workspaceId})`,
     );
 
     return this.getStatus();
@@ -205,7 +209,7 @@ export class TimeTrackerService {
 
   async stop(
     taskTitle?: string,
-    waitForSync: boolean = false
+    waitForSync: boolean = false,
   ): Promise<TimeTrackerStatus> {
     if (!this.currentTimeLog || this.currentTimeLog.status === "stopped") {
       throw new Error("No active time tracking session");
@@ -216,15 +220,25 @@ export class TimeTrackerService {
     let endTimeMs: number;
 
     if (this.currentTimeLog.status === "paused") {
-      // If currently paused, use frozen duration and calculate end time from start + duration + paused
+      // If currently paused, include the current paused duration in pausedTotal
+      const nowMs = Date.now();
+      const currentPauseDuration = this.pauseTimestamp
+        ? nowMs - this.pauseTimestamp
+        : 0;
+      this.totalPausedTime += currentPauseDuration;
+
+      // Use frozen duration for work time and set end time to now
       duration = this.frozenDuration;
-      // End time = start time + actual work duration + paused time
-      endTimeMs = this.startTimestamp! + duration + this.totalPausedTime;
+      endTimeMs = nowMs;
     } else {
       // If currently running, calculate from now
       const nowMs = Date.now();
       duration = nowMs - this.startTimestamp! - this.totalPausedTime;
       endTimeMs = nowMs;
+    }
+
+    if (duration < 0) {
+      duration = 0;
     }
 
     const endTime = formatISO(endTimeMs);
@@ -245,7 +259,7 @@ export class TimeTrackerService {
     this.stopTimer();
 
     console.log(
-      `⏹️  Time tracking stopped (Duration: ${this.formatDuration(duration)})`
+      `⏹️  Time tracking stopped (Duration: ${this.formatDuration(duration)})`,
     );
 
     // Trigger sync - wait for it if requested (e.g., before quit)
@@ -321,6 +335,7 @@ export class TimeTrackerService {
     this.totalPausedTime += pauseDuration;
     this.pauseTimestamp = null;
     this.frozenDuration = 0; // Clear frozen duration
+    this.lastPersistAt = nowMs;
 
     await this.dbService.updateTimeLog(this.currentTimeLog.id!, {
       resumedAt: formatISO(nowMs),
@@ -344,7 +359,7 @@ export class TimeTrackerService {
       this.currentTimeLog.taskLocalId || undefined,
       this.isManualTask ? this.currentTimeLog.taskId : undefined,
       organizationId, // Pass organization context
-      workspaceId // Pass workspace context
+      workspaceId, // Pass workspace context
     );
 
     // Restart timer
@@ -397,11 +412,14 @@ export class TimeTrackerService {
     const now = Date.now();
 
     // Currently running
-    return now - this.startTimestamp - this.totalPausedTime;
+    const duration = now - this.startTimestamp - this.totalPausedTime;
+    return duration < 0 ? 0 : duration;
   }
 
   private startTimer(): void {
     if (this.trackingTimer) return;
+
+    this.lastPersistAt = Date.now();
 
     // Update duration every second
     this.trackingTimer = setInterval(async () => {
@@ -409,11 +427,13 @@ export class TimeTrackerService {
         const duration = this.calculateDuration();
 
         // Update database every minute
-        if (duration % 60000 < 1000) {
+        const now = Date.now();
+        if (now - this.lastPersistAt >= 60000) {
           await this.dbService.updateTimeLog(this.currentTimeLog.id!, {
             duration, // Store in milliseconds locally
             pausedTotal: this.totalPausedTime, // Store in milliseconds locally
           });
+          this.lastPersistAt = now;
         }
       }
     }, 1000);
@@ -446,6 +466,9 @@ export class TimeTrackerService {
     if (this.currentTimeLog && this.currentTimeLog.id) {
       try {
         const nowMs = Date.now();
+        if (this.currentTimeLog.status === "paused" && this.pauseTimestamp) {
+          this.totalPausedTime += nowMs - this.pauseTimestamp;
+        }
         const duration = this.calculateDuration();
 
         await this.dbService.updateTimeLog(this.currentTimeLog.id, {

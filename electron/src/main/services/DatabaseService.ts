@@ -10,6 +10,7 @@ export interface TimeLog {
   taskLocalId?: string; // UUID - primary reference to task
   organizationId?: number; // Organization ID for workspace context
   workspaceId?: number; // Workspace ID the time log belongs to
+  userId?: number; // User ID who owns this time log
   startTime: string;
   endTime?: string;
   pausedAt?: string;
@@ -74,6 +75,7 @@ export class DatabaseService {
         task_local_id TEXT,
         organization_id INTEGER,
         workspace_id INTEGER,
+        user_id INTEGER,
         start_time TEXT NOT NULL,
         end_time TEXT,
         paused_at TEXT,
@@ -144,7 +146,7 @@ export class DatabaseService {
       // Add mime_type column if missing
       if (!existingColumns.has("mime_type")) {
         console.log(
-          "🔄 Running migration: Adding mime_type column to screenshots"
+          "🔄 Running migration: Adding mime_type column to screenshots",
         );
         this.db.exec(`
           ALTER TABLE screenshots ADD COLUMN mime_type TEXT DEFAULT 'image/png'
@@ -155,7 +157,7 @@ export class DatabaseService {
       // Add is_encrypted column if missing
       if (!existingColumns.has("is_encrypted")) {
         console.log(
-          "🔄 Running migration: Adding is_encrypted column to screenshots"
+          "🔄 Running migration: Adding is_encrypted column to screenshots",
         );
         this.db.exec(`
           ALTER TABLE screenshots ADD COLUMN is_encrypted INTEGER DEFAULT 0
@@ -166,7 +168,7 @@ export class DatabaseService {
       // Add checksum column if missing
       if (!existingColumns.has("checksum")) {
         console.log(
-          "🔄 Running migration: Adding checksum column to screenshots"
+          "🔄 Running migration: Adding checksum column to screenshots",
         );
         this.db.exec(`
           ALTER TABLE screenshots ADD COLUMN checksum TEXT
@@ -183,7 +185,7 @@ export class DatabaseService {
 
       if (!timeLogsColumns.has("task_title")) {
         console.log(
-          "🔄 Running migration: Adding task_title column to time_logs"
+          "🔄 Running migration: Adding task_title column to time_logs",
         );
         this.db.exec(`
           ALTER TABLE time_logs ADD COLUMN task_title TEXT
@@ -194,7 +196,7 @@ export class DatabaseService {
       // Add task_local_id column if missing
       if (!timeLogsColumns.has("task_local_id")) {
         console.log(
-          "🔄 Running migration: Adding task_local_id column to time_logs"
+          "🔄 Running migration: Adding task_local_id column to time_logs",
         );
         this.db.exec(`
           ALTER TABLE time_logs ADD COLUMN task_local_id TEXT
@@ -208,7 +210,7 @@ export class DatabaseService {
       // Add task_local_id column to screenshots if missing
       if (!existingColumns.has("task_local_id")) {
         console.log(
-          "🔄 Running migration: Adding task_local_id column to screenshots"
+          "🔄 Running migration: Adding task_local_id column to screenshots",
         );
         this.db.exec(`
           ALTER TABLE screenshots ADD COLUMN task_local_id TEXT
@@ -217,7 +219,7 @@ export class DatabaseService {
           CREATE INDEX IF NOT EXISTS idx_screenshots_task_local_id ON screenshots(task_local_id)
         `);
         console.log(
-          "✅ Migration completed: task_local_id column added to screenshots"
+          "✅ Migration completed: task_local_id column added to screenshots",
         );
       }
 
@@ -231,22 +233,22 @@ export class DatabaseService {
       `);
       console.log("✅ Indexes verified");
 
-      // Add organization_id and workspace_id columns to time_logs if missing
+      // Add organization_id, workspace_id, and user_id columns to time_logs if missing
       if (!timeLogsColumns.has("organization_id")) {
         console.log(
-          "🔄 Running migration: Adding organization_id column to time_logs"
+          "🔄 Running migration: Adding organization_id column to time_logs",
         );
         this.db.exec(`
           ALTER TABLE time_logs ADD COLUMN organization_id INTEGER
         `);
         console.log(
-          "✅ Migration completed: organization_id column added to time_logs"
+          "✅ Migration completed: organization_id column added to time_logs",
         );
       }
 
       if (!timeLogsColumns.has("workspace_id")) {
         console.log(
-          "🔄 Running migration: Adding workspace_id column to time_logs"
+          "🔄 Running migration: Adding workspace_id column to time_logs",
         );
         this.db.exec(`
           ALTER TABLE time_logs ADD COLUMN workspace_id INTEGER
@@ -255,26 +257,36 @@ export class DatabaseService {
           CREATE INDEX IF NOT EXISTS idx_time_logs_workspace_id ON time_logs(workspace_id)
         `);
         console.log(
-          "✅ Migration completed: workspace_id column added to time_logs"
+          "✅ Migration completed: workspace_id column added to time_logs",
+        );
+      }
+
+      if (!timeLogsColumns.has("user_id")) {
+        console.log("🔄 Running migration: Adding user_id column to time_logs");
+        this.db.exec(`
+          ALTER TABLE time_logs ADD COLUMN user_id INTEGER
+        `);
+        console.log(
+          "✅ Migration completed: user_id column added to time_logs",
         );
       }
 
       // Add organization_id and workspace_id columns to screenshots if missing
       if (!existingColumns.has("organization_id")) {
         console.log(
-          "🔄 Running migration: Adding organization_id column to screenshots"
+          "🔄 Running migration: Adding organization_id column to screenshots",
         );
         this.db.exec(`
           ALTER TABLE screenshots ADD COLUMN organization_id INTEGER
         `);
         console.log(
-          "✅ Migration completed: organization_id column added to screenshots"
+          "✅ Migration completed: organization_id column added to screenshots",
         );
       }
 
       if (!existingColumns.has("workspace_id")) {
         console.log(
-          "🔄 Running migration: Adding workspace_id column to screenshots"
+          "🔄 Running migration: Adding workspace_id column to screenshots",
         );
         this.db.exec(`
           ALTER TABLE screenshots ADD COLUMN workspace_id INTEGER
@@ -283,7 +295,7 @@ export class DatabaseService {
           CREATE INDEX IF NOT EXISTS idx_screenshots_workspace_id ON screenshots(workspace_id)
         `);
         console.log(
-          "✅ Migration completed: workspace_id column added to screenshots"
+          "✅ Migration completed: workspace_id column added to screenshots",
         );
       }
 
@@ -306,10 +318,10 @@ export class DatabaseService {
 
     const stmt = this.db.prepare(`
       INSERT INTO time_logs (
-        local_id, task_id, task_local_id, organization_id, workspace_id,
+        local_id, task_id, task_local_id, organization_id, workspace_id, user_id,
         start_time, end_time, paused_at, resumed_at,
         duration, paused_total, status, task_title, notes, is_synced, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -318,6 +330,7 @@ export class DatabaseService {
       timeLog.taskLocalId ?? null,
       timeLog.organizationId ?? null,
       timeLog.workspaceId ?? null,
+      timeLog.userId ?? null,
       timeLog.startTime,
       timeLog.endTime,
       timeLog.pausedAt,
@@ -328,7 +341,7 @@ export class DatabaseService {
       timeLog.taskTitle || null,
       timeLog.notes,
       timeLog.isSynced ? 1 : 0,
-      timeLog.createdAt
+      timeLog.createdAt,
     );
 
     return { ...timeLog, id: result.lastInsertRowid as number };
@@ -375,7 +388,7 @@ export class DatabaseService {
 
     const row = this.db
       .prepare(
-        "SELECT * FROM time_logs WHERE status IN ('running', 'paused') ORDER BY start_time DESC LIMIT 1"
+        "SELECT * FROM time_logs WHERE status IN ('running', 'paused') ORDER BY start_time DESC LIMIT 1",
       )
       .get();
 
@@ -393,20 +406,20 @@ export class DatabaseService {
 
   async getTimeLogsByDateRange(
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<TimeLog[]> {
     if (!this.db) throw new Error("Database not initialized");
 
     const rows = this.db
       .prepare(
-        "SELECT * FROM time_logs WHERE start_time >= ? AND start_time <= ? ORDER BY start_time DESC"
+        "SELECT * FROM time_logs WHERE start_time >= ? AND start_time <= ? ORDER BY start_time DESC",
       )
       .all(startDate, endDate);
 
     return rows.map(this.rowToTimeLog);
   }
 
-  async getTodayTotalDuration(): Promise<number> {
+  async getTodayTotalDuration(userId: number): Promise<number> {
     if (!this.db) throw new Error("Database not initialized");
 
     // Get today's date range (00:00:00 to 23:59:59)
@@ -417,19 +430,25 @@ export class DatabaseService {
     today.setHours(23, 59, 59, 999);
     const endOfDay = today.toISOString();
 
-    // Sum all durations for today (including active session)
+    // Sum durations for completed sessions today
+    // duration is already stored as net working time (pause excluded)
     const result = this.db
       .prepare(
-        "SELECT SUM(duration) as total FROM time_logs WHERE start_time >= ? AND start_time <= ?"
+        `
+        SELECT SUM(COALESCE(duration, 0)) as total
+        FROM time_logs
+        WHERE start_time >= ? AND start_time <= ?
+          AND status = 'stopped' AND user_id = ?
+      `,
       )
-      .get(startOfDay, endOfDay) as { total: number | null };
+      .get(startOfDay, endOfDay, userId) as { total: number | null };
 
-    return result?.total || 0;
+    return Math.max(0, Math.floor(result?.total || 0));
   }
 
   // Screenshots methods
   async createScreenshot(
-    screenshot: Omit<Screenshot, "id">
+    screenshot: Omit<Screenshot, "id">,
   ): Promise<Screenshot> {
     if (!this.db) throw new Error("Database not initialized");
 
@@ -457,7 +476,7 @@ export class DatabaseService {
       screenshot.isEncrypted ? 1 : 0,
       screenshot.checksum ?? null,
       screenshot.isSynced ? 1 : 0,
-      screenshot.createdAt
+      screenshot.createdAt,
     );
 
     return { ...screenshot, id: result.lastInsertRowid as number };
@@ -477,7 +496,7 @@ export class DatabaseService {
 
     const rows = this.db
       .prepare(
-        "SELECT * FROM screenshots WHERE time_log_id = ? ORDER BY captured_at ASC"
+        "SELECT * FROM screenshots WHERE time_log_id = ? ORDER BY captured_at ASC",
       )
       .all(timeLogId);
 
@@ -592,7 +611,7 @@ export class DatabaseService {
 
     const rows = this.db
       .prepare(
-        "SELECT * FROM screenshots WHERE is_synced = 1 AND captured_at < ? ORDER BY captured_at ASC"
+        "SELECT * FROM screenshots WHERE is_synced = 1 AND captured_at < ? ORDER BY captured_at ASC",
       )
       .all(date);
 
@@ -604,7 +623,7 @@ export class DatabaseService {
 
     const rows = this.db
       .prepare(
-        "SELECT * FROM screenshots WHERE task_id = ? ORDER BY captured_at ASC"
+        "SELECT * FROM screenshots WHERE task_id = ? ORDER BY captured_at ASC",
       )
       .all(taskId);
 
@@ -651,6 +670,7 @@ export class DatabaseService {
       taskLocalId: row.task_local_id,
       organizationId: row.organization_id,
       workspaceId: row.workspace_id,
+      userId: row.user_id,
       startTime: row.start_time,
       endTime: row.end_time,
       pausedAt: row.paused_at,

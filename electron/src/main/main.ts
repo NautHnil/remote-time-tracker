@@ -375,8 +375,8 @@ function setupIpcHandlers() {
     },
   );
 
-  ipcMain.handle("time-logs:get-today-total-duration", async () => {
-    return await dbService.getTodayTotalDuration();
+  ipcMain.handle("time-logs:get-today-total-duration", async (_, userId) => {
+    return await dbService.getTodayTotalDuration(userId);
   });
 
   // Screenshots

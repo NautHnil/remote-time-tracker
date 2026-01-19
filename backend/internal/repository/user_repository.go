@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"time"
 
 	"github.com/beuphecan/remote-time-tracker/internal/models"
 	"gorm.io/gorm"
@@ -16,6 +17,7 @@ type UserRepository interface {
 	Delete(id uint) error
 	List(page, perPage int) ([]models.User, int64, error)
 	UpdateLastLogin(id uint) error
+	UpdatePresence(id uint, status string, lastPresenceAt time.Time, lastWorkingAt *time.Time) error
 
 	// Additional methods for admin
 	FindAllPaginated(limit, offset int) ([]models.User, int64, error)
@@ -86,6 +88,19 @@ func (r *userRepository) List(page, perPage int) ([]models.User, int64, error) {
 
 func (r *userRepository) UpdateLastLogin(id uint) error {
 	return r.db.Model(&models.User{}).Where("id = ?", id).Update("last_login_at", gorm.Expr("NOW()")).Error
+}
+
+func (r *userRepository) UpdatePresence(id uint, status string, lastPresenceAt time.Time, lastWorkingAt *time.Time) error {
+	updates := map[string]interface{}{
+		"presence_status":  status,
+		"last_presence_at": lastPresenceAt,
+	}
+
+	if lastWorkingAt != nil {
+		updates["last_working_at"] = *lastWorkingAt
+	}
+
+	return r.db.Model(&models.User{}).Where("id = ?", id).Updates(updates).Error
 }
 
 func (r *userRepository) FindAllPaginated(limit, offset int) ([]models.User, int64, error) {

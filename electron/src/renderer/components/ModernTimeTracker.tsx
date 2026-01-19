@@ -1,6 +1,7 @@
 import { format } from "date-fns";
-import { useEffect, useState } from "react";
-import { formatDurationFull } from "../utils/timeFormat";
+import { useEffect, useRef, useState } from "react";
+import { presenceService } from "../services/presenceService";
+import { formatDuration, formatDurationFull } from "../utils/timeFormat";
 import { PromptDialog, usePromptDialog } from "./dialogs/index";
 import { Icons } from "./Icons";
 
@@ -45,6 +46,7 @@ function ModernTimeTracker() {
   const [currentLocalCount, setCurrentLocalCount] = useState<number>(0); // Current local count (updates every interval)
   const [todayTotalDuration, setTodayTotalDuration] = useState<number>(0);
   const promptDialog = usePromptDialog();
+  const heartbeatIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     loadConfig();
@@ -70,6 +72,43 @@ function ModernTimeTracker() {
     };
   }, []);
 
+  useEffect(() => {
+    // Send immediate heartbeat when status changes
+    if (status.status === "running") {
+      presenceService.heartbeat("working");
+    } else {
+      presenceService.heartbeat("idle");
+    }
+  }, [status.status]);
+
+  const startPresenceHeartbeat = () => {
+    const intervalMs = config?.presenceHeartbeatInterval || 15000;
+    if (heartbeatIntervalRef.current) {
+      window.clearInterval(heartbeatIntervalRef.current);
+    }
+    heartbeatIntervalRef.current = window.setInterval(() => {
+      if (status.status === "running") {
+        presenceService.heartbeat("working");
+      } else {
+        presenceService.heartbeat("idle");
+      }
+    }, intervalMs);
+  };
+
+  const stopPresenceHeartbeat = () => {
+    if (heartbeatIntervalRef.current) {
+      window.clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    startPresenceHeartbeat();
+    return () => {
+      stopPresenceHeartbeat();
+    };
+  }, [status.status, config?.presenceHeartbeatInterval]);
+
   const loadTasks = async () => {
     try {
       const result = await window.electronAPI.tasks.getAll();
@@ -84,9 +123,8 @@ function ModernTimeTracker() {
   const loadServerScreenshotCount = async () => {
     try {
       // Import screenshotService
-      const { screenshotService } = await import(
-        "../services/screenshotService"
-      );
+      const { screenshotService } =
+        await import("../services/screenshotService");
 
       // Get today's screenshot count from server
       const response = await screenshotService.getTodayCount();
@@ -124,8 +162,14 @@ function ModernTimeTracker() {
 
   const loadTodayTotalDuration = async () => {
     try {
+      const credentials = await window.electronAPI.auth.getCredentials();
+      const userId = credentials?.userId;
+      if (!userId) {
+        setTodayTotalDuration(0);
+        return;
+      }
       const totalDuration =
-        await window.electronAPI.timeLogs.getTodayTotalDuration();
+        await window.electronAPI.timeLogs.getTodayTotalDuration(userId);
       setTodayTotalDuration(totalDuration);
     } catch (error) {
       console.error("Error loading today's total duration:", error);
@@ -156,7 +200,7 @@ function ModernTimeTracker() {
       ) {
         // Find the task in available tasks
         const task = availableTasks.find(
-          (t) => t.id === result.currentTimeLog?.taskId
+          (t) => t.id === result.currentTimeLog?.taskId,
         );
         if (task) {
           setSelectedTask(task);
@@ -205,8 +249,10 @@ function ModernTimeTracker() {
       // If it's a manual task, we pass the task ID and mark it as manual
       await window.electronAPI.timeTracker.start(
         selectedTaskId || undefined,
-        task?.is_manual ? task.title : undefined // Pass title for manual task
+        task?.is_manual ? task.title : undefined, // Pass title for manual task
       );
+
+      await presenceService.heartbeat("working");
 
       // Update current task name
       if (task) {
@@ -228,6 +274,7 @@ function ModernTimeTracker() {
     try {
       setLoading(true);
       await window.electronAPI.timeTracker.pause();
+      await presenceService.heartbeat("idle");
       await loadStatus();
     } catch (error: any) {
       alert(error.message || "Failed to pause tracking");
@@ -240,6 +287,7 @@ function ModernTimeTracker() {
     try {
       setLoading(true);
       await window.electronAPI.timeTracker.resume();
+      await presenceService.heartbeat("working");
       await loadStatus();
     } catch (error: any) {
       alert(error.message || "Failed to resume tracking");
@@ -264,6 +312,7 @@ function ModernTimeTracker() {
 
         // Stop tracking with the manual task's title
         await window.electronAPI.timeTracker.stop(manualTaskTitle);
+        await presenceService.heartbeat("idle");
         await loadStatus();
         await loadTasks(); // Reload to update stats
 
@@ -304,12 +353,13 @@ function ModernTimeTracker() {
           const nowMs = Date.now();
           const defaultTitle = `Work Session - ${format(
             nowMs,
-            "MMM d, yyyy"
+            "MMM d, yyyy",
           )} at ${format(nowMs, "hh:mm a")}`;
           const finalTitle = taskTitle?.trim() || defaultTitle;
 
           // Stop tracking with task title
           await window.electronAPI.timeTracker.stop(finalTitle);
+          await presenceService.heartbeat("idle");
           await loadStatus();
           await loadTasks(); // Reload to update stats
 
@@ -334,6 +384,7 @@ function ModernTimeTracker() {
             await window.electronAPI.timeTracker.getStatus();
           if (currentStatus.status === "paused") {
             await window.electronAPI.timeTracker.resume();
+            await presenceService.heartbeat("working");
             await loadStatus();
           }
         } catch (error) {
@@ -350,7 +401,7 @@ function ModernTimeTracker() {
     const secs = seconds % 60;
     return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
       2,
-      "0"
+      "0",
     )}:${String(secs).padStart(2, "0")}`;
   };
 
@@ -368,19 +419,21 @@ function ModernTimeTracker() {
       totalMs += status.elapsedTime;
     }
 
-    const hours = Math.floor(totalMs / 1000 / 3600);
-    const minutes = Math.floor(((totalMs / 1000) % 3600) / 60);
-    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+    return formatDuration(totalMs, {
+      maxUnits: 2,
+      format: "minimal",
+    });
   };
 
   const calculateScreenshotCount = () => {
     // Total = server count (fixed) + session capture count
     // Session capture count = current local - baseline at start
-    const sessionCaptureCount = Math.max(
-      0,
-      currentLocalCount - sessionStartLocalCount
-    );
-    return serverScreenshotCount + sessionCaptureCount;
+    // const sessionCaptureCount = Math.max(
+    //   0,
+    //   currentLocalCount - sessionStartLocalCount,
+    // );
+    // return serverScreenshotCount + sessionCaptureCount;
+    return serverScreenshotCount;
   };
 
   const getEstimatedScreenshots = () => {
@@ -491,7 +544,7 @@ function ModernTimeTracker() {
                 value={selectedTaskId || ""}
                 onChange={(e) =>
                   setSelectedTaskId(
-                    e.target.value ? Number(e.target.value) : null
+                    e.target.value ? Number(e.target.value) : null,
                   )
                 }
                 className="input w-full"
@@ -503,14 +556,14 @@ function ModernTimeTracker() {
                       t.is_manual &&
                       (t.status === undefined ||
                         t.status === "pending" ||
-                        t.status === "new")
+                        t.status === "new"),
                   )
                   .map((task) => (
                     <option key={task.id} value={task.id}>
                       {task.title}
                       {task.duration
                         ? ` (${Math.floor(task.duration / 3600)}h ${Math.floor(
-                            (task.duration % 3600) / 60
+                            (task.duration % 3600) / 60,
                           )}m)`
                         : ""}
                     </option>
@@ -598,11 +651,11 @@ function ModernTimeTracker() {
           </div>
           <div className="text-xs text-gray-500 dark:text-dark-400">
             Screenshots today
-            {status.isTracking && getEstimatedScreenshots() > 0 && (
+            {/* {status.isTracking && getEstimatedScreenshots() > 0 && (
               <span className="ml-1 text-gray-400 dark:text-dark-500">
                 (Est: {getEstimatedScreenshots()})
               </span>
-            )}
+            )} */}
           </div>
         </div>
 

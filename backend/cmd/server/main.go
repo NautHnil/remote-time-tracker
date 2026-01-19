@@ -132,7 +132,8 @@ func main() {
 	// Initialize services
 	authService := service.NewAuthService(userRepo, orgRepo, invitationRepo, workspaceRepo)
 	taskService := service.NewTaskService(taskRepo)
-	timeLogService := service.NewTimeLogService(timeLogRepo, deviceRepo)
+	timeLogService := service.NewTimeLogService(timeLogRepo, deviceRepo, userRepo)
+	presenceService := service.NewPresenceService(userRepo, deviceRepo)
 	syncService := service.NewSyncService(timeLogRepo, screenshotRepo, deviceRepo, syncLogRepo, taskRepo)
 	screenshotService := service.NewScreenshotService(screenshotRepo, timeLogRepo, taskRepo)
 	organizationService := service.NewOrganizationService(orgRepo, workspaceRepo, userRepo)
@@ -156,6 +157,7 @@ func main() {
 	// Initialize controllers
 	authController := controller.NewAuthController(authService)
 	timeLogController := controller.NewTimeLogController(timeLogService)
+	presenceController := controller.NewPresenceController(presenceService)
 	syncController := controller.NewSyncController(syncService)
 	screenshotController := controller.NewScreenshotController(screenshotService)
 	taskController := controller.NewTaskController(taskService)
@@ -164,25 +166,28 @@ func main() {
 	workspaceController := controller.NewWorkspaceController(workspaceService)
 	invitationController := controller.NewInvitationController(invitationService)
 	adminController := controller.NewAdminController(adminService)
+	adminPresenceController := controller.NewAdminPresenceController()
 	updateController := controller.NewUpdateController(updateService)
 
 	log.Println("✅ Controllers initialized")
 
 	// Setup router with full config
 	r := router.SetupRouterWithConfig(&router.RouterConfig{
-		AuthController:         authController,
-		TimeLogController:      timeLogController,
-		SyncController:         syncController,
-		ScreenshotController:   screenshotController,
-		TaskController:         taskController,
-		SystemController:       systemController,
-		OrganizationController: organizationController,
-		WorkspaceController:    workspaceController,
-		InvitationController:   invitationController,
-		AdminController:        adminController,
-		UpdateController:       updateController,
-		OrganizationService:    organizationService,
-		WorkspaceService:       workspaceService,
+		AuthController:          authController,
+		TimeLogController:       timeLogController,
+		SyncController:          syncController,
+		ScreenshotController:    screenshotController,
+		TaskController:          taskController,
+		SystemController:        systemController,
+		PresenceController:      presenceController,
+		OrganizationController:  organizationController,
+		WorkspaceController:     workspaceController,
+		InvitationController:    invitationController,
+		AdminController:         adminController,
+		AdminPresenceController: adminPresenceController,
+		UpdateController:        updateController,
+		OrganizationService:     organizationService,
+		WorkspaceService:        workspaceService,
 	})
 
 	// Start server

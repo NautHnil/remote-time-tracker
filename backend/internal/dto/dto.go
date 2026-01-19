@@ -49,6 +49,19 @@ type UserResponse struct {
 	CreatedAt   time.Time  `json:"created_at"`
 }
 
+// PresenceHeartbeatRequest represents a presence heartbeat from client
+type PresenceHeartbeatRequest struct {
+	Status   string `json:"status" binding:"required"` // working, idle
+	DeviceID *uint  `json:"device_id"`
+}
+
+// PresenceStatusResponse represents presence status info
+type PresenceStatusResponse struct {
+	Status         string     `json:"status"`
+	LastPresenceAt time.Time  `json:"last_presence_at"`
+	LastWorkingAt  *time.Time `json:"last_working_at"`
+}
+
 // CreateTaskRequest represents task creation request
 type CreateTaskRequest struct {
 	Title          string `json:"title" binding:"required"`

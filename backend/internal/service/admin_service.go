@@ -4,9 +4,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/beuphecan/remote-time-tracker/internal/config"
 	"github.com/beuphecan/remote-time-tracker/internal/dto"
 	"github.com/beuphecan/remote-time-tracker/internal/models"
 	"github.com/beuphecan/remote-time-tracker/internal/repository"
+	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -814,17 +816,22 @@ func (s *adminService) GetActivityStats() (*dto.AdminActivityStats, error) {
 // ============================================================================
 
 func (s *adminService) userToResponse(u *models.User) dto.AdminUserResponse {
+	presenceStatus := utils.ComputePresenceStatus(u.PresenceStatus, u.LastPresenceAt, config.AppConfig.Presence.StaleAfter)
+
 	return dto.AdminUserResponse{
-		ID:          u.ID,
-		Email:       u.Email,
-		FirstName:   u.FirstName,
-		LastName:    u.LastName,
-		Role:        u.Role,
-		SystemRole:  u.SystemRole,
-		IsActive:    u.IsActive,
-		LastLoginAt: u.LastLoginAt,
-		CreatedAt:   u.CreatedAt,
-		UpdatedAt:   u.UpdatedAt,
+		ID:             u.ID,
+		Email:          u.Email,
+		FirstName:      u.FirstName,
+		LastName:       u.LastName,
+		Role:           u.Role,
+		SystemRole:     u.SystemRole,
+		IsActive:       u.IsActive,
+		LastLoginAt:    u.LastLoginAt,
+		PresenceStatus: presenceStatus,
+		LastPresenceAt: u.LastPresenceAt,
+		LastWorkingAt:  u.LastWorkingAt,
+		CreatedAt:      u.CreatedAt,
+		UpdatedAt:      u.UpdatedAt,
 	}
 }
 

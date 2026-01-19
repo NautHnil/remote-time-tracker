@@ -1,5 +1,6 @@
 import * as datefns from "date-fns";
 import { useCallback, useEffect, useState } from "react";
+import { presenceService } from "../services/presenceService";
 import { formatDurationDetailed } from "../utils/timeFormat";
 import AuthenticatedImage from "./AuthenticatedImage";
 import { Icons } from "./Icons";
@@ -112,7 +113,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
         alert(error.message || "An error occurred while deleting task");
       }
     },
-    [loadTasks]
+    [loadTasks],
   );
 
   const handleCreateTask = useCallback(async () => {
@@ -152,7 +153,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
         // Only allow starting manual tasks
         if (!task.is_manual) {
           alert(
-            "Only manual tasks can be started from here. Auto-tracked tasks are created when you start time tracking from the Time Tracker view."
+            "Only manual tasks can be started from here. Auto-tracked tasks are created when you start time tracking from the Time Tracker view.",
           );
           return;
         }
@@ -160,7 +161,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
         // Check if task is in a valid state to start
         if (task.status === "completed" || task.status === "cancelled") {
           alert(
-            `Cannot start a ${task.status} task. Please create a new task or change the status first.`
+            `Cannot start a ${task.status} task. Please create a new task or change the status first.`,
           );
           return;
         }
@@ -169,17 +170,19 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
         const status = await window.electronAPI.timeTracker.getStatus();
         if (status.isTracking) {
           const confirmSwitch = confirm(
-            "There is an active tracking session. Do you want to stop it and start tracking this task instead?"
+            "There is an active tracking session. Do you want to stop it and start tracking this task instead?",
           );
           if (!confirmSwitch) {
             return;
           }
           // Stop the current session first
           await window.electronAPI.timeTracker.stop();
+          await presenceService.heartbeat("idle");
         }
 
         // Start time tracking for this manual task with task ID and title
         await window.electronAPI.timeTracker.start(task.id, task.title);
+        await presenceService.heartbeat("working");
 
         // Update task status to in_progress
         await window.electronAPI.tasks.update(task.id, {
@@ -198,7 +201,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
         alert(error.message || "Failed to start time tracking");
       }
     },
-    [loadTasks, onNavigateToTracker]
+    [loadTasks, onNavigateToTracker],
   );
 
   // Stop manual task in-progress (logic same time tracker)
@@ -211,6 +214,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
 
         // Stop tracking with the manual task's title
         await window.electronAPI.timeTracker.stop(task.title);
+        await presenceService.heartbeat("idle");
         // Update task status to completed
         await window.electronAPI.tasks.update(task.id, { status: "completed" });
         await setTimeout(async () => {
@@ -222,7 +226,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
         alert(error.message || "Failed to stop time tracking");
       }
     },
-    [loadTasks]
+    [loadTasks],
   );
 
   const getPriorityColor = useCallback((priority: Task["priority"]) => {
@@ -261,7 +265,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
     if (seconds > 86400) {
       console.warn(
         `⚠️  Duration seems to be in milliseconds, not seconds:`,
-        seconds
+        seconds,
       );
       // Assume it's already in milliseconds, don't multiply
       return formatDurationDetailed(seconds, "minimal");
@@ -365,7 +369,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
           {
             label: "Total Time",
             value: formatDuration(
-              tasks.reduce((sum, t) => sum + (t.duration || 0), 0)
+              tasks.reduce((sum, t) => sum + (t.duration || 0), 0),
             ),
             icon: Icons.Chart,
             color: "accent",
@@ -502,7 +506,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTaskTypeBadgeColor(
-                          task
+                          task,
                         )}`}
                       >
                         {getTaskTypeLabel(task)}
@@ -511,7 +515,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                          task.status
+                          task.status,
                         )}`}
                       >
                         {task.status.replace("_", " ")}
@@ -520,7 +524,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                     <td className="px-6 py-4">
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                          task.priority
+                          task.priority,
                         )}`}
                       >
                         {task.priority}
@@ -745,7 +749,7 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
       if (viewSource === "local") {
         // Load local screenshots
         const localResult = await window.electronAPI.screenshots.getByTask(
-          task.id
+          task.id,
         );
         const screenshotsData = Array.isArray(localResult) ? localResult : [];
 
@@ -759,7 +763,7 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
             taskId: s.taskId ?? s.task_id,
             fileSize: s.fileSize ?? s.file_size ?? 0,
             isLocal: true,
-          })
+          }),
         );
         setScreenshots(screenshotsFormatted);
       } else {
@@ -777,7 +781,7 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
             taskId: s.task_id,
             fileSize: s.file_size || 0,
             isLocal: false,
-          })
+          }),
         );
         setScreenshots(screenshotsFormatted);
       }
@@ -827,7 +831,7 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
         alert("Failed to delete screenshot");
       }
     },
-    [selectedScreenshot, viewSource]
+    [selectedScreenshot, viewSource],
   );
 
   const formatDate = (dateString: string) => {
@@ -857,14 +861,14 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
     (dateString: string, _format?: string): string => {
       return formatDate(dateString); // Reuse existing formatDate
     },
-    []
+    [],
   );
 
   // Pagination logic
   const totalPages = Math.ceil(screenshots.length / pageSize);
   const paginatedScreenshots = screenshots.slice(
     (page - 1) * pageSize,
-    page * pageSize
+    page * pageSize,
   );
 
   return (

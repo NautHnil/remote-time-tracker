@@ -5,7 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Icons } from "../../components/Icons";
 import Pagination from "../../components/Pagination";
 import { Button, IconButton, Input, Select } from "../../components/ui";
@@ -14,6 +14,8 @@ import {
   AdminUpdateUserRequest,
   AdminUser,
 } from "../../services/adminService";
+import { API_BASE_URL } from "../../services/config";
+import { useAuthStore } from "../../store/authStore";
 
 // User Edit Modal Component
 interface UserEditModalProps {
@@ -205,6 +207,9 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string>("");
   const [systemRoleFilter, setSystemRoleFilter] = useState<string>("");
   const [activeFilter, setActiveFilter] = useState<string>("");
+  const storedToken =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const accessToken = useAuthStore((state) => state.accessToken) || storedToken;
 
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [deletingUser, setDeletingUser] = useState<AdminUser | null>(null);
@@ -230,7 +235,69 @@ export default function AdminUsersPage() {
       const response = await adminService.getUsers(params);
       return response.data;
     },
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true,
+    staleTime: 5000,
   });
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const url = `${API_BASE_URL}/admin/presence/stream?token=${encodeURIComponent(
+      accessToken,
+    )}`;
+    let eventSource: EventSource | null = null;
+    let retryCount = 0;
+    let isClosed = false;
+
+    const connect = () => {
+      if (isClosed) return;
+      eventSource = new EventSource(url);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          queryClient.setQueriesData(
+            { queryKey: ["admin-users"] },
+            (oldData: any) => {
+              if (!oldData?.users) return oldData;
+              const users = oldData.users.map((user: AdminUser) => {
+                if (user.id !== payload.user_id) return user;
+                return {
+                  ...user,
+                  presence_status: payload.status,
+                  last_presence_at: payload.last_presence_at,
+                  last_working_at:
+                    payload.last_working_at ?? user.last_working_at,
+                } as AdminUser;
+              });
+              return { ...oldData, users };
+            },
+          );
+        } catch (error) {
+          // Ignore malformed payloads (e.g., ping)
+        }
+      };
+
+      eventSource.onerror = () => {
+        if (eventSource) {
+          eventSource.close();
+        }
+        retryCount += 1;
+        const backoff = Math.min(30000, 1000 * 2 ** retryCount);
+        setTimeout(connect, backoff);
+      };
+    };
+
+    connect();
+
+    return () => {
+      isClosed = true;
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [accessToken, queryClient]);
 
   // Update user mutation
   const updateUserMutation = useMutation({
@@ -285,6 +352,34 @@ export default function AdminUsersPage() {
     return systemRole === "admin"
       ? "bg-purple-100 text-purple-800"
       : "bg-green-100 text-green-800";
+  };
+
+  const STALE_AFTER_MS = 45000;
+
+  const getEffectivePresenceStatus = (user: AdminUser) => {
+    const status = user.presence_status || "idle";
+    if (!user.last_presence_at) return "idle";
+    const last = new Date(user.last_presence_at).getTime();
+    if (Number.isNaN(last)) return status;
+    if (Date.now() - last > STALE_AFTER_MS) return "stale";
+    return status;
+  };
+
+  const getPresenceBadgeColor = (status: string) => {
+    switch (status) {
+      case "working":
+        return "bg-emerald-100 text-emerald-800";
+      case "idle":
+        return "bg-yellow-100 text-yellow-800";
+      case "stale":
+        return "bg-gray-100 text-gray-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  const formatPresenceStatus = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
   if (error) {
@@ -402,7 +497,10 @@ export default function AdminUsersPage() {
                     System Role
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    Presence
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Account
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Last Login
@@ -450,6 +548,24 @@ export default function AdminUsersPage() {
                       >
                         {user.system_role || "member"}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {(() => {
+                        const effectiveStatus =
+                          getEffectivePresenceStatus(user);
+                        return (
+                          <>
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPresenceBadgeColor(effectiveStatus)}`}
+                            >
+                              {formatPresenceStatus(effectiveStatus)}
+                            </span>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Last: {formatDate(user.last_presence_at || null)}
+                            </p>
+                          </>
+                        );
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span

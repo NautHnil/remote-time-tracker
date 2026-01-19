@@ -18,6 +18,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useDeeplink } from "./hooks";
 import { MainLayout, View } from "./layout";
 import { AppRouter } from "./routes";
+import { presenceService } from "./services/presenceService";
 
 // ============================================================================
 // LOADING SCREEN
@@ -113,6 +114,7 @@ function AppContent() {
 
       if (status.isTracking && status.status === "running") {
         await window.electronAPI.timeTracker.pause();
+        await presenceService.heartbeat("idle");
         setPausedForLogout(true);
 
         const pausedStatus = await window.electronAPI.timeTracker.getStatus();
@@ -154,6 +156,7 @@ function AppContent() {
       window.electronAPI.timeTracker.resume().catch((error) => {
         console.error("Error resuming tracking:", error);
       });
+      presenceService.heartbeat("working");
       setPausedForLogout(false);
     }
   }, [pausedForLogout, logoutDialog]);
@@ -161,6 +164,7 @@ function AppContent() {
   const executeLogout = useCallback(async () => {
     setPausedForLogout(false);
     await window.electronAPI.auth.clear();
+    await presenceService.heartbeat("idle");
     logout();
     setCurrentView("tracker");
     logoutDialog.close();
@@ -178,6 +182,7 @@ function AppContent() {
 
         console.log("🔄 Stopping tracking and syncing before logout...");
         await window.electronAPI.timeTracker.stopAndSync(finalTitle);
+        await presenceService.heartbeat("idle");
         console.log("✅ Stop and sync completed, now logging out...");
         setPausedForLogout(false);
         await executeLogout();
@@ -189,6 +194,8 @@ function AppContent() {
           await executeLogout();
         } catch (forceError) {
           console.error("Error force stopping:", forceError);
+        } finally {
+          await presenceService.heartbeat("idle");
         }
       }
     },
@@ -205,6 +212,7 @@ function AppContent() {
 
       if (status.isTracking && status.status === "running") {
         await window.electronAPI.timeTracker.pause();
+        await presenceService.heartbeat("idle");
         setPausedForQuit(true);
 
         const pausedStatus = await window.electronAPI.timeTracker.getStatus();
@@ -246,6 +254,7 @@ function AppContent() {
       window.electronAPI.timeTracker.resume().catch((error) => {
         console.error("Error resuming tracking:", error);
       });
+      presenceService.heartbeat("working");
       setPausedForQuit(false);
     }
   }, [pausedForQuit, quitAppDialog]);
@@ -253,6 +262,7 @@ function AppContent() {
   const executeQuitApp = useCallback(async () => {
     setPausedForQuit(false);
     quitAppDialog.close();
+    await presenceService.heartbeat("idle");
     await window.electronAPI.app.quit();
   }, [quitAppDialog]);
 
@@ -268,6 +278,7 @@ function AppContent() {
 
         console.log("🔄 Stopping tracking and syncing before quit...");
         await window.electronAPI.timeTracker.stopAndSync(finalTitle);
+        await presenceService.heartbeat("idle");
         console.log("✅ Stop and sync completed, now quitting...");
         setPausedForQuit(false);
         await executeQuitApp();
@@ -279,6 +290,8 @@ function AppContent() {
           await executeQuitApp();
         } catch (forceError) {
           console.error("Error force stopping:", forceError);
+        } finally {
+          await presenceService.heartbeat("idle");
         }
       }
     },

@@ -24,6 +24,7 @@ interface Config {
   apiUrl: string;
   screenshotInterval: number;
   syncInterval: number;
+  presenceHeartbeatInterval: number;
   credentials?: Credentials;
   deviceUUID?: string;
   imageOptimization: ImageOptimizationConfig;
@@ -38,9 +39,12 @@ class AppConfigClass {
       defaults: {
         apiUrl: process.env.API_URL || "http://localhost:8080/api/v1",
         screenshotInterval: parseInt(
-          process.env.SCREENSHOT_INTERVAL || "300000"
+          process.env.SCREENSHOT_INTERVAL || "300000",
         ), // 5 minutes
         syncInterval: parseInt(process.env.SYNC_INTERVAL || "60000"), // 1 minute
+        presenceHeartbeatInterval: parseInt(
+          process.env.PRESENCE_HEARTBEAT_INTERVAL || "15000",
+        ), // 15 seconds
         imageOptimization: {
           enabled: true,
           format: "jpeg",
@@ -62,6 +66,10 @@ class AppConfigClass {
 
   get syncInterval(): number {
     return this.store.get("syncInterval");
+  }
+
+  get presenceHeartbeatInterval(): number {
+    return this.store.get("presenceHeartbeatInterval");
   }
 
   getCredentials(): Credentials | undefined {
