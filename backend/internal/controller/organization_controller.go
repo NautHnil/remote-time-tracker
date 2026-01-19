@@ -306,7 +306,7 @@ func (c *OrganizationController) RemoveMember(ctx *gin.Context) {
 // @Success 200 {object} dto.OrganizationPublicInfo
 // @Router /api/v1/organizations/join/{code} [get]
 func (c *OrganizationController) GetOrgByInviteCode(ctx *gin.Context) {
-	code := ctx.Param("code")
+	code := ctx.Param("invite_code")
 	if code == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invite code is required"})
 		return
@@ -318,7 +318,11 @@ func (c *OrganizationController) GetOrgByInviteCode(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, org)
+	ctx.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Organization found",
+		"data":    org,
+	})
 }
 
 // JoinByInviteCode joins organization by invite code

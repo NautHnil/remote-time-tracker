@@ -111,6 +111,7 @@ export interface OrganizationPublicInfo {
   id: number;
   name: string;
   slug: string;
+  description?: string;
   logo_url: string;
   member_count: number;
 }
@@ -199,9 +200,8 @@ class OrganizationService {
    * Get all organizations for the current user
    */
   async getMyOrganizations(): Promise<OrganizationListItem[]> {
-    const response = await apiClient.get<OrganizationListItem[]>(
-      "/organizations"
-    );
+    const response =
+      await apiClient.get<OrganizationListItem[]>("/organizations");
     return response.data || [];
   }
 
@@ -218,7 +218,7 @@ class OrganizationService {
    */
   async getById(orgId: number): Promise<Organization> {
     const response = await apiClient.get<Organization>(
-      `/organizations/${orgId}`
+      `/organizations/${orgId}`,
     );
     return response.data;
   }
@@ -228,11 +228,11 @@ class OrganizationService {
    */
   async update(
     orgId: number,
-    data: UpdateOrganizationRequest
+    data: UpdateOrganizationRequest,
   ): Promise<Organization> {
     const response = await apiClient.put<Organization>(
       `/organizations/${orgId}`,
-      data
+      data,
     );
     return response.data;
   }
@@ -253,7 +253,7 @@ class OrganizationService {
    */
   async getMembers(orgId: number): Promise<OrganizationMember[]> {
     const response = await apiClient.get<OrganizationMember[]>(
-      `/organizations/${orgId}/members`
+      `/organizations/${orgId}/members`,
     );
     return response.data || [];
   }
@@ -263,11 +263,11 @@ class OrganizationService {
    */
   async addMember(
     orgId: number,
-    data: AddOrganizationMemberRequest
+    data: AddOrganizationMemberRequest,
   ): Promise<OrganizationMember> {
     const response = await apiClient.post<OrganizationMember>(
       `/organizations/${orgId}/members`,
-      data
+      data,
     );
     return response.data;
   }
@@ -278,11 +278,11 @@ class OrganizationService {
   async updateMember(
     orgId: number,
     userId: number,
-    data: UpdateOrganizationMemberRequest
+    data: UpdateOrganizationMemberRequest,
   ): Promise<OrganizationMember> {
     const response = await apiClient.put<OrganizationMember>(
       `/organizations/${orgId}/members/${userId}`,
-      data
+      data,
     );
     return response.data;
   }
@@ -303,7 +303,7 @@ class OrganizationService {
    */
   async getRoles(orgId: number): Promise<WorkspaceRole[]> {
     const response = await apiClient.get<WorkspaceRole[]>(
-      `/organizations/${orgId}/roles`
+      `/organizations/${orgId}/roles`,
     );
     return response.data || [];
   }
@@ -313,11 +313,11 @@ class OrganizationService {
    */
   async createRole(
     orgId: number,
-    data: CreateRoleRequest
+    data: CreateRoleRequest,
   ): Promise<WorkspaceRole> {
     const response = await apiClient.post<WorkspaceRole>(
       `/organizations/${orgId}/roles`,
-      data
+      data,
     );
     return response.data;
   }
@@ -328,11 +328,11 @@ class OrganizationService {
   async updateRole(
     orgId: number,
     roleId: number,
-    data: UpdateRoleRequest
+    data: UpdateRoleRequest,
   ): Promise<WorkspaceRole> {
     const response = await apiClient.put<WorkspaceRole>(
       `/organizations/${orgId}/roles/${roleId}`,
-      data
+      data,
     );
     return response.data;
   }
@@ -353,7 +353,7 @@ class OrganizationService {
    */
   async getWorkspaces(orgId: number): Promise<Workspace[]> {
     const response = await apiClient.get<Workspace[]>(
-      `/organizations/${orgId}/workspaces`
+      `/organizations/${orgId}/workspaces`,
     );
     return response.data || [];
   }
@@ -363,11 +363,11 @@ class OrganizationService {
    */
   async createWorkspace(
     orgId: number,
-    data: CreateWorkspaceRequest
+    data: CreateWorkspaceRequest,
   ): Promise<Workspace> {
     const response = await apiClient.post<Workspace>(
       `/organizations/${orgId}/workspaces`,
-      data
+      data,
     );
     return response.data;
   }
@@ -381,7 +381,7 @@ class OrganizationService {
    */
   async getInvitations(orgId: number): Promise<Invitation[]> {
     const response = await apiClient.get<Invitation[]>(
-      `/organizations/${orgId}/invitations`
+      `/organizations/${orgId}/invitations`,
     );
     return response.data || [];
   }
@@ -391,11 +391,11 @@ class OrganizationService {
    */
   async createInvitation(
     orgId: number,
-    data: CreateInvitationRequest
+    data: CreateInvitationRequest,
   ): Promise<Invitation> {
     const response = await apiClient.post<Invitation>(
       `/organizations/${orgId}/invitations`,
-      data
+      data,
     );
     return response.data;
   }
@@ -405,7 +405,7 @@ class OrganizationService {
    */
   async revokeInvitation(orgId: number, invitationId: number): Promise<void> {
     await apiClient.delete(
-      `/organizations/${orgId}/invitations/${invitationId}`
+      `/organizations/${orgId}/invitations/${invitationId}`,
     );
   }
 
@@ -414,21 +414,21 @@ class OrganizationService {
   // ===========================================================================
 
   /**
-   * Get organization by invite code (public info)
+   * Get organization by invite code (public info - no auth required)
    */
   async getByInviteCode(inviteCode: string): Promise<OrganizationPublicInfo> {
-    const response = await apiClient.get<OrganizationPublicInfo>(
-      `/organizations/join/${inviteCode}`
+    const response = await apiClient.publicGet<OrganizationPublicInfo>(
+      `/public/organizations/invite/${inviteCode}`,
     );
     return response.data;
   }
 
   /**
-   * Join organization by invite code
+   * Join organization by invite code (requires authentication)
    */
   async joinByInviteCode(inviteCode: string): Promise<OrganizationMember> {
     const response = await apiClient.post<OrganizationMember>(
-      `/organizations/join/${inviteCode}`
+      `/organizations/join/${inviteCode}`,
     );
     return response.data;
   }
@@ -438,7 +438,7 @@ class OrganizationService {
    */
   async regenerateInviteCode(orgId: number): Promise<string> {
     const response = await apiClient.post<{ invite_code: string }>(
-      `/organizations/${orgId}/regenerate-invite-code`
+      `/organizations/${orgId}/regenerate-invite-code`,
     );
     return response.data.invite_code;
   }
@@ -448,7 +448,7 @@ class OrganizationService {
    */
   async transferOwnership(
     orgId: number,
-    data: TransferOwnershipRequest
+    data: TransferOwnershipRequest,
   ): Promise<void> {
     await apiClient.post(`/organizations/${orgId}/transfer-ownership`, data);
   }

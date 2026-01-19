@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import DashboardPage from "./pages/DashboardPage";
+import JoinOrganizationPage from "./pages/JoinOrganizationPage";
 import LoginPage from "./pages/LoginPage";
 import OrganizationDetailPage from "./pages/OrganizationDetailPage";
 import OrganizationsPage from "./pages/OrganizationsPage";
@@ -17,6 +18,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public route - Join organization via invite link (accessible to all) */}
+        <Route path="/join/:inviteCode" element={<JoinOrganizationPage />} />
+
         {!isAuthenticated || !isAdmin() ? (
           <>
             <Route path="/login" element={<LoginPage />} />

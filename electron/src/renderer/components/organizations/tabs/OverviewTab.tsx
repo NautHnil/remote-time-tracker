@@ -134,12 +134,12 @@ export default function OverviewTab({
                 </label>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-gray-100 dark:bg-dark-900 px-3 py-2 rounded-lg text-primary-500 dark:text-primary-400 text-xs font-mono truncate">
-                    {`${window.location.origin}/join/${org.invite_code}`}
+                    {`${import.meta.env.VITE_WEBSITE_DOMAIN}/join/${org.invite_code}`}
                   </code>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(
-                        `${window.location.origin}/join/${org.invite_code}`
+                        `${import.meta.env.VITE_WEBSITE_DOMAIN}/join/${org.invite_code}`,
                       );
                       alert("Invite link copied to clipboard!");
                     }}

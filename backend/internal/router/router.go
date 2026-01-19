@@ -85,6 +85,23 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			}
 		}
 
+		// Public organization routes (for viewing invite link info)
+		if cfg.OrganizationController != nil {
+			publicOrgs := v1.Group("/public/organizations")
+			{
+				publicOrgs.GET("/invite/:invite_code", cfg.OrganizationController.GetOrgByInviteCode)
+			}
+		}
+
+		// Public download routes (for website to get app download links)
+		if cfg.UpdateController != nil {
+			publicDownloads := v1.Group("/public/downloads")
+			{
+				publicDownloads.GET("/latest", cfg.UpdateController.GetPublicDownloadLinks)
+				publicDownloads.GET("/file/:version/:filename", cfg.UpdateController.DownloadAsset) // Reuse existing handler
+			}
+		}
+
 		// Public update routes (for checking and downloading updates)
 		// These require JWT auth to prevent unauthorized access
 		if cfg.UpdateController != nil {

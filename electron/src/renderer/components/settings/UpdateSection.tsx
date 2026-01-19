@@ -6,6 +6,7 @@ type UpdateStep =
   | "idle"
   | "checking"
   | "available"
+  | "download-pending" // New: waiting for download to start
   | "downloading"
   | "downloaded"
   | "installing"
@@ -45,7 +46,7 @@ export function UpdateSection() {
             setStep("available");
             // Support both direct GitHub (version) and backend proxy (latest_version)
             setAvailableVersion(
-              payload.info?.latest_version || payload.info?.version || null
+              payload.info?.latest_version || payload.info?.version || null,
             );
             break;
           case "update-not-available":
@@ -93,7 +94,8 @@ export function UpdateSection() {
   };
 
   const handleDownload = async () => {
-    // Do not setStep("downloading") here; let event handler control state
+    // Set pending state immediately to prevent multiple clicks
+    setStep("download-pending");
     setProgress(0);
     setErrorMessage("");
     try {
@@ -117,7 +119,7 @@ export function UpdateSection() {
         if (res.error?.includes("Manual installation required")) {
           setStep("manual-install");
           setErrorMessage(
-            "Please install the update manually from your Downloads folder."
+            "Please install the update manually from your Downloads folder.",
           );
         } else {
           setStep("error");
@@ -152,6 +154,13 @@ export function UpdateSection() {
           badgeText: `v${availableVersion} Available`,
           icon: <Icons.ArrowUp className="w-4 h-4" />,
           description: "A new version is ready to download",
+        };
+      case "download-pending":
+        return {
+          badge: "warning" as const,
+          badgeText: "Starting...",
+          icon: <Icons.Download className="w-4 h-4 animate-pulse" />,
+          description: "Preparing download...",
         };
       case "downloading":
         return {
@@ -242,6 +251,16 @@ export function UpdateSection() {
           >
             <Icons.Download className="w-5 h-5" />
             Download v{availableVersion}
+          </button>
+        );
+      case "download-pending":
+        return (
+          <button
+            disabled
+            className={`${baseClasses} bg-gray-400 dark:bg-gray-600 text-white cursor-not-allowed`}
+          >
+            <Icons.Download className="w-5 h-5 animate-pulse" />
+            Starting download...
           </button>
         );
       case "downloading":

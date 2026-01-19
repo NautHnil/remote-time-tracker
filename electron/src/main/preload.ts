@@ -17,6 +17,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
     forceStop: () => ipcRenderer.invoke("time-tracker:force-stop"),
   },
 
+  // Deeplink APIs
+  deeplink: {
+    onJoinOrganization: (callback: (inviteCode: string) => void) => {
+      const handler = (_: any, inviteCode: string) => callback(inviteCode);
+      ipcRenderer.on("deeplink:join-organization", handler);
+      return () =>
+        ipcRenderer.removeListener("deeplink:join-organization", handler);
+    },
+  },
+
   // Time Logs APIs
   timeLogs: {
     getAll: () => ipcRenderer.invoke("time-logs:get-all"),
@@ -141,6 +151,9 @@ export interface ElectronAPI {
     resume: () => Promise<any>;
     getStatus: () => Promise<any>;
     forceStop: () => Promise<void>;
+  };
+  deeplink: {
+    onJoinOrganization: (callback: (inviteCode: string) => void) => () => void;
   };
   timeLogs: {
     getAll: () => Promise<any[]>;

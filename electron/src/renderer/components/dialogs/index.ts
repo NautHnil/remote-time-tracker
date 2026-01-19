@@ -1,6 +1,7 @@
 // Dialog Components
 export { AlertDialog } from "./AlertDialog";
 export { ConfirmDialog } from "./ConfirmDialog";
+export { JoinOrganizationDialog } from "./JoinOrganizationDialog";
 export { LogoutConfirmDialog } from "./LogoutConfirmDialog";
 export { PromptDialog } from "./PromptDialog";
 export { QuitAppConfirmDialog } from "./QuitAppConfirmDialog";

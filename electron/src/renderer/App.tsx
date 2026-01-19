@@ -6,6 +6,7 @@
 import { format } from "date-fns";
 import { useCallback, useEffect, useState } from "react";
 import {
+  JoinOrganizationDialog,
   LogoutConfirmDialog,
   QuitAppConfirmDialog,
   useLogoutConfirmDialog,
@@ -14,6 +15,7 @@ import {
 import { Icons } from "./components/Icons";
 import LoginForm from "./components/LoginForm";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { useDeeplink } from "./hooks";
 import { MainLayout, View } from "./layout";
 import { AppRouter } from "./routes";
 
@@ -58,6 +60,20 @@ function AppContent() {
   // Quit app confirmation dialog
   const quitAppDialog = useQuitAppConfirmDialog();
 
+  // Deeplink handler
+  const { pendingDeeplink, clearDeeplink } = useDeeplink();
+  const [joinOrgDialogOpen, setJoinOrgDialogOpen] = useState(false);
+  const [joinOrgInviteCode, setJoinOrgInviteCode] = useState("");
+
+  // Handle deeplink when received
+  useEffect(() => {
+    if (pendingDeeplink && pendingDeeplink.type === "join-organization") {
+      setJoinOrgInviteCode(pendingDeeplink.inviteCode);
+      setJoinOrgDialogOpen(true);
+      clearDeeplink();
+    }
+  }, [pendingDeeplink, clearDeeplink]);
+
   // Track if we paused the tracker for logout/quit dialogs
   const [pausedForLogout, setPausedForLogout] = useState(false);
   const [pausedForQuit, setPausedForQuit] = useState(false);
@@ -69,6 +85,23 @@ function AppContent() {
   const currentWorkspace = currentWorkspaceId
     ? workspaces.find((w) => w.id === currentWorkspaceId) || null
     : null;
+
+  // Handle join organization success
+  const handleJoinOrgSuccess = useCallback(
+    async (organization: any) => {
+      console.log("✅ Successfully joined organization:", organization);
+      // Refresh user data to update organizations list
+      await refreshUserData();
+      setJoinOrgDialogOpen(false);
+      setJoinOrgInviteCode("");
+    },
+    [refreshUserData],
+  );
+
+  const handleJoinOrgClose = useCallback(() => {
+    setJoinOrgDialogOpen(false);
+    setJoinOrgInviteCode("");
+  }, []);
 
   // ============================================================================
   // LOGOUT HANDLERS
@@ -139,7 +172,7 @@ function AppContent() {
         const nowMs = Date.now();
         const defaultTitle = `Work Session - ${format(
           nowMs,
-          "MMM d, yyyy"
+          "MMM d, yyyy",
         )} at ${format(nowMs, "hh:mm a")}`;
         const finalTitle = taskTitle?.trim() || defaultTitle;
 
@@ -159,7 +192,7 @@ function AppContent() {
         }
       }
     },
-    [executeLogout]
+    [executeLogout],
   );
 
   // ============================================================================
@@ -229,7 +262,7 @@ function AppContent() {
         const nowMs = Date.now();
         const defaultTitle = `Work Session - ${format(
           nowMs,
-          "MMM d, yyyy"
+          "MMM d, yyyy",
         )} at ${format(nowMs, "hh:mm a")}`;
         const finalTitle = taskTitle?.trim() || defaultTitle;
 
@@ -249,7 +282,7 @@ function AppContent() {
         }
       }
     },
-    [executeQuitApp]
+    [executeQuitApp],
   );
 
   // ============================================================================
@@ -320,6 +353,14 @@ function AppContent() {
         onConfirmQuit={executeQuitApp}
         onStopAndQuit={handleStopAndQuit}
         onCancel={handleCancelQuit}
+      />
+
+      {/* Join Organization Dialog (deeplink) */}
+      <JoinOrganizationDialog
+        open={joinOrgDialogOpen}
+        inviteCode={joinOrgInviteCode}
+        onClose={handleJoinOrgClose}
+        onJoinSuccess={handleJoinOrgSuccess}
       />
 
       {/* Main Layout */}

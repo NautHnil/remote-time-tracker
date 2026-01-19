@@ -71,6 +71,12 @@
     "appId": "com.rtt.desktop",
     "productName": "Remote Time Tracker",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "protocols": {
+      "name": "Remote Time Tracker",
+      "schemes": [
+        "timetracker"
+      ]
+    },
     "directories": {
       "output": "release"
     },

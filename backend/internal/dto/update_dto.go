@@ -75,3 +75,25 @@ type YMLUpdateInfo struct {
 		Size   int64  `yaml:"size" json:"size"`
 	} `yaml:"files" json:"files,omitempty"`
 }
+
+// ============================================================
+// Public Download DTOs (for website)
+// ============================================================
+
+// PublicDownloadResponse represents the response for public download links
+type PublicDownloadResponse struct {
+	Version      string                      `json:"version"`
+	ReleaseDate  time.Time                   `json:"release_date"`
+	ReleaseNotes string                      `json:"release_notes,omitempty"`
+	Downloads    map[string]PlatformDownload `json:"downloads"`
+}
+
+// PlatformDownload represents a download link for a specific platform
+type PlatformDownload struct {
+	Name        string `json:"name"`         // Display name (e.g., "Windows", "macOS (Apple Silicon)")
+	Icon        string `json:"icon"`         // Icon identifier (windows, apple, linux)
+	Filename    string `json:"filename"`     // Original filename
+	URL         string `json:"url"`          // Proxied download URL through backend (use this for private repos)
+	Size        int64  `json:"size"`         // File size in bytes
+	ContentType string `json:"content_type"` // MIME type
+}
