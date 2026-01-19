@@ -16,6 +16,8 @@ interface OrgRailProps {
   onTrackerClick: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  /** Whether user has access to a workspace (to show/hide tracker button) */
+  hasWorkspaceAccess?: boolean;
 }
 
 const OrgRail: React.FC<OrgRailProps> = ({
@@ -26,6 +28,7 @@ const OrgRail: React.FC<OrgRailProps> = ({
   onTrackerClick,
   isCollapsed,
   onToggleCollapse,
+  hasWorkspaceAccess = false,
 }) => {
   // When collapsed, hide the entire org rail
   if (isCollapsed) {
@@ -113,8 +116,8 @@ const OrgRail: React.FC<OrgRailProps> = ({
       {/* Divider */}
       <div className="h-px bg-gray-300 dark:bg-dark-700 mt-1 w-8" />
 
-      {/* Mini Tracker Status at bottom */}
-      <MiniTrackerStatus onClick={onTrackerClick} />
+      {/* Mini Tracker Status at bottom - only show when user has workspace access */}
+      {hasWorkspaceAccess && <MiniTrackerStatus onClick={onTrackerClick} />}
 
       {/* Collapse Button at the very bottom */}
       <button

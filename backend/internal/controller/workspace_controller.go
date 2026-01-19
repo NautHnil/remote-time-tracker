@@ -27,11 +27,17 @@ func NewWorkspaceController(workspaceService service.WorkspaceService) *Workspac
 
 // GetByID gets workspace by ID
 // @Summary Get workspace by ID
+// @Description Get workspace details. Use ?members=true to include members list.
 // @Tags workspaces
 // @Produce json
-// @Param id path int true "Workspace ID"
-// @Success 200 {object} dto.WorkspaceResponse
-// @Router /api/v1/workspaces/{id} [get]
+// @Security BearerAuth
+// @Param workspace_id path int true "Workspace ID"
+// @Param members query bool false "Include members list"
+// @Success 200 {object} dto.WorkspaceResponse "Workspace details"
+// @Failure 400 {object} dto.ErrorResponse "Invalid workspace ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 404 {object} dto.ErrorResponse "Workspace not found"
+// @Router /workspaces/{workspace_id} [get]
 func (c *WorkspaceController) GetByID(ctx *gin.Context) {
 	workspaceID, err := strconv.ParseUint(ctx.Param("workspace_id"), 10, 32)
 	if err != nil {
@@ -61,13 +67,18 @@ func (c *WorkspaceController) GetByID(ctx *gin.Context) {
 
 // Update updates a workspace
 // @Summary Update workspace
+// @Description Update workspace details. Only workspace admin can update.
 // @Tags workspaces
 // @Accept json
 // @Produce json
-// @Param id path int true "Workspace ID"
+// @Security BearerAuth
+// @Param workspace_id path int true "Workspace ID"
 // @Param request body dto.UpdateWorkspaceRequest true "Workspace data"
-// @Success 200 {object} dto.WorkspaceResponse
-// @Router /api/v1/workspaces/{id} [put]
+// @Success 200 {object} dto.WorkspaceResponse "Workspace updated"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Forbidden"
+// @Router /workspaces/{workspace_id} [put]
 func (c *WorkspaceController) Update(ctx *gin.Context) {
 	workspaceID, err := strconv.ParseUint(ctx.Param("workspace_id"), 10, 32)
 	if err != nil {
@@ -93,10 +104,15 @@ func (c *WorkspaceController) Update(ctx *gin.Context) {
 
 // Delete deletes a workspace
 // @Summary Delete workspace
+// @Description Delete a workspace. Only organization owner can delete.
 // @Tags workspaces
-// @Param id path int true "Workspace ID"
-// @Success 204
-// @Router /api/v1/workspaces/{id} [delete]
+// @Security BearerAuth
+// @Param workspace_id path int true "Workspace ID"
+// @Success 204 "Workspace deleted"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Forbidden"
+// @Router /workspaces/{workspace_id} [delete]
 func (c *WorkspaceController) Delete(ctx *gin.Context) {
 	workspaceID, err := strconv.ParseUint(ctx.Param("workspace_id"), 10, 32)
 	if err != nil {
@@ -115,10 +131,16 @@ func (c *WorkspaceController) Delete(ctx *gin.Context) {
 
 // List lists user's workspaces
 // @Summary List user's workspaces
+// @Description Get all workspaces the user is a member of. Can filter by organization_id.
 // @Tags workspaces
 // @Produce json
-// @Success 200 {array} dto.WorkspaceListResponse
-// @Router /api/v1/workspaces [get]
+// @Security BearerAuth
+// @Param organization_id query int false "Filter by organization ID"
+// @Success 200 {array} dto.WorkspaceListResponse "User's workspaces"
+// @Failure 400 {object} dto.ErrorResponse "Invalid organization ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /workspaces [get]
 func (c *WorkspaceController) List(ctx *gin.Context) {
 	userID := ctx.GetUint("userID")
 
@@ -155,11 +177,16 @@ func (c *WorkspaceController) List(ctx *gin.Context) {
 
 // GetMembers lists workspace members
 // @Summary List workspace members
+// @Description Get all members of a workspace with their roles
 // @Tags workspaces
 // @Produce json
-// @Param id path int true "Workspace ID"
-// @Success 200 {array} dto.WorkspaceMemberResponse
-// @Router /api/v1/workspaces/{id}/members [get]
+// @Security BearerAuth
+// @Param workspace_id path int true "Workspace ID"
+// @Success 200 {array} dto.WorkspaceMemberResponse "Workspace members"
+// @Failure 400 {object} dto.ErrorResponse "Invalid workspace ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Not a member"
+// @Router /workspaces/{workspace_id}/members [get]
 func (c *WorkspaceController) GetMembers(ctx *gin.Context) {
 	workspaceID, err := strconv.ParseUint(ctx.Param("workspace_id"), 10, 32)
 	if err != nil {
@@ -179,13 +206,18 @@ func (c *WorkspaceController) GetMembers(ctx *gin.Context) {
 
 // AddMember adds a member to workspace
 // @Summary Add member to workspace
+// @Description Add a new member to the workspace. Only workspace admin can add members.
 // @Tags workspaces
 // @Accept json
 // @Produce json
-// @Param id path int true "Workspace ID"
+// @Security BearerAuth
+// @Param workspace_id path int true "Workspace ID"
 // @Param request body dto.AddWorkspaceMemberRequest true "Member data"
-// @Success 201 {object} dto.WorkspaceMemberResponse
-// @Router /api/v1/workspaces/{id}/members [post]
+// @Success 201 {object} dto.WorkspaceMemberResponse "Member added"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Forbidden"
+// @Router /workspaces/{workspace_id}/members [post]
 func (c *WorkspaceController) AddMember(ctx *gin.Context) {
 	workspaceID, err := strconv.ParseUint(ctx.Param("workspace_id"), 10, 32)
 	if err != nil {
@@ -211,14 +243,19 @@ func (c *WorkspaceController) AddMember(ctx *gin.Context) {
 
 // UpdateMember updates a workspace member
 // @Summary Update workspace member
+// @Description Update a workspace member's role. Only workspace admin can update.
 // @Tags workspaces
 // @Accept json
 // @Produce json
-// @Param id path int true "Workspace ID"
-// @Param uid path int true "User ID"
+// @Security BearerAuth
+// @Param workspace_id path int true "Workspace ID"
+// @Param user_id path int true "User ID"
 // @Param request body dto.UpdateWorkspaceMemberRequest true "Member data"
-// @Success 200 {object} dto.WorkspaceMemberResponse
-// @Router /api/v1/workspaces/{id}/members/{uid} [put]
+// @Success 200 {object} dto.WorkspaceMemberResponse "Member updated"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Forbidden"
+// @Router /workspaces/{workspace_id}/members/{user_id} [put]
 func (c *WorkspaceController) UpdateMember(ctx *gin.Context) {
 	workspaceID, err := strconv.ParseUint(ctx.Param("workspace_id"), 10, 32)
 	if err != nil {
@@ -250,11 +287,16 @@ func (c *WorkspaceController) UpdateMember(ctx *gin.Context) {
 
 // RemoveMember removes a member from workspace
 // @Summary Remove member from workspace
+// @Description Remove a member from the workspace. Only workspace admin can remove.
 // @Tags workspaces
-// @Param id path int true "Workspace ID"
-// @Param uid path int true "User ID"
-// @Success 204
-// @Router /api/v1/workspaces/{id}/members/{uid} [delete]
+// @Security BearerAuth
+// @Param workspace_id path int true "Workspace ID"
+// @Param user_id path int true "User ID"
+// @Success 204 "Member removed"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Cannot remove admin"
+// @Router /workspaces/{workspace_id}/members/{user_id} [delete]
 func (c *WorkspaceController) RemoveMember(ctx *gin.Context) {
 	workspaceID, err := strconv.ParseUint(ctx.Param("workspace_id"), 10, 32)
 	if err != nil {

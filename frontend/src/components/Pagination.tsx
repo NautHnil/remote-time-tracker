@@ -1,4 +1,5 @@
 import React from "react";
+import { Icons } from "./Icons";
 
 interface PaginationProps {
   currentPage: number;
@@ -86,7 +87,7 @@ const Pagination: React.FC<PaginationProps> = ({
   };
 
   const handleJumpToPageKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Enter") {
       handleJumpToPage();
@@ -140,19 +141,7 @@ const Pagination: React.FC<PaginationProps> = ({
             className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
             title="First page"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-              />
-            </svg>
+            <Icons.ChevronDoubleLeft className="w-4 h-4" />
           </button>
         )}
 
@@ -163,19 +152,7 @@ const Pagination: React.FC<PaginationProps> = ({
           className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
           title="Previous page"
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
+          <Icons.ChevronLeft className="w-4 h-4" />
         </button>
 
         {/* Page numbers */}
@@ -200,7 +177,7 @@ const Pagination: React.FC<PaginationProps> = ({
               >
                 {page}
               </button>
-            )
+            ),
           )}
         </div>
 
@@ -211,19 +188,7 @@ const Pagination: React.FC<PaginationProps> = ({
           className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
           title="Next page"
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
+          <Icons.ChevronRight className="w-4 h-4" />
         </button>
 
         {/* Last page button */}
@@ -234,19 +199,7 @@ const Pagination: React.FC<PaginationProps> = ({
             className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
             title="Last page"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 5l7 7-7 7M5 5l7 7-7 7"
-              />
-            </svg>
+            <Icons.ChevronDoubleRight className="w-4 h-4" />
           </button>
         )}
       </div>

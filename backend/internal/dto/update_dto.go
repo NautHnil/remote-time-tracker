@@ -64,10 +64,11 @@ type UpdateDownloadRequest struct {
 }
 
 // YMLUpdateInfo represents the structure of latest.yml/latest-mac.yml files
+// @Description YAML update info for electron-updater
 type YMLUpdateInfo struct {
-	Version     string    `yaml:"version" json:"version"`
-	Path        string    `yaml:"path" json:"path"`
-	SHA512      string    `yaml:"sha512" json:"sha512"`
+	Version     string    `yaml:"version" json:"version" example:"1.0.0"`
+	Path        string    `yaml:"path" json:"path" example:"Remote Time Tracker-1.0.0.dmg"`
+	SHA512      string    `yaml:"sha512" json:"sha512" example:"sha512hash..."`
 	ReleaseDate time.Time `yaml:"releaseDate" json:"releaseDate"`
 	Files       []struct {
 		URL    string `yaml:"url" json:"url"`
@@ -75,6 +76,20 @@ type YMLUpdateInfo struct {
 		Size   int64  `yaml:"size" json:"size"`
 	} `yaml:"files" json:"files,omitempty"`
 }
+
+// YMLInfo is alias for YMLUpdateInfo for swagger
+type YMLInfo = YMLUpdateInfo
+
+// ReleaseNotesResponse represents release notes response
+// @Description Release notes for a specific version
+type ReleaseNotesResponse struct {
+	Version      string    `json:"version" example:"v1.0.0"`
+	ReleaseNotes string    `json:"release_notes" example:"## Changes\n- New feature..."`
+	ReleaseDate  time.Time `json:"release_date"`
+}
+
+// PublicDownloadsResponse is alias for PublicDownloadResponse for swagger
+type PublicDownloadsResponse = PublicDownloadResponse
 
 // ============================================================
 // Public Download DTOs (for website)

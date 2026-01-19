@@ -25,13 +25,17 @@ func NewTaskController(taskService service.TaskService) *TaskController {
 
 // Create handles creating a new task
 // @Summary Create a new task
+// @Description Create a new task. Tasks can be manually created (is_manual=true) or auto-created from time tracker.
 // @Tags tasks
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param request body dto.CreateTaskRequest true "Task creation details"
-// @Success 201 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Router /api/v1/tasks [post]
+// @Success 201 {object} dto.SuccessResponse{data=dto.TaskWithStats} "Task created successfully"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /tasks [post]
 func (ctrl *TaskController) Create(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -56,14 +60,16 @@ func (ctrl *TaskController) Create(c *gin.Context) {
 
 // GetByID handles retrieving a task by ID
 // @Summary Get task by ID
+// @Description Get detailed information about a specific task including statistics
 // @Tags tasks
-// @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Task ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Router /api/v1/tasks/{id} [get]
+// @Success 200 {object} dto.SuccessResponse{data=dto.TaskWithStats} "Task retrieved successfully"
+// @Failure 400 {object} dto.ErrorResponse "Invalid task ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 404 {object} dto.ErrorResponse "Task not found"
+// @Router /tasks/{id} [get]
 func (ctrl *TaskController) GetByID(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -89,14 +95,16 @@ func (ctrl *TaskController) GetByID(c *gin.Context) {
 
 // List handles listing tasks with pagination
 // @Summary List tasks
+// @Description Get paginated list of tasks for the authenticated user with statistics
 // @Tags tasks
-// @Accept json
 // @Produce json
-// @Param page query int false "Page number" default(1)
-// @Param per_page query int false "Items per page" default(50)
-// @Success 200 {object} dto.PaginatedResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Router /api/v1/tasks [get]
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1) minimum(1)
+// @Param per_page query int false "Items per page" default(50) minimum(1) maximum(100)
+// @Success 200 {object} dto.SuccessResponse "Tasks retrieved successfully"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /tasks [get]
 func (ctrl *TaskController) List(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -140,15 +148,19 @@ func (ctrl *TaskController) List(c *gin.Context) {
 
 // Update handles updating a task
 // @Summary Update task
+// @Description Update an existing task's details
 // @Tags tasks
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Task ID"
 // @Param request body dto.UpdateTaskRequest true "Task update details"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Router /api/v1/tasks/{id} [put]
+// @Success 200 {object} dto.SuccessResponse{data=dto.TaskWithStats} "Task updated successfully"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 404 {object} dto.ErrorResponse "Task not found"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /tasks/{id} [put]
 func (ctrl *TaskController) Update(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -180,14 +192,17 @@ func (ctrl *TaskController) Update(c *gin.Context) {
 
 // Delete handles deleting a task
 // @Summary Delete task
+// @Description Delete a task and its associated data
 // @Tags tasks
-// @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Task ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Router /api/v1/tasks/{id} [delete]
+// @Success 200 {object} dto.SuccessResponse "Task deleted successfully"
+// @Failure 400 {object} dto.ErrorResponse "Invalid task ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 404 {object} dto.ErrorResponse "Task not found"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /tasks/{id} [delete]
 func (ctrl *TaskController) Delete(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {
@@ -212,12 +227,14 @@ func (ctrl *TaskController) Delete(c *gin.Context) {
 
 // GetActiveTasks handles retrieving active tasks for a user
 // @Summary Get active tasks
+// @Description Get all active (non-completed, non-archived) tasks for the authenticated user
 // @Tags tasks
-// @Accept json
 // @Produce json
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Router /api/v1/tasks/active [get]
+// @Security BearerAuth
+// @Success 200 {object} dto.SuccessResponse "Active tasks retrieved successfully"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /tasks/active [get]
 func (ctrl *TaskController) GetActiveTasks(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {

@@ -43,6 +43,7 @@ type UserResponse struct {
 	FirstName   string     `json:"first_name"`
 	LastName    string     `json:"last_name"`
 	Role        string     `json:"role"`
+	SystemRole  string     `json:"system_role"`
 	IsActive    bool       `json:"is_active"`
 	LastLoginAt *time.Time `json:"last_login_at"`
 	CreatedAt   time.Time  `json:"created_at"`
@@ -234,4 +235,62 @@ type PaginationResponse struct {
 	PerPage    int         `json:"per_page"`
 	Total      int64       `json:"total"`
 	TotalPages int         `json:"total_pages"`
+}
+
+// RefreshTokenRequest represents refresh token request
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
+}
+
+// TimeLogResponse represents time log in responses
+type TimeLogResponse struct {
+	ID          uint       `json:"id" example:"1"`
+	UserID      uint       `json:"user_id" example:"1"`
+	TaskID      *uint      `json:"task_id" example:"1"`
+	LocalID     string     `json:"local_id" example:"550e8400-e29b-41d4-a716-446655440000"`
+	StartTime   time.Time  `json:"start_time" example:"2024-01-01T09:00:00Z"`
+	EndTime     *time.Time `json:"end_time" example:"2024-01-01T17:00:00Z"`
+	PausedAt    *time.Time `json:"paused_at"`
+	ResumedAt   *time.Time `json:"resumed_at"`
+	Duration    int64      `json:"duration" example:"28800"`
+	PausedTotal int64      `json:"paused_total" example:"3600"`
+	Status      string     `json:"status" example:"stopped"`
+	TaskTitle   string     `json:"task_title" example:"Working on feature X"`
+	Notes       string     `json:"notes" example:"Completed the main functionality"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+// ScreenshotResponse represents screenshot in responses
+type ScreenshotResponse struct {
+	ID           uint      `json:"id" example:"1"`
+	UserID       uint      `json:"user_id" example:"1"`
+	TimeLogID    *uint     `json:"time_log_id" example:"1"`
+	TaskID       *uint     `json:"task_id" example:"1"`
+	FilePath     string    `json:"file_path" example:"/uploads/screenshots/user_1/2024/01/screenshot_1.png"`
+	FileName     string    `json:"file_name" example:"screenshot_1.png"`
+	FileSize     int64     `json:"file_size" example:"245760"`
+	MimeType     string    `json:"mime_type" example:"image/png"`
+	CapturedAt   time.Time `json:"captured_at" example:"2024-01-01T10:30:00Z"`
+	ScreenNumber int       `json:"screen_number" example:"1"`
+	IsEncrypted  bool      `json:"is_encrypted" example:"false"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+// ScreenshotStats represents screenshot statistics
+type ScreenshotStats struct {
+	TotalCount     int64 `json:"total_count" example:"150"`
+	TotalSize      int64 `json:"total_size" example:"38400000"`
+	TodayCount     int64 `json:"today_count" example:"25"`
+	ThisWeekCount  int64 `json:"this_week_count" example:"100"`
+	ThisMonthCount int64 `json:"this_month_count" example:"350"`
+}
+
+// TimeLogStats represents time tracking statistics
+type TimeLogStats struct {
+	TotalTimeSeconds int64   `json:"total_time_seconds" example:"144000"`
+	TotalTimeHours   float64 `json:"total_time_hours" example:"40.0"`
+	SessionCount     int     `json:"session_count" example:"20"`
+	StartDate        string  `json:"start_date" example:"2024-01-01"`
+	EndDate          string  `json:"end_date" example:"2024-01-07"`
 }

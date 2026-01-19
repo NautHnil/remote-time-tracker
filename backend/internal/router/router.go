@@ -6,6 +6,8 @@ import (
 	"github.com/beuphecan/remote-time-tracker/internal/middleware"
 	"github.com/beuphecan/remote-time-tracker/internal/service"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // RouterConfig holds all dependencies for router setup
@@ -65,6 +67,9 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 	// Health check
 	router.GET("/health", middleware.HealthCheck)
 
+	// Swagger documentation
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
@@ -74,6 +79,15 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			auth.POST("/register", cfg.AuthController.Register)
 			auth.POST("/login", cfg.AuthController.Login)
 			auth.POST("/refresh", cfg.AuthController.RefreshToken)
+		}
+
+		// Public system routes (no auth required) - for initializing admin
+		if cfg.SystemController != nil {
+			publicSystem := v1.Group("/system")
+			{
+				publicSystem.POST("/init-admin", cfg.SystemController.InitializeAdmin)
+				publicSystem.GET("/admin-exists", cfg.SystemController.CheckAdminExists)
+			}
 		}
 
 		// Public invitation routes (for accepting invitations)
@@ -269,11 +283,78 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 				admin := protected.Group("/admin")
 				admin.Use(middleware.RequireSystemAdmin())
 				{
-					admin.GET("/users", cfg.AdminController.ListUsers)
-					admin.GET("/users/:id", cfg.AdminController.GetUser)
-					admin.PUT("/users/:id", cfg.AdminController.UpdateUser)
-					admin.DELETE("/users/:id", cfg.AdminController.DeleteUser)
-					admin.GET("/stats", cfg.AdminController.GetSystemStats)
+					// User management
+					users := admin.Group("/users")
+					{
+						users.GET("", cfg.AdminController.ListUsers)
+						users.POST("", cfg.AdminController.CreateUser)
+						users.GET("/:id", cfg.AdminController.GetUser)
+						users.PUT("/:id", cfg.AdminController.UpdateUser)
+						users.DELETE("/:id", cfg.AdminController.DeleteUser)
+						users.PUT("/:id/activate", cfg.AdminController.ActivateUser)
+						users.PUT("/:id/role", cfg.AdminController.ChangeUserRole)
+						users.PUT("/:id/system-role", cfg.AdminController.ChangeUserSystemRole)
+					}
+
+					// Organization management
+					orgs := admin.Group("/organizations")
+					{
+						orgs.GET("", cfg.AdminController.ListOrganizations)
+						orgs.GET("/:id", cfg.AdminController.GetOrganization)
+						orgs.PUT("/:id", cfg.AdminController.UpdateOrganization)
+						orgs.DELETE("/:id", cfg.AdminController.DeleteOrganization)
+						orgs.PUT("/:id/verify", cfg.AdminController.VerifyOrganization)
+					}
+
+					// Workspace management
+					workspaces := admin.Group("/workspaces")
+					{
+						workspaces.GET("", cfg.AdminController.ListWorkspaces)
+						workspaces.GET("/:id", cfg.AdminController.GetWorkspace)
+						workspaces.PUT("/:id", cfg.AdminController.UpdateWorkspace)
+						workspaces.DELETE("/:id", cfg.AdminController.DeleteWorkspace)
+						workspaces.PUT("/:id/archive", cfg.AdminController.ArchiveWorkspace)
+					}
+
+					// Task management
+					tasks := admin.Group("/tasks")
+					{
+						tasks.GET("", cfg.AdminController.ListTasks)
+						tasks.GET("/:id", cfg.AdminController.GetTask)
+						tasks.PUT("/:id", cfg.AdminController.UpdateTask)
+						tasks.DELETE("/:id", cfg.AdminController.DeleteTask)
+					}
+
+					// Time log management
+					timelogs := admin.Group("/timelogs")
+					{
+						timelogs.GET("", cfg.AdminController.ListTimeLogs)
+						timelogs.GET("/:id", cfg.AdminController.GetTimeLog)
+						timelogs.PUT("/:id", cfg.AdminController.UpdateTimeLog)
+						timelogs.DELETE("/:id", cfg.AdminController.DeleteTimeLog)
+						timelogs.POST("/approve", cfg.AdminController.ApproveTimeLogs)
+					}
+
+					// Screenshot management
+					screenshots := admin.Group("/screenshots")
+					{
+						screenshots.GET("", cfg.AdminController.ListScreenshots)
+						screenshots.GET("/:id", cfg.AdminController.GetScreenshot)
+						screenshots.GET("/:id/view", cfg.AdminController.ViewScreenshot)
+						screenshots.DELETE("/:id", cfg.AdminController.DeleteScreenshot)
+						screenshots.POST("/bulk-delete", cfg.AdminController.BulkDeleteScreenshots)
+					}
+
+					// Statistics & Reports
+					stats := admin.Group("/stats")
+					{
+						stats.GET("", cfg.AdminController.GetSystemStats)
+						stats.GET("/overview", cfg.AdminController.GetOverviewStats)
+						stats.GET("/trends", cfg.AdminController.GetTrendStats)
+						stats.GET("/user-performance", cfg.AdminController.GetUserPerformanceStats)
+						stats.GET("/org-distribution", cfg.AdminController.GetOrgDistributionStats)
+						stats.GET("/activity", cfg.AdminController.GetActivityStats)
+					}
 				}
 			}
 		}

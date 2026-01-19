@@ -26,14 +26,16 @@ func NewScreenshotController(screenshotService service.ScreenshotService) *Scree
 
 // GetScreenshot retrieves a single screenshot
 // @Summary Get screenshot by ID
+// @Description Get detailed information about a specific screenshot
 // @Tags screenshots
-// @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Screenshot ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Failure 404 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots/{id} [get]
+// @Success 200 {object} dto.SuccessResponse{data=dto.ScreenshotResponse} "Screenshot retrieved successfully"
+// @Failure 400 {object} dto.ErrorResponse "Invalid screenshot ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 404 {object} dto.ErrorResponse "Screenshot not found"
+// @Router /screenshots/{id} [get]
 func (c *ScreenshotController) GetScreenshot(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 	idStr := ctx.Param("id")
@@ -54,14 +56,16 @@ func (c *ScreenshotController) GetScreenshot(ctx *gin.Context) {
 
 // ListScreenshots retrieves screenshots with pagination
 // @Summary List screenshots
+// @Description Get paginated list of screenshots for the authenticated user
 // @Tags screenshots
-// @Accept json
 // @Produce json
-// @Param page query int false "Page number" default(1)
-// @Param per_page query int false "Items per page" default(20)
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots [get]
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1) minimum(1)
+// @Param per_page query int false "Items per page" default(20) minimum(1) maximum(100)
+// @Success 200 {object} dto.SuccessResponse{data=dto.PaginationResponse} "Screenshots retrieved successfully"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /screenshots [get]
 func (c *ScreenshotController) ListScreenshots(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 
@@ -86,14 +90,17 @@ func (c *ScreenshotController) ListScreenshots(ctx *gin.Context) {
 }
 
 // GetScreenshotsByTimeLog retrieves screenshots for a specific timelog
-// @Summary Get screenshots by timelog ID
+// @Summary Get screenshots by time log ID
+// @Description Get all screenshots associated with a specific time log session
 // @Tags screenshots
-// @Accept json
 // @Produce json
-// @Param timelog_id path int true "TimeLog ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots/timelog/{timelog_id} [get]
+// @Security BearerAuth
+// @Param timelog_id path int true "Time Log ID"
+// @Success 200 {object} dto.SuccessResponse{data=[]dto.ScreenshotResponse} "Screenshots retrieved successfully"
+// @Failure 400 {object} dto.ErrorResponse "Invalid time log ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /screenshots/timelog/{timelog_id} [get]
 func (c *ScreenshotController) GetScreenshotsByTimeLog(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 	timeLogIDStr := ctx.Param("timelog_id")
@@ -114,13 +121,16 @@ func (c *ScreenshotController) GetScreenshotsByTimeLog(ctx *gin.Context) {
 
 // GetScreenshotsByTaskID retrieves all screenshots for a specific task
 // @Summary Get screenshots by task ID
+// @Description Get all screenshots associated with a specific task
 // @Tags screenshots
-// @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param task_id path int true "Task ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots/task/{task_id} [get]
+// @Success 200 {object} dto.SuccessResponse{data=[]dto.ScreenshotResponse} "Screenshots retrieved successfully"
+// @Failure 400 {object} dto.ErrorResponse "Invalid task ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /screenshots/task/{task_id} [get]
 func (c *ScreenshotController) GetScreenshotsByTaskID(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 
@@ -142,14 +152,17 @@ func (c *ScreenshotController) GetScreenshotsByTaskID(ctx *gin.Context) {
 
 // GetScreenshotsByDateRange retrieves screenshots within a date range
 // @Summary Get screenshots by date range
+// @Description Get all screenshots captured within a specific date range
 // @Tags screenshots
-// @Accept json
 // @Produce json
-// @Param start_date query string true "Start date (YYYY-MM-DD)"
-// @Param end_date query string true "End date (YYYY-MM-DD)"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots/range [get]
+// @Security BearerAuth
+// @Param start_date query string true "Start date (YYYY-MM-DD)" example(2024-01-01)
+// @Param end_date query string true "End date (YYYY-MM-DD)" example(2024-01-31)
+// @Success 200 {object} dto.SuccessResponse{data=[]dto.ScreenshotResponse} "Screenshots retrieved successfully"
+// @Failure 400 {object} dto.ErrorResponse "Invalid date format or missing parameters"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /screenshots/range [get]
 func (c *ScreenshotController) GetScreenshotsByDateRange(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 
@@ -187,13 +200,16 @@ func (c *ScreenshotController) GetScreenshotsByDateRange(ctx *gin.Context) {
 
 // DeleteScreenshot deletes a screenshot
 // @Summary Delete screenshot
+// @Description Delete a screenshot by ID
 // @Tags screenshots
-// @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "Screenshot ID"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots/{id} [delete]
+// @Success 200 {object} dto.SuccessResponse "Screenshot deleted successfully"
+// @Failure 400 {object} dto.ErrorResponse "Invalid screenshot ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Failed to delete screenshot"
+// @Router /screenshots/{id} [delete]
 func (c *ScreenshotController) DeleteScreenshot(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 	idStr := ctx.Param("id")
@@ -214,14 +230,16 @@ func (c *ScreenshotController) DeleteScreenshot(ctx *gin.Context) {
 
 // GetScreenshotStats retrieves screenshot statistics
 // @Summary Get screenshot statistics
+// @Description Get statistics about screenshots including total count, size, and counts by period
 // @Tags screenshots
-// @Accept json
 // @Produce json
-// @Param start_date query string false "Start date (YYYY-MM-DD)"
-// @Param end_date query string false "End date (YYYY-MM-DD)"
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 400 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots/stats [get]
+// @Security BearerAuth
+// @Param start_date query string false "Start date (YYYY-MM-DD)" default(30 days ago)
+// @Param end_date query string false "End date (YYYY-MM-DD)" default(today)
+// @Success 200 {object} dto.SuccessResponse{data=dto.ScreenshotStats} "Statistics retrieved successfully"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /screenshots/stats [get]
 func (c *ScreenshotController) GetScreenshotStats(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 
@@ -252,13 +270,16 @@ func (c *ScreenshotController) GetScreenshotStats(ctx *gin.Context) {
 
 // DownloadScreenshot serves the screenshot file
 // @Summary Download screenshot file
+// @Description Download a screenshot file as attachment
 // @Tags screenshots
-// @Accept json
 // @Produce application/octet-stream
+// @Security BearerAuth
 // @Param id path int true "Screenshot ID"
-// @Success 200 {file} file
-// @Failure 404 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots/{id}/download [get]
+// @Success 200 {file} file "Screenshot file"
+// @Failure 400 {object} dto.ErrorResponse "Invalid screenshot ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 404 {object} dto.ErrorResponse "Screenshot not found"
+// @Router /screenshots/{id}/download [get]
 func (c *ScreenshotController) DownloadScreenshot(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 	idStr := ctx.Param("id")
@@ -286,13 +307,16 @@ func (c *ScreenshotController) DownloadScreenshot(ctx *gin.Context) {
 
 // ViewScreenshot serves the screenshot file for viewing
 // @Summary View screenshot file
+// @Description View a screenshot file inline in browser
 // @Tags screenshots
-// @Accept json
-// @Produce image/*
+// @Produce image/png,image/jpeg
+// @Security BearerAuth
 // @Param id path int true "Screenshot ID"
-// @Success 200 {file} file
-// @Failure 404 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots/{id}/view [get]
+// @Success 200 {file} file "Screenshot image"
+// @Failure 400 {object} dto.ErrorResponse "Invalid screenshot ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 404 {object} dto.ErrorResponse "Screenshot not found"
+// @Router /screenshots/{id}/view [get]
 func (c *ScreenshotController) ViewScreenshot(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 	idStr := ctx.Param("id")
@@ -324,12 +348,14 @@ func (c *ScreenshotController) ViewScreenshot(ctx *gin.Context) {
 
 // GetTodayScreenshotCount returns the count of screenshots captured today
 // @Summary Get today's screenshot count
+// @Description Get the number of screenshots captured today
 // @Tags screenshots
-// @Accept json
 // @Produce json
-// @Success 200 {object} utils.SuccessResponse
-// @Failure 500 {object} utils.ErrorResponse
-// @Router /api/v1/screenshots/today/count [get]
+// @Security BearerAuth
+// @Success 200 {object} dto.SuccessResponse "Today's screenshot count retrieved successfully"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /screenshots/today/count [get]
 func (c *ScreenshotController) GetTodayScreenshotCount(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 

@@ -97,20 +97,20 @@ export const NoWorkspaceMessage: React.FC<NoWorkspaceMessageProps> = ({
         <div className="flex items-center gap-2 mb-2">
           <Icons.Workspace className="w-4 h-4 text-yellow-600 dark:text-yellow-500" />
           <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
-            {hasAnyWorkspace ? "Select Workspace" : "No Workspace"}
+            {hasAnyWorkspace ? "Select Workspace" : "No Workspace Access"}
           </span>
         </div>
         <p className="text-[10px] text-gray-500 dark:text-dark-400 leading-relaxed">
           {hasAnyWorkspace
             ? "Please select a workspace from the dropdown above to access features."
-            : "Join or create a workspace to start tracking time and managing tasks."}
+            : "You need to be assigned to a workspace by an organization admin or owner to access time tracking features."}
         </p>
-        {!hasAnyWorkspace && (
+        {hasAnyWorkspace && (
           <button
             onClick={() => onViewChange("workspaces")}
             className="mt-2 w-full text-[10px] px-2 py-1.5 bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 rounded-md hover:bg-primary-200 dark:hover:bg-primary-500/30 transition-colors font-medium"
           >
-            Manage Workspaces
+            View Workspaces
           </button>
         )}
       </div>

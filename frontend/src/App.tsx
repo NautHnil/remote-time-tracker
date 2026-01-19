@@ -1,47 +1,54 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import Layout from "./components/Layout";
-import DashboardPage from "./pages/DashboardPage";
+import { AdminLayout, AdminProtectedRoute } from "./components/admin";
 import JoinOrganizationPage from "./pages/JoinOrganizationPage";
-import LoginPage from "./pages/LoginPage";
-import OrganizationDetailPage from "./pages/OrganizationDetailPage";
-import OrganizationsPage from "./pages/OrganizationsPage";
-import ScreenshotsPage from "./pages/ScreenshotsPage";
-import StatisticsPage from "./pages/StatisticsPage";
-import TaskDetailPage from "./pages/TaskDetailPage";
-import TasksPage from "./pages/TasksPage";
-import TimeLogsPage from "./pages/TimeLogsPage";
-import { useAuthStore } from "./store/authStore";
+import {
+  AdminDashboardPage,
+  AdminLoginPage,
+  AdminOrganizationsPage,
+  AdminScreenshotsPage,
+  AdminStatisticsPage,
+  AdminTasksPage,
+  AdminTimeLogsPage,
+  AdminUsersPage,
+  AdminWorkspacesPage,
+} from "./pages/admin";
 
 function App() {
-  const { isAuthenticated, isAdmin } = useAuthStore();
-
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public route - Join organization via invite link (accessible to all) */}
+        {/* Public route - Join organization via invite link */}
         <Route path="/join/:inviteCode" element={<JoinOrganizationPage />} />
 
-        {!isAuthenticated || !isAdmin() ? (
-          <>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="*" element={<Navigate to="/login" replace />} />
-          </>
-        ) : (
-          <Route path="/" element={<Layout />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="timelogs" element={<TimeLogsPage />} />
-            <Route path="tasks" element={<TasksPage />} />
-            <Route path="tasks/:id" element={<TaskDetailPage />} />
-            <Route path="screenshots" element={<ScreenshotsPage />} />
-            <Route path="statistics" element={<StatisticsPage />} />
-            <Route path="organizations" element={<OrganizationsPage />} />
-            <Route
-              path="organizations/:orgId"
-              element={<OrganizationDetailPage />}
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        )}
+        {/* Legacy login redirect to admin login */}
+        <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+
+        {/* Admin Login - Always accessible */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+
+        {/* Admin Panel Routes - Protected */}
+        <Route
+          path="/admin"
+          element={
+            <AdminProtectedRoute>
+              <AdminLayout />
+            </AdminProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="organizations" element={<AdminOrganizationsPage />} />
+          <Route path="workspaces" element={<AdminWorkspacesPage />} />
+          <Route path="tasks" element={<AdminTasksPage />} />
+          <Route path="timelogs" element={<AdminTimeLogsPage />} />
+          <Route path="screenshots" element={<AdminScreenshotsPage />} />
+          <Route path="statistics" element={<AdminStatisticsPage />} />
+        </Route>
+
+        {/* Default redirect to admin */}
+        <Route path="/" element={<Navigate to="/admin" replace />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </BrowserRouter>
   );

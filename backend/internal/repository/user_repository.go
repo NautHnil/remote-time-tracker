@@ -21,6 +21,7 @@ type UserRepository interface {
 	FindAllPaginated(limit, offset int) ([]models.User, int64, error)
 	Count() (int64, error)
 	IsSystemAdmin(userID uint) (bool, error)
+	CountBySystemRole(role string) (int64, error)
 }
 
 type userRepository struct {
@@ -115,4 +116,13 @@ func (r *userRepository) IsSystemAdmin(userID uint) (bool, error) {
 		return false, err
 	}
 	return user.Role == "admin" || user.SystemRole == "admin", nil
+}
+
+// CountBySystemRole counts users by system_role
+func (r *userRepository) CountBySystemRole(role string) (int64, error) {
+	var count int64
+	err := r.db.Model(&models.User{}).
+		Where("system_role = ? AND deleted_at IS NULL", role).
+		Count(&count).Error
+	return count, err
 }

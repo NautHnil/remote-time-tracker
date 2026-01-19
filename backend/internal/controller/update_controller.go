@@ -25,8 +25,16 @@ func NewUpdateController(updateService *service.UpdateService) *UpdateController
 }
 
 // CheckForUpdates checks if a new version is available
-// POST /api/v1/updates/check
-// Request body: { "current_version": "1.0.0", "platform": "darwin", "arch": "arm64" }
+// @Summary Check for app updates
+// @Description Check if a new version of the desktop app is available
+// @Tags updates
+// @Accept json
+// @Produce json
+// @Param request body dto.UpdateCheckRequest true "Current version and platform info"
+// @Success 200 {object} dto.UpdateCheckResponse "Update check result"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /updates/check [post]
 func (c *UpdateController) CheckForUpdates(ctx *gin.Context) {
 	var req dto.UpdateCheckRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -48,7 +56,15 @@ func (c *UpdateController) CheckForUpdates(ctx *gin.Context) {
 }
 
 // GetLatestVersion returns the latest version info
-// GET /api/v1/updates/latest?platform=darwin&arch=arm64
+// @Summary Get latest app version
+// @Description Get information about the latest available version
+// @Tags updates
+// @Produce json
+// @Param platform query string false "Platform (darwin, win32, linux)" default(darwin)
+// @Param arch query string false "Architecture (x64, arm64)" default(x64)
+// @Success 200 {object} dto.UpdateCheckResponse "Latest version info"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /updates/latest [get]
 func (c *UpdateController) GetLatestVersion(ctx *gin.Context) {
 	platform := ctx.DefaultQuery("platform", "darwin")
 	arch := ctx.DefaultQuery("arch", "x64")
@@ -70,8 +86,17 @@ func (c *UpdateController) GetLatestVersion(ctx *gin.Context) {
 }
 
 // DownloadAsset proxies the download of a release asset from GitHub
-// GET /api/v1/updates/download/:version/:filename
-// Also used for public downloads: GET /api/v1/public/downloads/file/:version/:filename
+// @Summary Download release asset
+// @Description Download a specific release asset (installer/update file)
+// @Tags updates
+// @Produce application/octet-stream
+// @Param version path string true "Version tag (e.g., v1.0.0)"
+// @Param filename path string true "Asset filename"
+// @Success 200 {file} binary "File download"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 404 {object} dto.ErrorResponse "Asset not found"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /updates/download/{version}/{filename} [get]
 func (c *UpdateController) DownloadAsset(ctx *gin.Context) {
 	version := ctx.Param("version")
 	filename := ctx.Param("filename")
@@ -114,8 +139,14 @@ func (c *UpdateController) DownloadAsset(ctx *gin.Context) {
 }
 
 // GetYMLFile returns the latest.yml/latest-mac.yml file for electron-updater
-// GET /api/v1/updates/yml/:platform
-// platform can be: darwin, win32, linux
+// @Summary Get update YAML file
+// @Description Get the latest.yml file for electron-updater auto-update
+// @Tags updates
+// @Produce application/x-yaml
+// @Param platform path string true "Platform (darwin, win32, linux)"
+// @Success 200 {object} dto.YMLInfo "YAML update info"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /updates/yml/{platform} [get]
 func (c *UpdateController) GetYMLFile(ctx *gin.Context) {
 	platform := ctx.Param("platform")
 	if platform == "" {
@@ -137,7 +168,15 @@ func (c *UpdateController) GetYMLFile(ctx *gin.Context) {
 }
 
 // GetReleaseNotes returns the release notes for a specific version
-// GET /api/v1/updates/notes/:version
+// @Summary Get release notes
+// @Description Get release notes for a specific version or the latest release
+// @Tags updates
+// @Produce json
+// @Param version path string false "Version tag (use 'latest' for latest release)" default(latest)
+// @Success 200 {object} dto.ReleaseNotesResponse "Release notes"
+// @Failure 404 {object} dto.ErrorResponse "Release not found"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /updates/notes/{version} [get]
 func (c *UpdateController) GetReleaseNotes(ctx *gin.Context) {
 	version := ctx.Param("version")
 	if version == "" {
@@ -185,8 +224,13 @@ func (c *UpdateController) GetReleaseNotes(ctx *gin.Context) {
 }
 
 // GetPublicDownloadLinks returns download links for all platforms (public, no auth required)
-// GET /api/v1/public/downloads/latest
-// This is used by the website to display download links for users who don't have the app
+// @Summary Get public download links
+// @Description Get download links for all platforms (public endpoint, no authentication)
+// @Tags updates
+// @Produce json
+// @Success 200 {object} dto.PublicDownloadsResponse "Download links for all platforms"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /public/downloads/latest [get]
 func (c *UpdateController) GetPublicDownloadLinks(ctx *gin.Context) {
 	log.Printf("📥 Public download links request")
 

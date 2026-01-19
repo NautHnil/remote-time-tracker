@@ -17,8 +17,8 @@ type User struct {
 	PasswordHash string     `gorm:"not null" json:"-"`
 	FirstName    string     `gorm:"size:100" json:"first_name"`
 	LastName     string     `gorm:"size:100" json:"last_name"`
-	Role         string     `gorm:"size:20;default:'user'" json:"role"`          // admin, manager, user (legacy)
-	SystemRole   string     `gorm:"size:20;default:'member'" json:"system_role"` // admin, member (system-level)
+	Role         string     `gorm:"size:20;default:'user'" json:"role"`                // admin, manager, user (legacy)
+	SystemRole   string     `gorm:"size:20;default:'member';index" json:"system_role"` // admin, member (system-level) - indexed for admin queries
 	IsActive     bool       `gorm:"default:true" json:"is_active"`
 	LastLoginAt  *time.Time `json:"last_login_at"`
 
@@ -60,6 +60,9 @@ type Task struct {
 	Color          string `gorm:"size:7" json:"color"`                  // Hex color code
 	IsManual       bool   `gorm:"default:false;index" json:"is_manual"` // true: manually created, false: auto from time tracker
 
+	// Admin fields
+	AdminNotes string `gorm:"type:text" json:"admin_notes"` // Admin notes for internal use
+
 	// Relations
 	User         User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Organization *Organization `gorm:"foreignKey:OrganizationID" json:"organization,omitempty"`
@@ -99,6 +102,12 @@ type TimeLog struct {
 	LocalID     string     `gorm:"size:100;index" json:"local_id"` // ID from Electron app
 	PausedTotal int64      `gorm:"default:0" json:"paused_total"`  // Total paused time in seconds
 
+	// Admin fields
+	IsApproved bool       `gorm:"default:false" json:"is_approved"` // Admin approved time log
+	ApprovedBy *uint      `json:"approved_by"`
+	ApprovedAt *time.Time `json:"approved_at"`
+	AdminNotes string     `gorm:"type:text" json:"admin_notes"` // Admin notes for internal use
+
 	// Relations
 	User         User          `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Organization *Organization `gorm:"foreignKey:OrganizationID" json:"organization,omitempty"`
@@ -106,6 +115,7 @@ type TimeLog struct {
 	Task         *Task         `gorm:"foreignKey:TaskID" json:"task,omitempty"`
 	Device       *DeviceInfo   `gorm:"foreignKey:DeviceID" json:"device,omitempty"`
 	Screenshots  []Screenshot  `gorm:"foreignKey:TimeLogID" json:"screenshots,omitempty"`
+	Approver     *User         `gorm:"foreignKey:ApprovedBy" json:"approver,omitempty"`
 }
 
 // TableName overrides the table name
@@ -255,6 +265,12 @@ type Organization struct {
 	MaxMembers      int    `gorm:"default:100" json:"max_members"`
 	IsActive        bool   `gorm:"default:true" json:"is_active"`
 
+	// Admin fields
+	IsVerified bool       `gorm:"default:false" json:"is_verified"` // Admin verified organization
+	VerifiedAt *time.Time `json:"verified_at"`
+	VerifiedBy *uint      `json:"verified_by"`
+	AdminNotes string     `gorm:"type:text" json:"admin_notes"` // Admin notes for internal use
+
 	// Relations
 	Owner      User                 `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
 	Members    []OrganizationMember `gorm:"foreignKey:OrganizationID" json:"members,omitempty"`
@@ -336,6 +352,11 @@ type Workspace struct {
 	HourlyRate     float64    `gorm:"type:decimal(10,2)" json:"hourly_rate"`
 	StartDate      *time.Time `json:"start_date"`
 	EndDate        *time.Time `json:"end_date"`
+
+	// Admin fields
+	IsArchived bool       `gorm:"default:false" json:"is_archived"` // Admin archived workspace
+	ArchivedAt *time.Time `json:"archived_at"`
+	ArchivedBy *uint      `json:"archived_by"`
 
 	// Relations
 	Organization Organization      `gorm:"foreignKey:OrganizationID" json:"organization,omitempty"`

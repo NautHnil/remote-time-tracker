@@ -179,6 +179,32 @@ Thêm tính năng phân quyền quản trị.
 8. Cập nhật logic Electron để hiển thị đúng chức năng dựa trên vai trò user.
 9. Đảm bảo tất cả các thay đổi đều được kiểm tra kỹ lưỡng và hoạt động mượt mà trên cả desktop app và backend.
 
+IV. Yêu cầu bổ sung 04:
+Triển khai hệ thống admin quản trị qua web interface (frontend web). Hệ thống quản trị đóng vai trò quản lý toàn bộ users, organizations, workspaces, tasks, và time logs.
+
+- Không trực tiếp liên quan đến desktop app Electron.
+- Không tạo tasks từ web admin, chỉ quản lý và xem thông tin.
+
+1. Tạo giao diện web admin để quản lý users, organizations, workspaces, tasks, và time logs, báo cáo thống kê hệ thống.
+2. Chỉ admin system mới có quyền truy cập vào web admin.
+3. Cập nhật API backend để hỗ trợ các chức năng quản trị qua web.
+4. Cập nhật UI React để tạo giao diện web admin.
+5. Tạo logic bảo mật cho web admin.
+6. Viết 1 API nhỏ để tạo user admin system ban đầu.
+7. Cập nhật database schema nếu cần thiết để hỗ trợ chức năng quản trị.
+8. Đảm bảo tất cả các thay đổi đều được kiểm tra kỹ lưỡng và hoạt động mượt mà.
+
+V. Yêu cầu bổ sung 05:
+Tiếp tục triển khai hệ thống admin quản trị. Mỗi TODO dưới đây cần được thực hiện đầy đủ, chi tiết, có cấu trúc rõ ràng, tối ưu production-ready.
+
+1. Rà soát lại toàn bộ code frontend web admin.
+2. Clear toàn bộ nội dung code liên quan tới desktop app Electron.
+3. Chỉ giữ lại các phần code cho web admin.
+4. Tối ưu lại cấu trúc thư mục cho frontend web admin.
+5. Update lại UI/UX cho web admin cho chuyên nghiệp, dễ dùng.
+6. Đảm bảo toàn bộ code frontend web admin hoạt động mượt mà, không lỗi.
+7. Sau khi chạy api `/api/v1/system/init-admin` để tạo user admin system ban đầu, có thể đăng nhập vào web admin và quản lý toàn bộ hệ thống. Tuy nhiên, khi user admin system đăng nhập thành công thì đang bị chặn quyền truy cập toàn bộ router admin trên web. Cần fix lỗi này. Tài khoản admin system hiện tại: `admin@rtt.com` / `Admin@123`
+
 ## OUTPUT FORMAT MONG MUỐN
 
 Copilot cần trả về theo format sau:
@@ -188,6 +214,8 @@ Copilot cần trả về theo format sau:
 3. **Code chi tiết**
 4. **Giải thích ngắn gọn**
 5. **Gợi ý mở rộng**
+6. **Tạo TODO vào .github/prompts folder nếu cần**
+7. **Sau khi hoàn thành TODO, re-check và đánh trạng thái cho TODO**
 
 Ưu tiên trả về đầy đủ code trong 1 lần nếu có thể.
 
