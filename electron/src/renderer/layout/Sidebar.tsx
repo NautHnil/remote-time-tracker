@@ -207,6 +207,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         onTrackerClick={() => onViewChange("tracker")}
         isCollapsed={isOrgRailCollapsed}
         onToggleCollapse={toggleOrgRailCollapsed}
+        hasWorkspaceAccess={hasSelectedWorkspace}
       />
 
       {/* Main Sidebar - Collapsible */}

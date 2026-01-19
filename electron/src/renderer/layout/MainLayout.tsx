@@ -4,7 +4,11 @@
  */
 
 import React from "react";
-import { UserOrganization, UserWorkspace } from "../contexts/AuthContext";
+import {
+  UserOrganization,
+  UserWorkspace,
+  useAuth,
+} from "../contexts/AuthContext";
 import { getRouteConfig } from "../routes";
 import Header from "./Header";
 import Sidebar, { View } from "./Sidebar";
@@ -18,6 +22,14 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
+// Views that require a workspace to be selected
+const workspaceRequiredViews: View[] = [
+  "tracker",
+  "tasks",
+  "screenshots",
+  "stats",
+];
+
 const MainLayout: React.FC<MainLayoutProps> = ({
   currentView,
   onViewChange,
@@ -26,7 +38,26 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   currentWorkspace,
   children,
 }) => {
-  const pageInfo = getRouteConfig(currentView);
+  const { workspaces, currentOrgId, currentWorkspaceId } = useAuth();
+
+  // Check if user has any workspace in the current organization
+  const filteredWorkspacesForOrg = currentOrgId
+    ? workspaces.filter((ws) => ws.organization_id === currentOrgId)
+    : workspaces;
+  const hasWorkspace = filteredWorkspacesForOrg.length > 0;
+  const hasSelectedWorkspace =
+    currentWorkspaceId !== null &&
+    filteredWorkspacesForOrg.some((ws) => ws.id === currentWorkspaceId);
+
+  // Determine the actual view being displayed
+  // If workspace is required but not available, show organizations info instead
+  const effectiveView =
+    workspaceRequiredViews.includes(currentView) &&
+    (!hasWorkspace || !hasSelectedWorkspace)
+      ? "organizations"
+      : currentView;
+
+  const pageInfo = getRouteConfig(effectiveView);
 
   // Build breadcrumbs
   const breadcrumbs: Array<{ label: string; onClick?: () => void }> = [];
