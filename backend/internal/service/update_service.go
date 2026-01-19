@@ -218,8 +218,16 @@ func (s *UpdateService) filterAssetsForPlatform(assets []dto.GHAsset, platform, 
 	return result
 }
 
-// GetAssetDownloadURL returns the actual GitHub download URL for an asset
-func (s *UpdateService) GetAssetDownloadURL(version, assetName string) (string, string, error) {
+// AssetInfo contains information about a release asset
+type AssetInfo struct {
+	Name        string
+	URL         string
+	Size        int64
+	ContentType string
+}
+
+// GetAssetInfo returns information about a specific asset
+func (s *UpdateService) GetAssetInfo(version, assetName string) (*AssetInfo, error) {
 	// Get release by tag
 	tag := version
 	if !strings.HasPrefix(tag, "v") {
@@ -231,18 +239,32 @@ func (s *UpdateService) GetAssetDownloadURL(version, assetName string) (string, 
 		// Try without 'v' prefix
 		release, err = s.GetReleaseByTag(version)
 		if err != nil {
-			return "", "", fmt.Errorf("release not found: %w", err)
+			return nil, fmt.Errorf("release not found: %w", err)
 		}
 	}
 
 	// Find the asset
 	for _, asset := range release.Assets {
 		if asset.Name == assetName {
-			return asset.URL, asset.ContentType, nil
+			return &AssetInfo{
+				Name:        asset.Name,
+				URL:         asset.URL,
+				Size:        asset.Size,
+				ContentType: asset.ContentType,
+			}, nil
 		}
 	}
 
-	return "", "", fmt.Errorf("asset %s not found in release %s", assetName, version)
+	return nil, fmt.Errorf("asset %s not found in release %s", assetName, version)
+}
+
+// GetAssetDownloadURL returns the actual GitHub download URL for an asset
+func (s *UpdateService) GetAssetDownloadURL(version, assetName string) (string, string, error) {
+	assetInfo, err := s.GetAssetInfo(version, assetName)
+	if err != nil {
+		return "", "", err
+	}
+	return assetInfo.URL, assetInfo.ContentType, nil
 }
 
 // StreamAssetDownload streams an asset download to the provided writer
@@ -250,6 +272,11 @@ func (s *UpdateService) StreamAssetDownload(version, assetName string, w io.Writ
 	assetURL, contentType, err := s.GetAssetDownloadURL(version, assetName)
 	if err != nil {
 		return 0, "", err
+	}
+
+	// Create a client that follows redirects (GitHub returns 302 for asset downloads)
+	downloadClient := &http.Client{
+		Timeout: 5 * time.Minute, // Longer timeout for large files
 	}
 
 	// Create request to GitHub API
@@ -265,13 +292,13 @@ func (s *UpdateService) StreamAssetDownload(version, assetName string, w io.Writ
 		req.Header.Set(key, value)
 	}
 
-	resp, err := s.httpClient.Do(req)
+	resp, err := downloadClient.Do(req)
 	if err != nil {
 		return 0, "", fmt.Errorf("download request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusFound {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return 0, "", fmt.Errorf("download failed: status %d, body: %s", resp.StatusCode, string(body))
 	}
@@ -348,6 +375,84 @@ func (s *UpdateService) GetYMLFile(platform string) (*dto.YMLUpdateInfo, error) 
 	}
 
 	return &ymlInfo, nil
+}
+
+// GetAllPlatformDownloads returns download links for all platforms
+// This is used by the website to display download links for users
+func (s *UpdateService) GetAllPlatformDownloads() (*dto.PublicDownloadResponse, error) {
+	release, err := s.getLatestRelease()
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch latest release: %w", err)
+	}
+
+	version := strings.TrimPrefix(release.TagName, "v")
+
+	response := &dto.PublicDownloadResponse{
+		Version:      version,
+		ReleaseDate:  release.PublishedAt,
+		ReleaseNotes: release.Body,
+		Downloads:    make(map[string]dto.PlatformDownload),
+	}
+
+	// Define platform patterns
+	// Order matters: more specific patterns should come first
+	platformPatterns := map[string]struct {
+		patterns    []string
+		displayName string
+		icon        string
+	}{
+		"windows": {
+			patterns:    []string{`.*Setup.*\.exe$`},
+			displayName: "Windows",
+			icon:        "windows",
+		},
+		"mac-arm": {
+			patterns:    []string{`.*-arm64\.dmg$`},
+			displayName: "macOS (Apple Silicon)",
+			icon:        "apple",
+		},
+		"mac-intel": {
+			patterns:    []string{`.*\.dmg$`}, // Will exclude arm64 in the matching logic below
+			displayName: "macOS (Intel)",
+			icon:        "apple",
+		},
+		"linux": {
+			patterns:    []string{`.*\.AppImage$`},
+			displayName: "Linux",
+			icon:        "linux",
+		},
+	}
+
+	// Process in specific order to handle overlapping patterns correctly
+	platformOrder := []string{"windows", "mac-arm", "mac-intel", "linux"}
+
+	// Find assets for each platform
+	for _, platformKey := range platformOrder {
+		config := platformPatterns[platformKey]
+		for _, asset := range release.Assets {
+			for _, pattern := range config.patterns {
+				matched, _ := regexp.MatchString(pattern, asset.Name)
+				if matched {
+					// For mac-intel, explicitly exclude arm64 files
+					if platformKey == "mac-intel" && strings.Contains(asset.Name, "arm64") {
+						continue
+					}
+
+					response.Downloads[platformKey] = dto.PlatformDownload{
+						Name:        config.displayName,
+						Icon:        config.icon,
+						Filename:    asset.Name,
+						URL:         fmt.Sprintf("/api/v1/public/downloads/file/%s/%s", version, asset.Name),
+						Size:        asset.Size,
+						ContentType: asset.ContentType,
+					}
+					break
+				}
+			}
+		}
+	}
+
+	return response, nil
 }
 
 // compareVersions compares two semantic versions

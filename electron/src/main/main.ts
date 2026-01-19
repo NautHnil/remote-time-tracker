@@ -21,6 +21,7 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 let isUpdating = false; // Flag for auto-update quit
+let pendingDeeplink: string | null = null; // Store deeplink if received before window ready
 
 // Services
 let dbService: DatabaseService;
@@ -30,6 +31,57 @@ let taskService: TaskService;
 let timeTrackerService: TimeTrackerService;
 
 let backendUpdateService: BackendUpdateService | null = null;
+
+// Deeplink handler
+function handleDeeplink(url: string) {
+  console.log("🔗 Received deeplink:", url);
+
+  try {
+    // Parse the URL: timetracker://join/{inviteCode}
+    const parsed = new URL(url);
+    const protocol = parsed.protocol; // timetracker:
+    const host = parsed.host; // join
+    const pathname = parsed.pathname; // /{inviteCode}
+
+    console.log("📎 Parsed deeplink:", { protocol, host, pathname });
+
+    if (protocol !== "timetracker:") {
+      console.warn("⚠️ Unknown protocol:", protocol);
+      return;
+    }
+
+    // Handle different deeplink routes
+    if (host === "join") {
+      const inviteCode = pathname.replace(/^\//, ""); // Remove leading slash
+      if (inviteCode) {
+        console.log("📨 Join organization invite code:", inviteCode);
+
+        // If window is ready, send to renderer immediately
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.show();
+          mainWindow.focus();
+          mainWindow.webContents.send("deeplink:join-organization", inviteCode);
+        } else {
+          // Store for later when window is ready
+          pendingDeeplink = url;
+        }
+      }
+    } else {
+      console.warn("⚠️ Unknown deeplink route:", host);
+    }
+  } catch (error) {
+    console.error("❌ Failed to parse deeplink:", error);
+  }
+}
+
+// Send pending deeplink to renderer
+function sendPendingDeeplink() {
+  if (pendingDeeplink && mainWindow && !mainWindow.isDestroyed()) {
+    console.log("📤 Sending pending deeplink:", pendingDeeplink);
+    handleDeeplink(pendingDeeplink);
+    pendingDeeplink = null;
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -114,8 +166,8 @@ function createTray() {
         icon = nativeImage.createFromDataURL(
           "data:image/svg+xml;base64," +
             Buffer.from(
-              '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="#3B82F6"/><text x="16" y="22" font-size="20" font-family="Arial" text-anchor="middle" fill="white" font-weight="bold">T</text></svg>'
-            ).toString("base64")
+              '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="#3B82F6"/><text x="16" y="22" font-size="20" font-family="Arial" text-anchor="middle" fill="white" font-weight="bold">T</text></svg>',
+            ).toString("base64"),
         );
       }
     }
@@ -253,7 +305,7 @@ async function initializeServices() {
   timeTrackerService = new TimeTrackerService(
     dbService,
     screenshotService,
-    syncService
+    syncService,
   );
   console.log("✅ Services created");
 
@@ -280,7 +332,7 @@ function setupIpcHandlers() {
     "time-tracker:start",
     async (_event, taskId?: number, notes?: string) => {
       return await timeTrackerService.start(taskId, notes);
-    }
+    },
   );
 
   ipcMain.handle("time-tracker:stop", async (_event, taskTitle?: string) => {
@@ -292,7 +344,7 @@ function setupIpcHandlers() {
     "time-tracker:stop-and-sync",
     async (_event, taskTitle?: string) => {
       return await timeTrackerService.stop(taskTitle, true);
-    }
+    },
   );
 
   ipcMain.handle("time-tracker:pause", async () => {
@@ -320,7 +372,7 @@ function setupIpcHandlers() {
     "time-logs:get-by-date-range",
     async (_, startDate, endDate) => {
       return await dbService.getTimeLogsByDateRange(startDate, endDate);
-    }
+    },
   );
 
   ipcMain.handle("time-logs:get-today-total-duration", async () => {
@@ -392,7 +444,7 @@ function setupIpcHandlers() {
     async (_, settings) => {
       screenshotService.updateOptimizationSettings(settings);
       return screenshotService.getOptimizationSettings();
-    }
+    },
   );
 
   // Tasks
@@ -499,7 +551,7 @@ function setupIpcHandlers() {
         console.error("Failed to set screenshot path:", error);
         return { success: false, error: error.message };
       }
-    }
+    },
   );
 
   ipcMain.handle("storage:select-screenshot-folder", async () => {
@@ -707,13 +759,27 @@ app.whenReady().then(async () => {
 
   createTray();
 
+  // Handle deeplinks on macOS when app is already running
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    console.log("🔗 open-url event received:", url);
+    handleDeeplink(url);
+  });
+
+  // Send pending deeplink if exists (app was opened via deeplink)
+  if (mainWindow) {
+    mainWindow.webContents.on("did-finish-load", () => {
+      sendPendingDeeplink();
+    });
+  }
+
   // Handle before-quit event for auto-updater and tracking cleanup
   app.on("before-quit", async (event) => {
     console.log(
       "before-quit event, isUpdating:",
       isUpdating,
       "isQuitting:",
-      isQuitting
+      isQuitting,
     );
 
     if (isUpdating) {
@@ -753,6 +819,52 @@ app.on("window-all-closed", () => {
   // Không quit khi tất cả window đóng vì app chạy trong system tray
   // User phải dùng "Quit" từ tray menu để thoát
 });
+
+// Register protocol for development (production is handled by electron-builder)
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient("timetracker", process.execPath, [
+      path.resolve(process.argv[1]),
+    ]);
+  }
+} else {
+  app.setAsDefaultProtocolClient("timetracker");
+}
+
+// Single instance lock for Windows deeplink handling
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on("second-instance", (event, commandLine, workingDirectory) => {
+    // Windows: Handle deeplink when app is already running
+    // The deeplink URL will be in commandLine
+    const deeplinkUrl = commandLine.find((arg) =>
+      arg.startsWith("timetracker://"),
+    );
+    if (deeplinkUrl) {
+      console.log("🔗 second-instance deeplink:", deeplinkUrl);
+      handleDeeplink(deeplinkUrl);
+    }
+
+    // Focus main window
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
+// Handle deeplink on app start (Windows - cold start)
+const startupDeeplinkUrl = process.argv.find((arg) =>
+  arg.startsWith("timetracker://"),
+);
+if (startupDeeplinkUrl) {
+  console.log("🔗 Startup deeplink detected:", startupDeeplinkUrl);
+  pendingDeeplink = startupDeeplinkUrl;
+}
 
 // Handle uncaught exceptions - Emergency stop tracking
 process.on("uncaughtException", async (error) => {

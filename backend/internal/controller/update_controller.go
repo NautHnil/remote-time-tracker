@@ -71,6 +71,7 @@ func (c *UpdateController) GetLatestVersion(ctx *gin.Context) {
 
 // DownloadAsset proxies the download of a release asset from GitHub
 // GET /api/v1/updates/download/:version/:filename
+// Also used for public downloads: GET /api/v1/public/downloads/file/:version/:filename
 func (c *UpdateController) DownloadAsset(ctx *gin.Context) {
 	version := ctx.Param("version")
 	filename := ctx.Param("filename")
@@ -82,19 +83,20 @@ func (c *UpdateController) DownloadAsset(ctx *gin.Context) {
 
 	log.Printf("📥 Download request: version=%s, file=%s", version, filename)
 
-	// Get the actual download URL from GitHub
-	downloadURL, contentType, err := c.updateService.GetAssetDownloadURL(version, filename)
+	// Get asset info for content length
+	assetInfo, err := c.updateService.GetAssetInfo(version, filename)
 	if err != nil {
 		log.Printf("❌ Asset not found: %v", err)
 		utils.ErrorResponse(ctx, http.StatusNotFound, "Asset not found: "+err.Error())
 		return
 	}
 
-	log.Printf("🔗 Proxying download from GitHub: %s", downloadURL)
+	log.Printf("🔗 Proxying download from GitHub: %s (%d bytes)", filename, assetInfo.Size)
 
-	// Set response headers
+	// Set response headers BEFORE streaming
 	ctx.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
-	ctx.Header("Content-Type", contentType)
+	ctx.Header("Content-Type", assetInfo.ContentType)
+	ctx.Header("Content-Length", strconv.FormatInt(assetInfo.Size, 10))
 	ctx.Header("X-Content-Type-Options", "nosniff")
 
 	// Stream the file content
@@ -108,8 +110,6 @@ func (c *UpdateController) DownloadAsset(ctx *gin.Context) {
 		return
 	}
 
-	// Set content length header after successful streaming
-	ctx.Header("Content-Length", strconv.FormatInt(written, 10))
 	log.Printf("✅ Download complete: %s (%d bytes)", filename, written)
 }
 
@@ -182,4 +182,20 @@ func (c *UpdateController) GetReleaseNotes(ctx *gin.Context) {
 		"release_notes": release.Body,
 		"release_date":  release.PublishedAt,
 	})
+}
+
+// GetPublicDownloadLinks returns download links for all platforms (public, no auth required)
+// GET /api/v1/public/downloads/latest
+// This is used by the website to display download links for users who don't have the app
+func (c *UpdateController) GetPublicDownloadLinks(ctx *gin.Context) {
+	log.Printf("📥 Public download links request")
+
+	downloads, err := c.updateService.GetAllPlatformDownloads()
+	if err != nil {
+		log.Printf("❌ Failed to get download links: %v", err)
+		utils.ErrorResponse(ctx, http.StatusInternalServerError, "Failed to get download links: "+err.Error())
+		return
+	}
+
+	utils.SuccessResponse(ctx, http.StatusOK, "Download links retrieved", downloads)
 }

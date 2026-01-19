@@ -6,6 +6,10 @@
 export { useServerHealth } from "./useServerHealth";
 export type { ServerHealthStatus } from "./useServerHealth";
 
+// Deeplink Hook
+export { useDeeplink } from "./useDeeplink";
+export type { DeeplinkData } from "./useDeeplink";
+
 // Dialog Hooks
 export {
   useAlertDialog,

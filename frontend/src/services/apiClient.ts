@@ -40,7 +40,7 @@ class ApiClient {
    */
   private buildURL(
     endpoint: string,
-    params?: Record<string, string | number>
+    params?: Record<string, string | number>,
   ): string {
     const url = new URL(`${this.baseURL}${endpoint}`);
     if (params) {
@@ -83,7 +83,7 @@ class ApiClient {
    */
   async request<T = any>(
     endpoint: string,
-    options: RequestOptions = {}
+    options: RequestOptions = {},
   ): Promise<ApiResponse<T>> {
     const { params, headers = {}, ...fetchOptions } = options;
 
@@ -115,9 +115,8 @@ class ApiClient {
           const newToken = await this.refreshToken();
           if (newToken) {
             // Retry with new token
-            (headers as Record<string, string>)[
-              "Authorization"
-            ] = `Bearer ${newToken}`;
+            (headers as Record<string, string>)["Authorization"] =
+              `Bearer ${newToken}`;
             return this.request<T>(endpoint, {
               ...options,
               headers,
@@ -155,7 +154,7 @@ class ApiClient {
    */
   async get<T = any>(
     endpoint: string,
-    params?: Record<string, string | number>
+    params?: Record<string, string | number>,
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: "GET", params });
   }
@@ -166,7 +165,7 @@ class ApiClient {
   async post<T = any>(
     endpoint: string,
     body?: any,
-    params?: Record<string, string | number>
+    params?: Record<string, string | number>,
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "POST",
@@ -181,7 +180,7 @@ class ApiClient {
   async put<T = any>(
     endpoint: string,
     body?: any,
-    params?: Record<string, string | number>
+    params?: Record<string, string | number>,
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "PUT",
@@ -195,9 +194,39 @@ class ApiClient {
    */
   async delete<T = any>(
     endpoint: string,
-    params?: Record<string, string | number>
+    params?: Record<string, string | number>,
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: "DELETE", params });
+  }
+
+  /**
+   * Public GET request (no authentication required)
+   */
+  async publicGet<T = any>(
+    endpoint: string,
+    params?: Record<string, string | number>,
+  ): Promise<ApiResponse<T>> {
+    const url = this.buildURL(endpoint, params);
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: DEFAULT_HEADERS,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          message: response.statusText,
+        }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(`Public API Error [${endpoint}]:`, error);
+      throw error;
+    }
   }
 
   /**
