@@ -12,7 +12,60 @@ import (
 	"github.com/beuphecan/remote-time-tracker/internal/repository"
 	"github.com/beuphecan/remote-time-tracker/internal/router"
 	"github.com/beuphecan/remote-time-tracker/internal/service"
+
+	_ "github.com/beuphecan/remote-time-tracker/docs" // Swagger generated docs
 )
+
+// @title Remote Time Tracker API
+// @version 1.0
+// @description API documentation for Remote Time Tracker - A comprehensive time tracking application with screenshot capture, task management, organization/workspace management, and synchronization features.
+
+// @contact.name API Support
+// @contact.email support@remotetimetracker.com
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
+
+// @tag.name auth
+// @tag.description Authentication endpoints - Login, Register, Token refresh
+
+// @tag.name tasks
+// @tag.description Task management - Create, Read, Update, Delete tasks
+
+// @tag.name timelogs
+// @tag.description Time tracking - Start, Stop, Pause, Resume time tracking sessions
+
+// @tag.name screenshots
+// @tag.description Screenshot management - View, Download, Delete captured screenshots
+
+// @tag.name sync
+// @tag.description Data synchronization from Electron desktop app
+
+// @tag.name organizations
+// @tag.description Organization management - Create, manage organizations and members
+
+// @tag.name workspaces
+// @tag.description Workspace/Project management within organizations
+
+// @tag.name invitations
+// @tag.description User invitations to organizations and workspaces
+
+// @tag.name admin
+// @tag.description System administration - User, Organization, Task, TimeLog management (Admin only)
+
+// @tag.name system
+// @tag.description System utilities - Health check, initialization
+
+// @tag.name updates
+// @tag.description Application updates - Check for updates, download assets
 
 // ensureUploadDirectories creates necessary upload directories if they don't exist
 func ensureUploadDirectories(cfg *config.Config) error {
@@ -72,6 +125,7 @@ func main() {
 	orgRepo := repository.NewOrganizationRepository(db)
 	workspaceRepo := repository.NewWorkspaceRepository(db)
 	invitationRepo := repository.NewInvitationRepository(db)
+	adminRepo := repository.NewAdminRepository(db)
 
 	log.Println("✅ Repositories initialized")
 
@@ -86,6 +140,16 @@ func main() {
 	invitationService := service.NewInvitationService(invitationRepo, orgRepo, workspaceRepo, userRepo)
 	roleService := service.NewRoleService(workspaceRepo, orgRepo)
 	updateService := service.NewUpdateService()
+	systemService := service.NewSystemService(userRepo)
+	adminService := service.NewAdminService(
+		adminRepo,
+		userRepo,
+		orgRepo,
+		workspaceRepo,
+		taskRepo,
+		timeLogRepo,
+		screenshotRepo,
+	)
 
 	log.Println("✅ Services initialized")
 
@@ -95,11 +159,11 @@ func main() {
 	syncController := controller.NewSyncController(syncService)
 	screenshotController := controller.NewScreenshotController(screenshotService)
 	taskController := controller.NewTaskController(taskService)
-	systemController := controller.NewSystemController()
+	systemController := controller.NewSystemController(systemService)
 	organizationController := controller.NewOrganizationController(organizationService, workspaceService, invitationService, roleService)
 	workspaceController := controller.NewWorkspaceController(workspaceService)
 	invitationController := controller.NewInvitationController(invitationService)
-	adminController := controller.NewAdminController(userRepo, authService)
+	adminController := controller.NewAdminController(adminService)
 	updateController := controller.NewUpdateController(updateService)
 
 	log.Println("✅ Controllers initialized")

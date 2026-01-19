@@ -1,0 +1,6178 @@
+basePath: /api/v1
+definitions:
+  github_com_beuphecan_remote-time-tracker_internal_dto.AcceptInvitationRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AddOrganizationMemberRequest:
+    properties:
+      role:
+        enum:
+        - admin
+        - member
+        type: string
+      user_id:
+        type: integer
+    required:
+    - role
+    - user_id
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AddWorkspaceMemberRequest:
+    properties:
+      can_manage_tasks:
+        type: boolean
+      can_view_reports:
+        type: boolean
+      is_admin:
+        type: boolean
+      role_name:
+        type: string
+      user_id:
+        type: integer
+      workspace_role_id:
+        type: integer
+    required:
+    - user_id
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminActivateUserRequest:
+    properties:
+      active:
+        type: boolean
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminActivityStats:
+    properties:
+      activity_by_hour:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminHourlyStat'
+        type: array
+      peak_hour:
+        type: integer
+      peak_hour_count:
+        type: integer
+      today_active_users:
+        type: integer
+      today_duration:
+        type: integer
+      today_screenshots:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminApproveTimeLogsRequest:
+    properties:
+      approved:
+        type: boolean
+      ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - ids
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminArchiveWorkspaceRequest:
+    properties:
+      archived:
+        type: boolean
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminBulkDeleteRequest:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - ids
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminChangeRoleRequest:
+    properties:
+      role:
+        type: string
+    required:
+    - role
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminChangeSystemRoleRequest:
+    properties:
+      system_role:
+        type: string
+    required:
+    - system_role
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminCreateUserRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      role:
+        type: string
+      system_role:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminDailyStat:
+    properties:
+      date:
+        type: string
+      duration:
+        type: integer
+      new_users:
+        type: integer
+      screenshots:
+        type: integer
+      timelogs:
+        type: integer
+      total_users:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminDeviceResponse:
+    properties:
+      app_version:
+        type: string
+      device_name:
+        type: string
+      device_type:
+        type: string
+      device_uuid:
+        type: string
+      id:
+        type: integer
+      ip_address:
+        type: string
+      is_active:
+        type: boolean
+      last_seen_at:
+        type: string
+      os:
+        type: string
+      os_version:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminHourlyStat:
+    properties:
+      count:
+        type: integer
+      hour:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgDetailResponse:
+    properties:
+      admin_notes:
+        type: string
+      allow_invite_link:
+        type: boolean
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_verified:
+        type: boolean
+      max_members:
+        type: integer
+      member_count:
+        type: integer
+      members:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgMemberResponse'
+        type: array
+      name:
+        type: string
+      owner_email:
+        type: string
+      owner_id:
+        type: integer
+      owner_name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+      verified_at:
+        type: string
+      workspace_count:
+        type: integer
+      workspaces:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceSummary'
+        type: array
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgListResponse:
+    properties:
+      organizations:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse'
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgMemberResponse:
+    properties:
+      is_active:
+        type: boolean
+      joined_at:
+        type: string
+      role:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgMembershipResponse:
+    properties:
+      is_active:
+        type: boolean
+      joined_at:
+        type: string
+      org_id:
+        type: integer
+      org_name:
+        type: string
+      org_slug:
+        type: string
+      role:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgResponse:
+    properties:
+      admin_notes:
+        type: string
+      allow_invite_link:
+        type: boolean
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_verified:
+        type: boolean
+      max_members:
+        type: integer
+      member_count:
+        type: integer
+      name:
+        type: string
+      owner_email:
+        type: string
+      owner_id:
+        type: integer
+      owner_name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+      verified_at:
+        type: string
+      workspace_count:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgSizeCategory:
+    properties:
+      category:
+        description: small, medium, large
+        type: string
+      count:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgStats:
+    properties:
+      size_distribution:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgSizeCategory'
+        type: array
+      top_workspaces:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTopWorkspace'
+        type: array
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminOverviewStats:
+    properties:
+      active_tasks:
+        type: integer
+      active_users:
+        type: integer
+      active_workspaces:
+        type: integer
+      new_users_this_week:
+        type: integer
+      total_duration:
+        description: seconds
+        type: integer
+      total_organizations:
+        type: integer
+      total_screenshots:
+        type: integer
+      total_storage:
+        description: bytes
+        type: integer
+      total_storage_human:
+        type: string
+      total_tasks:
+        type: integer
+      total_timelogs:
+        type: integer
+      total_users:
+        type: integer
+      total_workspaces:
+        type: integer
+      verified_organizations:
+        type: integer
+      week_duration:
+        description: seconds
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse:
+    properties:
+      has_next:
+        type: boolean
+      has_prev:
+        type: boolean
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotListResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse'
+      screenshots:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse'
+        type: array
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse:
+    properties:
+      captured_at:
+        type: string
+      created_at:
+        type: string
+      file_name:
+        type: string
+      file_path:
+        type: string
+      file_size:
+        type: integer
+      id:
+        type: integer
+      is_encrypted:
+        type: boolean
+      mime_type:
+        type: string
+      monitor_index:
+        type: integer
+      org_name:
+        type: string
+      organization_id:
+        type: integer
+      screen_number:
+        type: integer
+      task_id:
+        type: integer
+      task_title:
+        type: string
+      thumbnail_path:
+        type: string
+      timelog_id:
+        type: integer
+      user_email:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+      workspace_id:
+        type: integer
+      workspace_name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskDetailResponse:
+    properties:
+      admin_notes:
+        type: string
+      color:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      end_time:
+        type: string
+      id:
+        type: integer
+      is_manual:
+        type: boolean
+      org_name:
+        type: string
+      organization_id:
+        type: integer
+      priority:
+        type: integer
+      screenshot_count:
+        type: integer
+      screenshots:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse'
+        type: array
+      start_time:
+        type: string
+      status:
+        type: string
+      timelogs:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse'
+        type: array
+      timelogs_count:
+        type: integer
+      title:
+        type: string
+      total_duration:
+        type: integer
+      total_time:
+        type: integer
+      updated_at:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+      workspace_id:
+        type: integer
+      workspace_name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskListResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse'
+      tasks:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse'
+        type: array
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse:
+    properties:
+      admin_notes:
+        type: string
+      color:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      end_time:
+        type: string
+      id:
+        type: integer
+      is_manual:
+        type: boolean
+      org_name:
+        type: string
+      organization_id:
+        type: integer
+      priority:
+        type: integer
+      screenshot_count:
+        type: integer
+      start_time:
+        type: string
+      status:
+        type: string
+      timelogs_count:
+        type: integer
+      title:
+        type: string
+      total_duration:
+        type: integer
+      total_time:
+        type: integer
+      updated_at:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+      workspace_id:
+        type: integer
+      workspace_name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogDetailResponse:
+    properties:
+      admin_notes:
+        type: string
+      approved_at:
+        type: string
+      approved_by:
+        type: integer
+      created_at:
+        type: string
+      duration:
+        type: integer
+      end_time:
+        type: string
+      id:
+        type: integer
+      is_approved:
+        type: boolean
+      is_manual:
+        type: boolean
+      org_name:
+        type: string
+      organization_id:
+        type: integer
+      screenshot_count:
+        type: integer
+      screenshots:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse'
+        type: array
+      start_time:
+        type: string
+      status:
+        type: string
+      task_id:
+        type: integer
+      task_title:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+      workspace_id:
+        type: integer
+      workspace_name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogListResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse'
+      timelogs:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse'
+        type: array
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse:
+    properties:
+      admin_notes:
+        type: string
+      approved_at:
+        type: string
+      approved_by:
+        type: integer
+      created_at:
+        type: string
+      duration:
+        type: integer
+      end_time:
+        type: string
+      id:
+        type: integer
+      is_approved:
+        type: boolean
+      is_manual:
+        type: boolean
+      org_name:
+        type: string
+      organization_id:
+        type: integer
+      screenshot_count:
+        type: integer
+      start_time:
+        type: string
+      status:
+        type: string
+      task_id:
+        type: integer
+      task_title:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+      workspace_id:
+        type: integer
+      workspace_name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminTopWorkspace:
+    properties:
+      member_count:
+        type: integer
+      name:
+        type: string
+      organization_name:
+        type: string
+      total_duration:
+        type: integer
+      workspace_id:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminTrendStats:
+    properties:
+      activity_trend:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminDailyStat'
+        type: array
+      user_growth:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminDailyStat'
+        type: array
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateOrgRequest:
+    properties:
+      admin_notes:
+        type: string
+      allow_invite_link:
+        type: boolean
+      description:
+        type: string
+      is_active:
+        type: boolean
+      max_members:
+        type: integer
+      name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateTaskRequest:
+    properties:
+      admin_notes:
+        type: string
+      description:
+        type: string
+      priority:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateTimeLogRequest:
+    properties:
+      admin_notes:
+        type: string
+      is_approved:
+        type: boolean
+      notes:
+        type: string
+      status:
+        type: string
+      task_title:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateUserRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      role:
+        type: string
+      system_role:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateWorkspaceRequest:
+    properties:
+      description:
+        type: string
+      hourly_rate:
+        type: number
+      is_active:
+        type: boolean
+      is_billable:
+        type: boolean
+      name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserDetailResponse:
+    properties:
+      created_at:
+        type: string
+      devices:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminDeviceResponse'
+        type: array
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_login_at:
+        type: string
+      last_name:
+        type: string
+      organizations:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgMembershipResponse'
+        type: array
+      orgs_count:
+        type: integer
+      recent_tasks:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse'
+        type: array
+      recent_timelogs:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse'
+        type: array
+      role:
+        type: string
+      system_role:
+        type: string
+      tasks_count:
+        type: integer
+      timelogs_count:
+        type: integer
+      total_duration:
+        description: seconds
+        type: integer
+      updated_at:
+        type: string
+      workspaces:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceMembershipResponse'
+        type: array
+      workspaces_count:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserListResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse'
+      users:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserResponse'
+        type: array
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserPerformance:
+    properties:
+      email:
+        type: string
+      rank:
+        type: integer
+      task_count:
+        type: integer
+      total_duration:
+        type: integer
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_login_at:
+        type: string
+      last_name:
+        type: string
+      orgs_count:
+        type: integer
+      role:
+        type: string
+      system_role:
+        type: string
+      tasks_count:
+        type: integer
+      timelogs_count:
+        type: integer
+      total_duration:
+        description: seconds
+        type: integer
+      updated_at:
+        type: string
+      workspaces_count:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminVerifyOrgRequest:
+    properties:
+      verified:
+        type: boolean
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceDetailResponse:
+    properties:
+      admin_email:
+        type: string
+      admin_id:
+        type: integer
+      admin_name:
+        type: string
+      archived_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      hourly_rate:
+        type: number
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_archived:
+        type: boolean
+      is_billable:
+        type: boolean
+      member_count:
+        type: integer
+      members:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceMemberResponse'
+        type: array
+      name:
+        type: string
+      org_name:
+        type: string
+      organization_id:
+        type: integer
+      recent_tasks:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse'
+        type: array
+      slug:
+        type: string
+      task_count:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceListResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse'
+      workspaces:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceResponse'
+        type: array
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceMemberResponse:
+    properties:
+      is_active:
+        type: boolean
+      is_admin:
+        type: boolean
+      joined_at:
+        type: string
+      role_name:
+        type: string
+      user_email:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceMembershipResponse:
+    properties:
+      is_active:
+        type: boolean
+      is_admin:
+        type: boolean
+      joined_at:
+        type: string
+      org_id:
+        type: integer
+      org_name:
+        type: string
+      role_name:
+        type: string
+      workspace_id:
+        type: integer
+      workspace_name:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceResponse:
+    properties:
+      admin_email:
+        type: string
+      admin_id:
+        type: integer
+      admin_name:
+        type: string
+      archived_at:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      hourly_rate:
+        type: number
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_archived:
+        type: boolean
+      is_billable:
+        type: boolean
+      member_count:
+        type: integer
+      name:
+        type: string
+      org_name:
+        type: string
+      organization_id:
+        type: integer
+      slug:
+        type: string
+      task_count:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceSummary:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.BatchSyncRequest:
+    properties:
+      device_info:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncDeviceInfoItem'
+      device_uuid:
+        type: string
+      organization_id:
+        description: Default organization ID for all items
+        type: integer
+      screenshots:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncScreenshotItem'
+        type: array
+      time_logs:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncTimeLogItem'
+        type: array
+      workspace_id:
+        description: Default workspace ID for all items
+        type: integer
+    required:
+    - device_uuid
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.BatchSyncResponse:
+    properties:
+      device_info:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.DeviceInfoResponse'
+      message:
+        type: string
+      screenshots_sync:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncResult'
+      success:
+        type: boolean
+      synced_at:
+        type: string
+      time_logs_sync:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncResult'
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.CheckAdminExistsResponse:
+    properties:
+      exists:
+        type: boolean
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.CreateInvitationRequest:
+    properties:
+      email:
+        type: string
+      expires_in_days:
+        description: 'Default: 7 days'
+        type: integer
+      message:
+        type: string
+      org_role:
+        enum:
+        - admin
+        - member
+        type: string
+      workspace_id:
+        type: integer
+      workspace_role_id:
+        type: integer
+    required:
+    - email
+    - org_role
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.CreateOrganizationRequest:
+    properties:
+      description:
+        type: string
+      logo_url:
+        type: string
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      slug:
+        maxLength: 255
+        minLength: 2
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.CreateTaskRequest:
+    properties:
+      color:
+        type: string
+      description:
+        type: string
+      is_manual:
+        description: 'true: manually created, false: auto from time tracker'
+        type: boolean
+      organization_id:
+        description: Organization ID (required for workspace context)
+        type: integer
+      priority:
+        type: integer
+      title:
+        type: string
+      workspace_id:
+        description: Workspace ID the task belongs to
+        type: integer
+    required:
+    - title
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.CreateWorkspaceRequest:
+    properties:
+      admin_id:
+        description: If not provided, creator becomes admin
+        type: integer
+      color:
+        type: string
+      description:
+        type: string
+      end_date:
+        type: string
+      hourly_rate:
+        type: number
+      icon:
+        type: string
+      is_billable:
+        type: boolean
+      name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      slug:
+        maxLength: 255
+        minLength: 2
+        type: string
+      start_date:
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.CreateWorkspaceRoleRequest:
+    properties:
+      color:
+        type: string
+      description:
+        type: string
+      display_name:
+        maxLength: 255
+        minLength: 2
+        type: string
+      is_default:
+        type: boolean
+      name:
+        maxLength: 100
+        minLength: 2
+        type: string
+      permissions:
+        description: JSON string of permissions
+        type: string
+      sort_order:
+        type: integer
+    required:
+    - display_name
+    - name
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.DeviceInfoResponse:
+    properties:
+      app_version:
+        type: string
+      device_name:
+        type: string
+      device_uuid:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_seen_at:
+        type: string
+      os:
+        type: string
+      os_version:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+      message:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.InitAdminRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.InitAdminResponse:
+    properties:
+      message:
+        type: string
+      success:
+        type: boolean
+      user:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse'
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse:
+    properties:
+      accepted_at:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: integer
+      invite_link:
+        type: string
+      invited_by:
+        type: integer
+      inviter:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse'
+      message:
+        type: string
+      org_role:
+        type: string
+      organization:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse'
+      organization_id:
+        type: integer
+      status:
+        type: string
+      token:
+        description: Only shown to creator
+        type: string
+      workspace:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse'
+      workspace_id:
+        type: integer
+      workspace_role:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse'
+      workspace_role_id:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: string
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse'
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationListResponse:
+    properties:
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      joined_at:
+        type: string
+      logo_url:
+        type: string
+      member_count:
+        type: integer
+      name:
+        type: string
+      role:
+        description: User's role in this organization
+        type: string
+      slug:
+        type: string
+      workspace_count:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse:
+    properties:
+      id:
+        type: integer
+      invited_by:
+        type: integer
+      is_active:
+        type: boolean
+      joined_at:
+        type: string
+      role:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse'
+      user_id:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse:
+    properties:
+      allow_invite_link:
+        type: boolean
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      invite_code:
+        type: string
+      is_active:
+        type: boolean
+      logo_url:
+        type: string
+      max_members:
+        type: integer
+      member_count:
+        type: integer
+      members:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse'
+        type: array
+      name:
+        type: string
+      owner:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse'
+      owner_id:
+        type: integer
+      share_invite_code:
+        description: If true, all members can see invite code
+        type: boolean
+      slug:
+        type: string
+      updated_at:
+        type: string
+      workspace_count:
+        type: integer
+      workspaces:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse'
+        type: array
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.PaginatedResponse:
+    properties:
+      data: {}
+      meta:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PaginationMeta'
+      success:
+        type: boolean
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.PaginationMeta:
+    properties:
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.PaginationResponse:
+    properties:
+      data: {}
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.PauseTimeLogRequest:
+    properties:
+      local_id:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.PlatformDownload:
+    properties:
+      content_type:
+        description: MIME type
+        type: string
+      filename:
+        description: Original filename
+        type: string
+      icon:
+        description: Icon identifier (windows, apple, linux)
+        type: string
+      name:
+        description: Display name (e.g., "Windows", "macOS (Apple Silicon)")
+        type: string
+      size:
+        description: File size in bytes
+        type: integer
+      url:
+        description: Proxied download URL through backend (use this for private repos)
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.PublicDownloadsResponse:
+    properties:
+      downloads:
+        additionalProperties:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PlatformDownload'
+        type: object
+      release_date:
+        type: string
+      release_notes:
+        type: string
+      version:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    required:
+    - refresh_token
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.RegisterRequest:
+    properties:
+      create_organization:
+        description: |-
+          Organization options - one of these must be provided
+          Option 1: Create new organization (user becomes owner)
+        type: boolean
+      email:
+        type: string
+      first_name:
+        type: string
+      invitation_token:
+        description: 'Option 3: Accept pending invitation via token'
+        type: string
+      invite_code:
+        description: 'Option 2: Join existing organization via invite code'
+        type: string
+      last_name:
+        type: string
+      organization_name:
+        description: Required if CreateOrganization is true
+        type: string
+      organization_slug:
+        description: Optional, auto-generated from name if empty
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseAsset:
+    properties:
+      content_type:
+        description: MIME type
+        type: string
+      name:
+        description: Filename (e.g., "Remote Time Tracker-1.0.1.dmg")
+        type: string
+      sha512:
+        type: string
+      size:
+        description: File size in bytes
+        type: integer
+      url:
+        description: Direct download URL (proxied through backend)
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseNotesResponse:
+    description: Release notes for a specific version
+    properties:
+      release_date:
+        type: string
+      release_notes:
+        example: |-
+          ## Changes
+          - New feature...
+        type: string
+      version:
+        example: v1.0.0
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.ResumeTimeLogRequest:
+    properties:
+      local_id:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse:
+    properties:
+      captured_at:
+        example: "2024-01-01T10:30:00Z"
+        type: string
+      created_at:
+        type: string
+      file_name:
+        example: screenshot_1.png
+        type: string
+      file_path:
+        example: /uploads/screenshots/user_1/2024/01/screenshot_1.png
+        type: string
+      file_size:
+        example: 245760
+        type: integer
+      id:
+        example: 1
+        type: integer
+      is_encrypted:
+        example: false
+        type: boolean
+      mime_type:
+        example: image/png
+        type: string
+      screen_number:
+        example: 1
+        type: integer
+      task_id:
+        example: 1
+        type: integer
+      time_log_id:
+        example: 1
+        type: integer
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotStats:
+    properties:
+      this_month_count:
+        example: 350
+        type: integer
+      this_week_count:
+        example: 100
+        type: integer
+      today_count:
+        example: 25
+        type: integer
+      total_count:
+        example: 150
+        type: integer
+      total_size:
+        example: 38400000
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.StartTimeLogRequest:
+    properties:
+      device_id:
+        type: integer
+      local_id:
+        type: string
+      notes:
+        type: string
+      task_id:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.StopTimeLogRequest:
+    properties:
+      local_id:
+        type: string
+      notes:
+        type: string
+      task_title:
+        description: Optional task title when stopping
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.SyncDeviceInfoItem:
+    properties:
+      app_version:
+        type: string
+      device_name:
+        type: string
+      device_uuid:
+        type: string
+      ip_address:
+        type: string
+      os:
+        type: string
+      os_version:
+        type: string
+    required:
+    - device_uuid
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.SyncResult:
+    properties:
+      errors:
+        items:
+          type: string
+        type: array
+      failed:
+        type: integer
+      success:
+        type: integer
+      total:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.SyncScreenshotItem:
+    properties:
+      base64_data:
+        description: For file upload
+        type: string
+      captured_at:
+        type: string
+      checksum:
+        type: string
+      file_name:
+        type: string
+      file_size:
+        type: integer
+      is_encrypted:
+        type: boolean
+      local_id:
+        type: string
+      mime_type:
+        type: string
+      organization_id:
+        description: Organization ID
+        type: integer
+      screen_number:
+        type: integer
+      task_id:
+        description: 'Deprecated: Use TaskLocalID instead'
+        type: integer
+      task_local_id:
+        description: UUID from Electron - primary task identifier
+        type: string
+      time_log_id:
+        description: Server-side TimeLog ID (deprecated, use TimeLogLocalID)
+        type: integer
+      time_log_local_id:
+        description: Local ID of TimeLog from Electron
+        type: string
+      workspace_id:
+        description: Workspace ID the screenshot belongs to
+        type: integer
+    required:
+    - captured_at
+    - file_name
+    - local_id
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.SyncTimeLogItem:
+    properties:
+      duration:
+        type: integer
+      end_time:
+        type: string
+      local_id:
+        type: string
+      notes:
+        type: string
+      organization_id:
+        description: Organization ID
+        type: integer
+      paused_at:
+        type: string
+      paused_total:
+        type: integer
+      resumed_at:
+        type: string
+      start_time:
+        type: string
+      status:
+        type: string
+      task_id:
+        description: 'Deprecated: Use TaskLocalID instead'
+        type: integer
+      task_local_id:
+        description: UUID from Electron - primary task identifier
+        type: string
+      task_title:
+        description: Task title when stopped
+        type: string
+      workspace_id:
+        description: Workspace ID the time log belongs to
+        type: integer
+    required:
+    - local_id
+    - start_time
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.TaskWithStats:
+    properties:
+      color:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      duration:
+        description: Total duration in seconds
+        type: integer
+      id:
+        type: integer
+      is_manual:
+        description: 'true: manually created, false: auto from time tracker'
+        type: boolean
+      organization_id:
+        description: Organization ID
+        type: integer
+      priority:
+        type: integer
+      screenshot_count:
+        description: Total screenshots
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      workspace_id:
+        description: Workspace ID the task belongs to
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse:
+    properties:
+      created_at:
+        type: string
+      duration:
+        example: 28800
+        type: integer
+      end_time:
+        example: "2024-01-01T17:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      local_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      notes:
+        example: Completed the main functionality
+        type: string
+      paused_at:
+        type: string
+      paused_total:
+        example: 3600
+        type: integer
+      resumed_at:
+        type: string
+      start_time:
+        example: "2024-01-01T09:00:00Z"
+        type: string
+      status:
+        example: stopped
+        type: string
+      task_id:
+        example: 1
+        type: integer
+      task_title:
+        example: Working on feature X
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogStats:
+    properties:
+      end_date:
+        example: "2024-01-07"
+        type: string
+      session_count:
+        example: 20
+        type: integer
+      start_date:
+        example: "2024-01-01"
+        type: string
+      total_time_hours:
+        example: 40
+        type: number
+      total_time_seconds:
+        example: 144000
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.TransferOwnershipRequest:
+    properties:
+      new_owner_id:
+        type: integer
+    required:
+    - new_owner_id
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckRequest:
+    properties:
+      arch:
+        description: x64, arm64, ia32
+        type: string
+      current_version:
+        description: Current app version (e.g., "1.0.0")
+        type: string
+      platform:
+        description: darwin, win32, linux
+        type: string
+    required:
+    - arch
+    - current_version
+    - platform
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckResponse:
+    properties:
+      files:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseAsset'
+        type: array
+      is_mandatory:
+        type: boolean
+      latest_version:
+        type: string
+      release_date:
+        type: string
+      release_notes:
+        type: string
+      update_available:
+        type: boolean
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.UpdateOrganizationMemberRequest:
+    properties:
+      is_active:
+        type: boolean
+      role:
+        enum:
+        - owner
+        - admin
+        - member
+        type: string
+    required:
+    - role
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.UpdateOrganizationRequest:
+    properties:
+      allow_invite_link:
+        type: boolean
+      description:
+        type: string
+      is_active:
+        type: boolean
+      logo_url:
+        type: string
+      max_members:
+        type: integer
+      name:
+        type: string
+      share_invite_code:
+        description: If true, all members can see invite code
+        type: boolean
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.UpdateTaskRequest:
+    properties:
+      color:
+        type: string
+      description:
+        type: string
+      is_manual:
+        description: Pointer to allow optional update
+        type: boolean
+      priority:
+        type: integer
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceMemberRequest:
+    properties:
+      can_manage_tasks:
+        type: boolean
+      can_view_reports:
+        type: boolean
+      is_active:
+        type: boolean
+      is_admin:
+        type: boolean
+      role_name:
+        type: string
+      workspace_role_id:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceRequest:
+    properties:
+      admin_id:
+        type: integer
+      color:
+        type: string
+      description:
+        type: string
+      end_date:
+        type: string
+      hourly_rate:
+        type: number
+      icon:
+        type: string
+      is_active:
+        type: boolean
+      is_billable:
+        type: boolean
+      name:
+        type: string
+      start_date:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceRoleRequest:
+    properties:
+      color:
+        type: string
+      description:
+        type: string
+      display_name:
+        type: string
+      is_default:
+        type: boolean
+      permissions:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_login_at:
+        type: string
+      last_name:
+        type: string
+      role:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceListResponse:
+    properties:
+      color:
+        type: string
+      description:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_admin:
+        description: Whether current user is admin of this workspace
+        type: boolean
+      joined_at:
+        type: string
+      member_count:
+        type: integer
+      name:
+        type: string
+      organization_id:
+        type: integer
+      organization_name:
+        description: Organization name for display
+        type: string
+      role_name:
+        type: string
+      slug:
+        type: string
+      task_count:
+        type: integer
+      workspace_role_id:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse:
+    properties:
+      added_by:
+        type: integer
+      can_manage_tasks:
+        type: boolean
+      can_view_reports:
+        type: boolean
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_admin:
+        type: boolean
+      joined_at:
+        type: string
+      role_name:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse'
+      user_id:
+        type: integer
+      workspace_role:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse'
+      workspace_role_id:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse:
+    properties:
+      admin:
+        $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse'
+      admin_id:
+        type: integer
+      color:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      end_date:
+        type: string
+      hourly_rate:
+        type: number
+      icon:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_billable:
+        type: boolean
+      member_count:
+        type: integer
+      members:
+        items:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse'
+        type: array
+      name:
+        type: string
+      organization_id:
+        type: integer
+      slug:
+        type: string
+      start_date:
+        type: string
+      task_count:
+        type: integer
+      updated_at:
+        type: string
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse:
+    properties:
+      color:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      display_name:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: boolean
+      name:
+        type: string
+      organization_id:
+        type: integer
+      permissions:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  github_com_beuphecan_remote-time-tracker_internal_dto.YMLInfo:
+    description: YAML update info for electron-updater
+    properties:
+      files:
+        items:
+          properties:
+            sha512:
+              type: string
+            size:
+              type: integer
+            url:
+              type: string
+          type: object
+        type: array
+      path:
+        example: Remote Time Tracker-1.0.0.dmg
+        type: string
+      releaseDate:
+        type: string
+      sha512:
+        example: sha512hash...
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@remotetimetracker.com
+    name: API Support
+  description: API documentation for Remote Time Tracker - A comprehensive time tracking
+    application with screenshot capture, task management, organization/workspace management,
+    and synchronization features.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Remote Time Tracker API
+  version: "1.0"
+paths:
+  /admin/organizations:
+    get:
+      description: Get paginated list of all organizations
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Search by name
+        in: query
+        name: search
+        type: string
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      - description: Filter by verified status
+        in: query
+        name: is_verified
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization list
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List organizations (admin only)
+      tags:
+      - admin
+  /admin/organizations/{id}:
+    delete:
+      description: Delete an organization and all associated data
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Organization deleted
+        "400":
+          description: Invalid organization ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete organization (admin only)
+      tags:
+      - admin
+    get:
+      description: Get detailed organization information
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization details
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgDetailResponse'
+        "400":
+          description: Invalid organization ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Organization not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get organization (admin only)
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Update organization information
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Organization data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateOrgRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated organization
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update organization (admin only)
+      tags:
+      - admin
+  /admin/organizations/{id}/verify:
+    put:
+      consumes:
+      - application/json
+      description: Toggle organization verification status
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Verification status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminVerifyOrgRequest'
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Verify organization (admin only)
+      tags:
+      - admin
+  /admin/screenshots:
+    get:
+      description: Get paginated list of all screenshots with filtering
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by user
+        in: query
+        name: user_id
+        type: integer
+      - description: Filter by task
+        in: query
+        name: task_id
+        type: integer
+      - description: Filter by time log
+        in: query
+        name: timelog_id
+        type: integer
+      - description: Filter by start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: Filter by end date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Screenshot list
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List screenshots (admin only)
+      tags:
+      - admin
+  /admin/screenshots/{id}:
+    delete:
+      description: Delete a screenshot by ID
+      parameters:
+      - description: Screenshot ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Screenshot deleted
+        "400":
+          description: Invalid screenshot ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete screenshot (admin only)
+      tags:
+      - admin
+    get:
+      description: Get screenshot details by ID
+      parameters:
+      - description: Screenshot ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Screenshot details
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse'
+        "400":
+          description: Invalid screenshot ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Screenshot not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get screenshot (admin only)
+      tags:
+      - admin
+  /admin/screenshots/bulk-delete:
+    post:
+      consumes:
+      - application/json
+      description: Delete multiple screenshots at once
+      parameters:
+      - description: Screenshot IDs
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminBulkDeleteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete screenshots (admin only)
+      tags:
+      - admin
+  /admin/stats:
+    get:
+      description: Get system statistics (alias for overview stats)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: System statistics
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOverviewStats'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get system statistics (admin only)
+      tags:
+      - admin
+  /admin/stats/activity:
+    get:
+      description: Get recent activity statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Activity statistics
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminActivityStats'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get activity stats (admin only)
+      tags:
+      - admin
+  /admin/stats/org-distribution:
+    get:
+      description: Get statistics about organization distribution
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization statistics
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgStats'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get organization distribution stats (admin only)
+      tags:
+      - admin
+  /admin/stats/overview:
+    get:
+      description: Get system-wide overview statistics
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Overview statistics
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOverviewStats'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get overview stats (admin only)
+      tags:
+      - admin
+  /admin/stats/trends:
+    get:
+      description: Get trend statistics over time
+      parameters:
+      - default: day
+        description: Period (day/week/month)
+        in: query
+        name: period
+        type: string
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trend statistics
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTrendStats'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get trend stats (admin only)
+      tags:
+      - admin
+  /admin/stats/user-performance:
+    get:
+      description: Get top performing users statistics
+      parameters:
+      - default: 10
+        description: Number of top users
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User performance list
+          schema:
+            items:
+              $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserPerformance'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user performance stats (admin only)
+      tags:
+      - admin
+  /admin/tasks:
+    get:
+      description: Get paginated list of all tasks with filtering options
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by user
+        in: query
+        name: user_id
+        type: integer
+      - description: Filter by organization
+        in: query
+        name: org_id
+        type: integer
+      - description: Filter by workspace
+        in: query
+        name: workspace_id
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by manual creation
+        in: query
+        name: is_manual
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task list
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List tasks (admin only)
+      tags:
+      - admin
+  /admin/tasks/{id}:
+    delete:
+      description: Delete a task and associated data
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Task deleted
+        "400":
+          description: Invalid task ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete task (admin only)
+      tags:
+      - admin
+    get:
+      description: Get detailed task information
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task details
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskDetailResponse'
+        "400":
+          description: Invalid task ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get task (admin only)
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Update task information
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated task
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update task (admin only)
+      tags:
+      - admin
+  /admin/timelogs:
+    get:
+      description: Get paginated list of all time logs with filtering
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by user
+        in: query
+        name: user_id
+        type: integer
+      - description: Filter by task
+        in: query
+        name: task_id
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by approval status
+        in: query
+        name: is_approved
+        type: boolean
+      - description: Filter by start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: Filter by end date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Time log list
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List time logs (admin only)
+      tags:
+      - admin
+  /admin/timelogs/{id}:
+    delete:
+      description: Delete a time log entry
+      parameters:
+      - description: Time Log ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Time log deleted
+        "400":
+          description: Invalid time log ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete time log (admin only)
+      tags:
+      - admin
+    get:
+      description: Get detailed time log information
+      parameters:
+      - description: Time Log ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Time log details
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogDetailResponse'
+        "400":
+          description: Invalid time log ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Time log not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get time log (admin only)
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Update time log information
+      parameters:
+      - description: Time Log ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Time log data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateTimeLogRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated time log
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update time log (admin only)
+      tags:
+      - admin
+  /admin/timelogs/approve:
+    post:
+      consumes:
+      - application/json
+      description: Approve or reject multiple time logs at once
+      parameters:
+      - description: IDs and approval status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminApproveTimeLogsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Bulk approve time logs (admin only)
+      tags:
+      - admin
+  /admin/users:
+    get:
+      description: Get paginated list of all users with filtering options
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Search by email/name
+        in: query
+        name: search
+        type: string
+      - description: Filter by role
+        in: query
+        name: role
+        type: string
+      - description: Filter by system role
+        in: query
+        name: system_role
+        type: string
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      - description: Filter by organization
+        in: query
+        name: org_id
+        type: integer
+      - description: Sort field
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc/desc)
+        in: query
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User list
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List all users (admin only)
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminCreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created user
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create user (admin only)
+      tags:
+      - admin
+  /admin/users/{id}:
+    delete:
+      description: Delete a user account (cannot delete self)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: User deleted
+        "400":
+          description: Invalid user ID or self-deletion
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user (admin only)
+      tags:
+      - admin
+    get:
+      description: Get detailed information about a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User details
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserDetailResponse'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user by ID (admin only)
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Update user information
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated user
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user (admin only)
+      tags:
+      - admin
+  /admin/users/{id}/activate:
+    put:
+      consumes:
+      - application/json
+      description: Toggle user active status
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Activation status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminActivateUserRequest'
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Activate/Deactivate user (admin only)
+      tags:
+      - admin
+  /admin/users/{id}/role:
+    put:
+      consumes:
+      - application/json
+      description: Change user's role within organization
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminChangeRoleRequest'
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user role (admin only)
+      tags:
+      - admin
+  /admin/users/{id}/system-role:
+    put:
+      consumes:
+      - application/json
+      description: Change user's system-wide role (cannot change own role)
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New system role
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminChangeSystemRoleRequest'
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request or self-modification
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user system role (admin only)
+      tags:
+      - admin
+  /admin/workspaces:
+    get:
+      description: Get paginated list of all workspaces
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by organization
+        in: query
+        name: org_id
+        type: integer
+      - description: Filter by active status
+        in: query
+        name: is_active
+        type: boolean
+      - description: Filter by archived status
+        in: query
+        name: is_archived
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workspace list
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List workspaces (admin only)
+      tags:
+      - admin
+  /admin/workspaces/{id}:
+    delete:
+      description: Delete a workspace and all associated data
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Workspace deleted
+        "400":
+          description: Invalid workspace ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete workspace (admin only)
+      tags:
+      - admin
+    get:
+      description: Get detailed workspace information
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workspace details
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceDetailResponse'
+        "400":
+          description: Invalid workspace ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Workspace not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get workspace (admin only)
+      tags:
+      - admin
+    put:
+      consumes:
+      - application/json
+      description: Update workspace information
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Workspace data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateWorkspaceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated workspace
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update workspace (admin only)
+      tags:
+      - admin
+  /admin/workspaces/{id}/archive:
+    put:
+      consumes:
+      - application/json
+      description: Toggle workspace archive status
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Archive status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminArchiveWorkspaceRequest'
+      responses:
+        "200":
+          description: Status message
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Archive workspace (admin only)
+      tags:
+      - admin
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user with email and password, returns JWT tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.LoginResponse'
+              type: object
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Login user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Get authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User info retrieved
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse'
+              type: object
+        "401":
+          description: Not authenticated
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user info
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh expired access token using refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.LoginResponse'
+              type: object
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account. User can either create a new organization
+        or join an existing one via invite code.
+      parameters:
+      - description: Registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.LoginResponse'
+              type: object
+        "400":
+          description: Invalid request or registration failed
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /invitations/{id}:
+    delete:
+      description: Revoke a pending invitation
+      parameters:
+      - description: Invitation ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Invitation revoked
+        "400":
+          description: Invalid invitation ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke invitation
+      tags:
+      - invitations
+  /invitations/{token}:
+    get:
+      description: Get invitation details by token (before accepting)
+      parameters:
+      - description: Invitation token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invitation details
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse'
+        "400":
+          description: Token required
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Invitation not found or expired
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Get invitation by token
+      tags:
+      - invitations
+  /invitations/accept:
+    post:
+      consumes:
+      - application/json
+      description: Accept an invitation with token provided in request body (for public
+        registration flow)
+      parameters:
+      - description: Invitation token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AcceptInvitationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invitation accepted
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse'
+        "400":
+          description: Invalid request or token
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Accept invitation by token in body
+      tags:
+      - invitations
+  /invitations/accept/{token}:
+    post:
+      description: Accept an invitation by token (requires authentication)
+      parameters:
+      - description: Invitation token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invitation accepted
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse'
+        "400":
+          description: Invalid token or already accepted
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Accept invitation
+      tags:
+      - invitations
+  /invitations/my:
+    get:
+      description: Get all pending invitations for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pending invitations
+          schema:
+            items:
+              $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse'
+            type: array
+        "400":
+          description: User email not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my pending invitations
+      tags:
+      - invitations
+  /organizations:
+    get:
+      description: Get all organizations the authenticated user is a member of
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User's organizations
+          schema:
+            items:
+              $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationListResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List user's organizations
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Create a new organization. The creator automatically becomes the
+        owner.
+      parameters:
+      - description: Organization data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateOrganizationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Organization created successfully
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create organization
+      tags:
+      - organizations
+  /organizations/{org_id}:
+    delete:
+      description: Delete an organization. Only owner can delete. All workspaces and
+        data will be removed.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Organization deleted
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden - only owner can delete
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete organization
+      tags:
+      - organizations
+    get:
+      description: Get organization details. Use ?details=true to include members
+        and workspaces.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: Include members and workspaces
+        in: query
+        name: details
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization details
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse'
+        "400":
+          description: Invalid organization ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Organization not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get organization by ID
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      description: Update organization details. Only owner or admin can update.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: Organization data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateOrganizationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization updated
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update organization
+      tags:
+      - organizations
+  /organizations/{org_id}/invitations:
+    get:
+      description: Get all pending invitations for the organization
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pending invitations
+          schema:
+            items:
+              $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse'
+            type: array
+        "400":
+          description: Invalid organization ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List organization invitations
+      tags:
+      - invitations
+    post:
+      consumes:
+      - application/json
+      description: Create a new invitation to join the organization. Only owner or
+        admin can create.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: Invitation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateInvitationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Invitation created
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create invitation
+      tags:
+      - invitations
+  /organizations/{org_id}/invitations/{invitation_id}:
+    delete:
+      description: Revoke a pending invitation. Only owner or admin can revoke.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: Invitation ID
+        in: path
+        name: invitation_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Invitation revoked
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Revoke invitation
+      tags:
+      - invitations
+  /organizations/{org_id}/members:
+    get:
+      description: Get all members of an organization with their roles
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization members
+          schema:
+            items:
+              $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse'
+            type: array
+        "400":
+          description: Invalid organization ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Not a member
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List organization members
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Add a new member to the organization. Only owner or admin can add
+        members.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: Member data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AddOrganizationMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Member added
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add member to organization
+      tags:
+      - organizations
+  /organizations/{org_id}/members/{user_id}:
+    delete:
+      description: Remove a member from the organization. Only owner or admin can
+        remove.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Member removed
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Cannot remove owner
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove member from organization
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      description: Update an organization member's role. Only owner or admin can update.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      - description: Member data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateOrganizationMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Member updated
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update member role
+      tags:
+      - organizations
+  /organizations/{org_id}/regenerate-invite-code:
+    post:
+      description: Generate a new invite code for the organization. Only owner or
+        admin can regenerate.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: New invite code
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Regenerate invite code
+      tags:
+      - organizations
+  /organizations/{org_id}/roles:
+    get:
+      description: Get all workspace roles defined in the organization
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workspace roles
+          schema:
+            items:
+              $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse'
+            type: array
+        "400":
+          description: Invalid organization ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List workspace roles
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Create a new workspace role in the organization. Only owner or
+        admin can create.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: Role data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateWorkspaceRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Role created
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create workspace role
+      tags:
+      - organizations
+  /organizations/{org_id}/roles/{role_id}:
+    delete:
+      description: Delete a workspace role from the organization. Only owner can delete.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Role deleted
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete workspace role
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      description: Update a workspace role. Only owner or admin can update.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: role_id
+        required: true
+        type: integer
+      - description: Role data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Role updated
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update workspace role
+      tags:
+      - organizations
+  /organizations/{org_id}/transfer-ownership:
+    post:
+      consumes:
+      - application/json
+      description: Transfer organization ownership to another member. Only owner can
+        transfer.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: New owner data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TransferOwnershipRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ownership transferred
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Only owner can transfer
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Transfer organization ownership
+      tags:
+      - organizations
+  /organizations/{org_id}/workspaces:
+    get:
+      description: Get all workspaces in an organization that the user has access
+        to
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workspaces list
+          schema:
+            items:
+              $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceListResponse'
+            type: array
+        "400":
+          description: Invalid organization ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List organization workspaces
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Create a new workspace/project in the organization. Only owner
+        or admin can create.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: org_id
+        required: true
+        type: integer
+      - description: Workspace data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateWorkspaceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Workspace created
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create workspace
+      tags:
+      - organizations
+  /organizations/join/{invite_code}:
+    get:
+      description: Get public organization info by invite code (used before joining)
+      parameters:
+      - description: Invite code
+        in: path
+        name: invite_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Organization found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+        "400":
+          description: Invite code required
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Organization not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Get organization by invite code
+      tags:
+      - organizations
+    post:
+      description: Join an organization using its invite code
+      parameters:
+      - description: Invite code
+        in: path
+        name: invite_code
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Joined successfully
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse'
+        "400":
+          description: Invalid invite code or already member
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Join organization by invite code
+      tags:
+      - organizations
+  /public/downloads/latest:
+    get:
+      description: Get download links for all platforms (public endpoint, no authentication)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Download links for all platforms
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PublicDownloadsResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Get public download links
+      tags:
+      - updates
+  /screenshots:
+    get:
+      description: Get paginated list of screenshots for the authenticated user
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        minimum: 1
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Screenshots retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PaginationResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List screenshots
+      tags:
+      - screenshots
+  /screenshots/{id}:
+    delete:
+      description: Delete a screenshot by ID
+      parameters:
+      - description: Screenshot ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Screenshot deleted successfully
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+        "400":
+          description: Invalid screenshot ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Failed to delete screenshot
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete screenshot
+      tags:
+      - screenshots
+    get:
+      description: Get detailed information about a specific screenshot
+      parameters:
+      - description: Screenshot ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Screenshot retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse'
+              type: object
+        "400":
+          description: Invalid screenshot ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Screenshot not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get screenshot by ID
+      tags:
+      - screenshots
+  /screenshots/{id}/download:
+    get:
+      description: Download a screenshot file as attachment
+      parameters:
+      - description: Screenshot ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Screenshot file
+          schema:
+            type: file
+        "400":
+          description: Invalid screenshot ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Screenshot not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Download screenshot file
+      tags:
+      - screenshots
+  /screenshots/{id}/view:
+    get:
+      description: View a screenshot file inline in browser
+      parameters:
+      - description: Screenshot ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - image/png
+      - image/jpeg
+      responses:
+        "200":
+          description: Screenshot image
+          schema:
+            type: file
+        "400":
+          description: Invalid screenshot ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Screenshot not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: View screenshot file
+      tags:
+      - screenshots
+  /screenshots/range:
+    get:
+      description: Get all screenshots captured within a specific date range
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        example: "2024-01-01"
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        example: "2024-01-31"
+        in: query
+        name: end_date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Screenshots retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid date format or missing parameters
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get screenshots by date range
+      tags:
+      - screenshots
+  /screenshots/stats:
+    get:
+      description: Get statistics about screenshots including total count, size, and
+        counts by period
+      parameters:
+      - default: 30 days ago
+        description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - default: today
+        description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Statistics retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotStats'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get screenshot statistics
+      tags:
+      - screenshots
+  /screenshots/task/{task_id}:
+    get:
+      description: Get all screenshots associated with a specific task
+      parameters:
+      - description: Task ID
+        in: path
+        name: task_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Screenshots retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid task ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get screenshots by task ID
+      tags:
+      - screenshots
+  /screenshots/timelog/{timelog_id}:
+    get:
+      description: Get all screenshots associated with a specific time log session
+      parameters:
+      - description: Time Log ID
+        in: path
+        name: timelog_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Screenshots retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid time log ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get screenshots by time log ID
+      tags:
+      - screenshots
+  /screenshots/today/count:
+    get:
+      description: Get the number of screenshots captured today
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Today's screenshot count retrieved successfully
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get today's screenshot count
+      tags:
+      - screenshots
+  /sync/batch:
+    post:
+      consumes:
+      - application/json
+      description: Synchronize time logs, screenshots, and device info from Electron
+        desktop app. Supports offline-first sync with conflict resolution.
+      parameters:
+      - description: Batch sync request containing time logs, screenshots, and device
+          info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.BatchSyncRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Batch sync completed
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.BatchSyncResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Sync failed
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Batch sync data from desktop app
+      tags:
+      - sync
+  /system/admin-exists:
+    get:
+      description: Returns whether a system admin has been created. Used to determine
+        if initial setup is required.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Admin status checked
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CheckAdminExistsResponse'
+              type: object
+        "500":
+          description: Failed to check admin status
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Check if system admin exists
+      tags:
+      - system
+  /system/init-admin:
+    post:
+      consumes:
+      - application/json
+      description: Creates the first system admin. This endpoint only works when no
+        admin exists in the system. Used for initial setup.
+      parameters:
+      - description: Admin details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InitAdminRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: System admin created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InitAdminResponse'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "409":
+          description: Admin already exists
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Failed to create admin
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Initialize system admin
+      tags:
+      - system
+  /system/uploads/check:
+    get:
+      description: Verifies that upload and screenshot folders exist and are writable
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Upload folder check completed
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Check uploads folder health
+      tags:
+      - system
+  /system/uploads/ensure:
+    post:
+      description: Creates necessary upload folders (uploads, screenshots) if they
+        don't exist
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Upload folders ensured
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Failed to create folders
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Ensure upload folders exist
+      tags:
+      - system
+  /tasks:
+    get:
+      description: Get paginated list of tasks for the authenticated user with statistics
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 50
+        description: Items per page
+        in: query
+        maximum: 100
+        minimum: 1
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tasks retrieved successfully
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List tasks
+      tags:
+      - tasks
+    post:
+      consumes:
+      - application/json
+      description: Create a new task. Tasks can be manually created (is_manual=true)
+        or auto-created from time tracker.
+      parameters:
+      - description: Task creation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Task created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TaskWithStats'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new task
+      tags:
+      - tasks
+  /tasks/{id}:
+    delete:
+      description: Delete a task and its associated data
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task deleted successfully
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+        "400":
+          description: Invalid task ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete task
+      tags:
+      - tasks
+    get:
+      description: Get detailed information about a specific task including statistics
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TaskWithStats'
+              type: object
+        "400":
+          description: Invalid task ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get task by ID
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: Update an existing task's details
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task update details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Task updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TaskWithStats'
+              type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Task not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update task
+      tags:
+      - tasks
+  /tasks/active:
+    get:
+      description: Get all active (non-completed, non-archived) tasks for the authenticated
+        user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Active tasks retrieved successfully
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get active tasks
+      tags:
+      - tasks
+  /timelogs:
+    get:
+      description: Get paginated list of time logs for the authenticated user
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        maximum: 100
+        minimum: 1
+        name: per_page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Time logs retrieved
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List time logs
+      tags:
+      - timelogs
+  /timelogs/{id}:
+    get:
+      description: Get a specific time log by its ID
+      parameters:
+      - description: Time log ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Time log retrieved
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse'
+              type: object
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Time log not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get time log by ID
+      tags:
+      - timelogs
+  /timelogs/active:
+    get:
+      description: Get the current active or paused time tracking session for the
+        authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Active session retrieved (null if no active session)
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get active time tracking session
+      tags:
+      - timelogs
+  /timelogs/pause:
+    post:
+      consumes:
+      - application/json
+      description: Pause the active time tracking session
+      parameters:
+      - description: Pause time log request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PauseTimeLogRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Time tracking paused
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse'
+              type: object
+        "400":
+          description: No active session or already paused
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Pause time tracking
+      tags:
+      - timelogs
+  /timelogs/resume:
+    post:
+      consumes:
+      - application/json
+      description: Resume a paused time tracking session
+      parameters:
+      - description: Resume time log request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ResumeTimeLogRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Time tracking resumed
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse'
+              type: object
+        "400":
+          description: No paused session or invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Resume time tracking
+      tags:
+      - timelogs
+  /timelogs/start:
+    post:
+      consumes:
+      - application/json
+      description: Start a new time tracking session. Only one active session is allowed
+        per user.
+      parameters:
+      - description: Start time log request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.StartTimeLogRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Time tracking started
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse'
+              type: object
+        "400":
+          description: Already have an active session or invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Start time tracking
+      tags:
+      - timelogs
+  /timelogs/stats:
+    get:
+      description: Get time tracking statistics for a date range
+      parameters:
+      - default: 7 days ago
+        description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - default: today
+        description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Statistics retrieved
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogStats'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get time tracking statistics
+      tags:
+      - timelogs
+  /timelogs/stop:
+    post:
+      consumes:
+      - application/json
+      description: Stop the active time tracking session and save the duration
+      parameters:
+      - description: Stop time log request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.StopTimeLogRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Time tracking stopped
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse'
+              type: object
+        "400":
+          description: No active session or invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Stop time tracking
+      tags:
+      - timelogs
+  /updates/check:
+    post:
+      consumes:
+      - application/json
+      description: Check if a new version of the desktop app is available
+      parameters:
+      - description: Current version and platform info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Update check result
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Check for app updates
+      tags:
+      - updates
+  /updates/download/{version}/{filename}:
+    get:
+      description: Download a specific release asset (installer/update file)
+      parameters:
+      - description: Version tag (e.g., v1.0.0)
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Asset filename
+        in: path
+        name: filename
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: File download
+          schema:
+            type: file
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Asset not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Download release asset
+      tags:
+      - updates
+  /updates/latest:
+    get:
+      description: Get information about the latest available version
+      parameters:
+      - default: darwin
+        description: Platform (darwin, win32, linux)
+        in: query
+        name: platform
+        type: string
+      - default: x64
+        description: Architecture (x64, arm64)
+        in: query
+        name: arch
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Latest version info
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Get latest app version
+      tags:
+      - updates
+  /updates/notes/{version}:
+    get:
+      description: Get release notes for a specific version or the latest release
+      parameters:
+      - default: latest
+        description: Version tag (use 'latest' for latest release)
+        in: path
+        name: version
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Release notes
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseNotesResponse'
+        "404":
+          description: Release not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Get release notes
+      tags:
+      - updates
+  /updates/yml/{platform}:
+    get:
+      description: Get the latest.yml file for electron-updater auto-update
+      parameters:
+      - description: Platform (darwin, win32, linux)
+        in: path
+        name: platform
+        required: true
+        type: string
+      produces:
+      - application/x-yaml
+      responses:
+        "200":
+          description: YAML update info
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.YMLInfo'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      summary: Get update YAML file
+      tags:
+      - updates
+  /workspaces:
+    get:
+      description: Get all workspaces the user is a member of. Can filter by organization_id.
+      parameters:
+      - description: Filter by organization ID
+        in: query
+        name: organization_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User's workspaces
+          schema:
+            items:
+              $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceListResponse'
+            type: array
+        "400":
+          description: Invalid organization ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List user's workspaces
+      tags:
+      - workspaces
+  /workspaces/{workspace_id}:
+    delete:
+      description: Delete a workspace. Only organization owner can delete.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Workspace deleted
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete workspace
+      tags:
+      - workspaces
+    get:
+      description: Get workspace details. Use ?members=true to include members list.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: integer
+      - description: Include members list
+        in: query
+        name: members
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workspace details
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse'
+        "400":
+          description: Invalid workspace ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "404":
+          description: Workspace not found
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get workspace by ID
+      tags:
+      - workspaces
+    put:
+      consumes:
+      - application/json
+      description: Update workspace details. Only workspace admin can update.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: integer
+      - description: Workspace data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workspace updated
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update workspace
+      tags:
+      - workspaces
+  /workspaces/{workspace_id}/members:
+    get:
+      description: Get all members of a workspace with their roles
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Workspace members
+          schema:
+            items:
+              $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse'
+            type: array
+        "400":
+          description: Invalid workspace ID
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Not a member
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List workspace members
+      tags:
+      - workspaces
+    post:
+      consumes:
+      - application/json
+      description: Add a new member to the workspace. Only workspace admin can add
+        members.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: integer
+      - description: Member data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AddWorkspaceMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Member added
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Add member to workspace
+      tags:
+      - workspaces
+  /workspaces/{workspace_id}/members/{user_id}:
+    delete:
+      description: Remove a member from the workspace. Only workspace admin can remove.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: integer
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Member removed
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Cannot remove admin
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove member from workspace
+      tags:
+      - workspaces
+    put:
+      consumes:
+      - application/json
+      description: Update a workspace member's role. Only workspace admin can update.
+      parameters:
+      - description: Workspace ID
+        in: path
+        name: workspace_id
+        required: true
+        type: integer
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      - description: Member data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceMemberRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Member updated
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update workspace member
+      tags:
+      - workspaces
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
+tags:
+- description: Authentication endpoints - Login, Register, Token refresh
+  name: auth
+- description: Task management - Create, Read, Update, Delete tasks
+  name: tasks
+- description: Time tracking - Start, Stop, Pause, Resume time tracking sessions
+  name: timelogs
+- description: Screenshot management - View, Download, Delete captured screenshots
+  name: screenshots
+- description: Data synchronization from Electron desktop app
+  name: sync
+- description: Organization management - Create, manage organizations and members
+  name: organizations
+- description: Workspace/Project management within organizations
+  name: workspaces
+- description: User invitations to organizations and workspaces
+  name: invitations
+- description: System administration - User, Organization, Task, TimeLog management
+    (Admin only)
+  name: admin
+- description: System utilities - Health check, initialization
+  name: system
+- description: Application updates - Check for updates, download assets
+  name: updates

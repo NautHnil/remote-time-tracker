@@ -23,6 +23,18 @@ func NewSyncController(syncService service.SyncService) *SyncController {
 }
 
 // BatchSync handles batch synchronization from Electron app
+// @Summary Batch sync data from desktop app
+// @Description Synchronize time logs, screenshots, and device info from Electron desktop app. Supports offline-first sync with conflict resolution.
+// @Tags sync
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.BatchSyncRequest true "Batch sync request containing time logs, screenshots, and device info"
+// @Success 200 {object} dto.SuccessResponse{data=dto.BatchSyncResponse} "Batch sync completed"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 500 {object} dto.ErrorResponse "Sync failed"
+// @Router /sync/batch [post]
 func (ctrl *SyncController) BatchSync(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {

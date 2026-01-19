@@ -11,6 +11,7 @@ export type { ApiResponse } from "./apiClient";
 export { API_BASE_URL, API_ENDPOINTS } from "./config";
 
 // Export services
+export { adminService } from "./adminService";
 export { authService } from "./authService";
 export { commonService } from "./commonService";
 export { invitationService } from "./invitationService";
@@ -20,6 +21,31 @@ export { syncService } from "./syncService";
 export { taskService } from "./taskService";
 export { timeLogService } from "./timeLogService";
 export { workspaceService } from "./workspaceService";
+
+// Export types from admin service
+export type {
+  AdminCreateUserRequest,
+  AdminOrgFilterParams,
+  AdminOrgListResponse,
+  AdminOrganization,
+  AdminPagination,
+  AdminScreenshot,
+  AdminScreenshotFilterParams,
+  AdminScreenshotListResponse,
+  AdminTask,
+  AdminTaskFilterParams,
+  AdminTaskListResponse,
+  AdminTimeLog,
+  AdminTimeLogFilterParams,
+  AdminTimeLogListResponse,
+  AdminUpdateUserRequest,
+  AdminUser,
+  AdminUserFilterParams,
+  AdminUserListResponse,
+  AdminWorkspace,
+  AdminWorkspaceFilterParams,
+  AdminWorkspaceListResponse,
+} from "./adminService";
 
 // Export types from organization service
 export type {
@@ -52,6 +78,7 @@ export type {
 } from "./invitationService";
 
 // Backward compatibility aliases
+export { adminService as adminAPI } from "./adminService";
 export { authService as authAPI } from "./authService";
 export { commonService as commonAPI } from "./commonService";
 export { invitationService as invitationAPI } from "./invitationService";

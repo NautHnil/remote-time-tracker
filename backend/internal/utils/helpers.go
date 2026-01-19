@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"fmt"
 	"math/rand"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -84,4 +86,28 @@ func CalculatePaginationPages(total int64, perPage int) int {
 		pages++
 	}
 	return pages
+}
+
+// ParseUint parses a string to uint and stores in the provided pointer
+func ParseUint(s string, result *uint) (uint, error) {
+	n, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	*result = uint(n)
+	return uint(n), nil
+}
+
+// UintToString converts uint to string
+func UintToString(n uint) string {
+	return fmt.Sprintf("%d", n)
+}
+
+// StringToUint converts string to uint
+func StringToUint(s string) (uint, error) {
+	n, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return uint(n), nil
 }

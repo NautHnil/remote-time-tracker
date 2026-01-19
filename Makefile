@@ -1,4 +1,4 @@
-.PHONY: help start start-be start-fe start-db stop stop-be stop-fe stop-db restart logs logs-be logs-fe logs-db clean build rebuild rebuild-be rebuild-fe dev-be dev-fe dev-app build-app install-be install-fe install-app install-all test-be test-fe db-shell db-reset status debug-be health backup-db restore-db prune
+.PHONY: help start start-be start-fe start-db stop stop-be stop-fe stop-db restart logs logs-be logs-fe logs-db clean build rebuild rebuild-be rebuild-fe dev-be dev-fe dev-app build-app build-swag install-be install-fe install-app install-all test-be test-fe db-shell db-reset status debug-be health backup-db restore-db prune
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -111,6 +111,9 @@ dev-app: ## Run electron app in development mode
 
 build-app: ## Build electron app
 	cd electron && npm run build:all
+
+build-swag: ## Generate Swagger documentation
+	cd backend && swag init -g ./cmd/server/main.go -o ./docs --parseDependency --parseInternal --dir ./
 
 install-be: ## Install backend dependencies
 	cd backend && go mod download

@@ -142,7 +142,19 @@ class ApiClient {
       }
 
       const data = await response.json();
-      return data;
+      if (
+        data &&
+        typeof data === "object" &&
+        "success" in data &&
+        "data" in data
+      ) {
+        return data as ApiResponse<T>;
+      }
+      return {
+        success: true,
+        message: "OK",
+        data: data as T,
+      } as ApiResponse<T>;
     } catch (error) {
       console.error(`API Error [${endpoint}]:`, error);
       throw error;
