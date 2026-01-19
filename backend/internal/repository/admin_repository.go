@@ -276,6 +276,10 @@ func (r *adminRepository) FindOrgsWithFilters(params *dto.AdminOrgListParams) ([
 		query = query.Where("is_verified = ?", *params.IsVerified)
 	}
 
+	if params.UserID != nil {
+		query = query.Where("owner_id = ?", *params.UserID)
+	}
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -337,6 +341,10 @@ func (r *adminRepository) FindWorkspacesWithFilters(params *dto.AdminWorkspaceLi
 
 	if params.OrgID != nil {
 		query = query.Where("organization_id = ?", *params.OrgID)
+	}
+
+	if params.UserID != nil {
+		query = query.Where("admin_id = ?", *params.UserID)
 	}
 
 	if params.IsActive != nil {

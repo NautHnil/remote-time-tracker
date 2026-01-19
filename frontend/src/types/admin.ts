@@ -462,6 +462,7 @@ export interface AdminOrgFilterParams {
   page?: number;
   page_size?: number;
   search?: string;
+  user_id?: number;
   is_active?: boolean;
   is_verified?: boolean;
   sort_by?: string;
@@ -472,6 +473,7 @@ export interface AdminWorkspaceFilterParams {
   page?: number;
   page_size?: number;
   search?: string;
+  user_id?: number;
   org_id?: number;
   is_active?: boolean;
   is_archived?: boolean;

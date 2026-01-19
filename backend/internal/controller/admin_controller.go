@@ -2,11 +2,13 @@ package controller
 
 import (
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/beuphecan/remote-time-tracker/internal/dto"
 	"github.com/beuphecan/remote-time-tracker/internal/service"
+	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,6 +39,7 @@ func NewAdminController(adminService service.AdminService) *AdminController {
 // @Param search query string false "Search by email/name"
 // @Param role query string false "Filter by role"
 // @Param system_role query string false "Filter by system role"
+// @Param user_id query int false "Filter by owner"
 // @Param is_active query bool false "Filter by active status"
 // @Param org_id query int false "Filter by organization"
 // @Param sort_by query string false "Sort field"
@@ -349,6 +352,11 @@ func (c *AdminController) ListOrganizations(ctx *gin.Context) {
 		SortOrder: ctx.Query("sort_order"),
 	}
 
+	if ctx.Query("user_id") != "" {
+		userID := uint(parseIntParam(ctx, "user_id", 0))
+		params.UserID = &userID
+	}
+
 	if ctx.Query("is_active") != "" {
 		isActive := ctx.Query("is_active") == "true"
 		params.IsActive = &isActive
@@ -513,6 +521,7 @@ func (c *AdminController) VerifyOrganization(ctx *gin.Context) {
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Items per page" default(20)
 // @Param org_id query int false "Filter by organization"
+// @Param user_id query int false "Filter by admin user"
 // @Param is_active query bool false "Filter by active status"
 // @Param is_archived query bool false "Filter by archived status"
 // @Success 200 {object} dto.AdminWorkspaceListResponse "Workspace list"
@@ -527,6 +536,11 @@ func (c *AdminController) ListWorkspaces(ctx *gin.Context) {
 		Search:    ctx.Query("search"),
 		SortBy:    ctx.Query("sort_by"),
 		SortOrder: ctx.Query("sort_order"),
+	}
+
+	if ctx.Query("user_id") != "" {
+		userID := uint(parseIntParam(ctx, "user_id", 0))
+		params.UserID = &userID
 	}
 
 	if ctx.Query("org_id") != "" {
@@ -728,6 +742,10 @@ func (c *AdminController) ListTasks(ctx *gin.Context) {
 	}
 
 	if ctx.Query("workspace_id") != "" {
+		if params.OrgID == nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "workspace_id requires org_id"})
+			return
+		}
 		wsID := uint(parseIntParam(ctx, "workspace_id", 0))
 		params.WorkspaceID = &wsID
 	}
@@ -1143,6 +1161,42 @@ func (c *AdminController) GetScreenshot(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, screenshot)
+}
+
+// ViewScreenshot serves the screenshot file for viewing (admin only)
+// @Summary View screenshot file (admin only)
+// @Description View a screenshot file inline in browser
+// @Tags admin
+// @Produce image/png,image/jpeg
+// @Security BearerAuth
+// @Param id path int true "Screenshot ID"
+// @Success 200 {file} file "Screenshot image"
+// @Failure 400 {object} dto.ErrorResponse "Invalid screenshot ID"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Forbidden"
+// @Failure 404 {object} dto.ErrorResponse "Screenshot not found"
+// @Router /admin/screenshots/{id}/view [get]
+func (c *AdminController) ViewScreenshot(ctx *gin.Context) {
+	ssID, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		utils.ErrorResponse(ctx, http.StatusBadRequest, "Invalid screenshot ID")
+		return
+	}
+
+	screenshot, err := c.adminService.GetScreenshot(uint(ssID))
+	if err != nil {
+		utils.ErrorResponse(ctx, http.StatusNotFound, "Screenshot not found")
+		return
+	}
+
+	if !utils.FileExists(screenshot.FilePath) {
+		utils.ErrorResponse(ctx, http.StatusNotFound, "Screenshot file not found on server")
+		return
+	}
+
+	ctx.Header("Content-Type", screenshot.MimeType)
+	ctx.Header("Content-Disposition", "inline; filename="+filepath.Base(screenshot.FileName))
+	ctx.File(screenshot.FilePath)
 }
 
 // DeleteScreenshot deletes screenshot

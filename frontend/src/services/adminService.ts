@@ -224,6 +224,7 @@ class AdminService {
     if (params.page) queryParams.page = params.page;
     if (params.page_size) queryParams.page_size = params.page_size;
     if (params.search) queryParams.search = params.search;
+    if (params.user_id) queryParams.user_id = params.user_id;
     if (params.is_active !== undefined)
       queryParams.is_active = params.is_active ? "true" : "false";
     if (params.is_verified !== undefined)
@@ -290,6 +291,7 @@ class AdminService {
     if (params.page_size) queryParams.page_size = params.page_size;
     if (params.org_id) queryParams.org_id = params.org_id;
     if (params.search) queryParams.search = params.search;
+    if (params.user_id) queryParams.user_id = params.user_id;
     if (params.is_active !== undefined)
       queryParams.is_active = params.is_active ? "true" : "false";
     if (params.is_archived !== undefined)

@@ -340,6 +340,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 					{
 						screenshots.GET("", cfg.AdminController.ListScreenshots)
 						screenshots.GET("/:id", cfg.AdminController.GetScreenshot)
+						screenshots.GET("/:id/view", cfg.AdminController.ViewScreenshot)
 						screenshots.DELETE("/:id", cfg.AdminController.DeleteScreenshot)
 						screenshots.POST("/bulk-delete", cfg.AdminController.BulkDeleteScreenshots)
 					}

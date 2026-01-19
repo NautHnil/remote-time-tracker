@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
 import { useState } from "react";
 import { Icons } from "../../components/Icons";
+import { Button, Input } from "../../components/ui";
 import { adminService } from "../../services/adminService";
 
 // Stat Card Component
@@ -322,22 +323,22 @@ export default function AdminStatisticsPage() {
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
-            <input
+            <Input
               type="date"
               value={dateRange.start}
               onChange={(e) =>
                 setDateRange({ ...dateRange, start: e.target.value })
               }
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-36"
             />
             <span className="text-gray-400">to</span>
-            <input
+            <Input
               type="date"
               value={dateRange.end}
               onChange={(e) =>
                 setDateRange({ ...dateRange, end: e.target.value })
               }
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-36"
             />
           </div>
         </div>
@@ -481,36 +482,26 @@ export default function AdminStatisticsPage() {
           Export Reports
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <button className="flex items-center justify-center space-x-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors">
+          <Button variant="outline" size="sm" className="justify-center gap-2">
             <Icons.Users className="h-5 w-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              Export Users
-            </span>
-          </button>
-          <button className="flex items-center justify-center space-x-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors">
+            <span>Export Users</span>
+          </Button>
+          <Button variant="outline" size="sm" className="justify-center gap-2">
             <Icons.ListTodo className="h-5 w-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              Export Tasks
-            </span>
-          </button>
-          <button className="flex items-center justify-center space-x-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors">
+            <span>Export Tasks</span>
+          </Button>
+          <Button variant="outline" size="sm" className="justify-center gap-2">
             <Icons.Clock className="h-5 w-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              Export Time Logs
-            </span>
-          </button>
-          <button className="flex items-center justify-center space-x-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors">
+            <span>Export Time Logs</span>
+          </Button>
+          <Button variant="outline" size="sm" className="justify-center gap-2">
             <Icons.Building2 className="h-5 w-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              Export Orgs
-            </span>
-          </button>
-          <button className="flex items-center justify-center space-x-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors">
+            <span>Export Orgs</span>
+          </Button>
+          <Button variant="outline" size="sm" className="justify-center gap-2">
             <Icons.Camera className="h-5 w-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              Export Screenshots
-            </span>
-          </button>
+            <span>Export Screenshots</span>
+          </Button>
         </div>
       </div>
     </div>

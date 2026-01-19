@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { useCallback, useState } from "react";
 import { Icons } from "../../components/Icons";
 import Pagination from "../../components/Pagination";
+import { Button, IconButton, Input, Select } from "../../components/ui";
 import {
   adminService,
   AdminUpdateUserRequest,
@@ -52,12 +53,9 @@ function UserEditModal({
         <div className="relative bg-white rounded-xl shadow-2xl max-w-md w-full p-6 z-10">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-gray-900">Edit User</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
+            <IconButton onClick={onClose} variant="ghost">
               <Icons.Close className="h-5 w-5" />
-            </button>
+            </IconButton>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -66,26 +64,24 @@ function UserEditModal({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   First Name
                 </label>
-                <input
+                <Input
                   type="text"
                   value={formData.first_name}
                   onChange={(e) =>
                     setFormData({ ...formData, first_name: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Last Name
                 </label>
-                <input
+                <Input
                   type="text"
                   value={formData.last_name}
                   onChange={(e) =>
                     setFormData({ ...formData, last_name: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
             </div>
@@ -94,33 +90,31 @@ function UserEditModal({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Role (Legacy)
               </label>
-              <select
+              <Select
                 value={formData.role}
                 onChange={(e) =>
                   setFormData({ ...formData, role: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="user">User</option>
                 <option value="manager">Manager</option>
                 <option value="admin">Admin</option>
-              </select>
+              </Select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 System Role
               </label>
-              <select
+              <Select
                 value={formData.system_role}
                 onChange={(e) =>
                   setFormData({ ...formData, system_role: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="member">Member</option>
                 <option value="admin">Admin</option>
-              </select>
+              </Select>
             </div>
 
             <div className="flex items-center">
@@ -142,20 +136,12 @@ function UserEditModal({
             </div>
 
             <div className="flex justify-end space-x-3 pt-4 border-t">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
+              <Button type="button" onClick={onClose} variant="secondary">
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
-              >
+              </Button>
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? "Saving..." : "Save Changes"}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -198,19 +184,12 @@ function DeleteConfirmModal({
           </div>
 
           <div className="flex justify-center space-x-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
+            <Button onClick={onClose} variant="secondary">
               Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={isLoading}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-            >
+            </Button>
+            <Button onClick={onConfirm} disabled={isLoading} variant="danger">
               {isLoading ? "Deleting..." : "Delete"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -350,56 +329,50 @@ export default function AdminUsersPage() {
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="relative">
-            <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={search}
-              onChange={handleSearch}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
+          <Input
+            type="text"
+            placeholder="Search users..."
+            value={search}
+            leftIcon={<Icons.Search className="h-4 w-4" />}
+            onChange={handleSearch}
+          />
 
-          <select
+          <Select
             value={roleFilter}
             onChange={(e) => {
               setRoleFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">All Roles</option>
             <option value="admin">Admin</option>
             <option value="manager">Manager</option>
             <option value="user">User</option>
-          </select>
+          </Select>
 
-          <select
+          <Select
             value={systemRoleFilter}
             onChange={(e) => {
               setSystemRoleFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">All System Roles</option>
             <option value="admin">System Admin</option>
             <option value="member">Member</option>
-          </select>
+          </Select>
 
-          <select
+          <Select
             value={activeFilter}
             onChange={(e) => {
               setActiveFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -493,20 +466,19 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        <button
+                        <IconButton
                           onClick={() => setEditingUser(user)}
-                          className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                           title="Edit User"
                         >
                           <Icons.Pencil className="h-4 w-4" />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
                           onClick={() => setDeletingUser(user)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete User"
+                          variant="danger"
                         >
                           <Icons.Trash className="h-4 w-4" />
-                        </button>
+                        </IconButton>
                       </div>
                     </td>
                   </tr>

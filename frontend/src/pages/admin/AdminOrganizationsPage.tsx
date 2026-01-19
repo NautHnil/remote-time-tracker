@@ -8,7 +8,12 @@ import { format } from "date-fns";
 import { useState } from "react";
 import { Icons } from "../../components/Icons";
 import Pagination from "../../components/Pagination";
-import { AdminOrganization, adminService } from "../../services/adminService";
+import { Button, IconButton, Input, Select } from "../../components/ui";
+import {
+  AdminOrganization,
+  AdminUser,
+  adminService,
+} from "../../services/adminService";
 
 // Organization Detail Modal
 interface OrgDetailModalProps {
@@ -35,12 +40,9 @@ function OrgDetailModal({ org, onClose }: OrgDetailModalProps) {
             <h3 className="text-xl font-bold text-gray-900">
               Organization Details
             </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
+            <IconButton onClick={onClose} variant="ghost">
               <Icons.Close className="h-5 w-5" />
-            </button>
+            </IconButton>
           </div>
 
           <div className="space-y-4">
@@ -135,12 +137,9 @@ function OrgDetailModal({ org, onClose }: OrgDetailModalProps) {
           </div>
 
           <div className="flex justify-end pt-4 mt-4 border-t">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
+            <Button onClick={onClose} variant="secondary">
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -182,19 +181,12 @@ function DeleteConfirmModal({
           </div>
 
           <div className="flex justify-center space-x-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
+            <Button onClick={onClose} variant="secondary">
               Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={isLoading}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-            >
+            </Button>
+            <Button onClick={onConfirm} disabled={isLoading} variant="danger">
               {isLoading ? "Deleting..." : "Delete"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -205,9 +197,10 @@ function DeleteConfirmModal({
 export default function AdminOrganizationsPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [pageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("");
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   const [viewingOrg, setViewingOrg] = useState<AdminOrganization | null>(null);
   const [deletingOrg, setDeletingOrg] = useState<AdminOrganization | null>(
@@ -216,13 +209,29 @@ export default function AdminOrganizationsPage() {
 
   // Fetch organizations
   const { data, isLoading, error } = useQuery({
-    queryKey: ["admin-organizations", page, limit, search, activeFilter],
+    queryKey: [
+      "admin-organizations",
+      page,
+      pageSize,
+      search,
+      activeFilter,
+      selectedUserId,
+    ],
     queryFn: async () => {
-      const params: Record<string, any> = { page, limit };
+      const params: Record<string, any> = { page, page_size: pageSize };
       if (search) params.search = search;
       if (activeFilter) params.is_active = activeFilter === "active";
+      if (selectedUserId) params.user_id = Number(selectedUserId);
 
       const response = await adminService.getOrganizations(params);
+      return response.data;
+    },
+  });
+
+  const { data: usersData } = useQuery({
+    queryKey: ["admin-users-options"],
+    queryFn: async () => {
+      const response = await adminService.getUsers({ page: 1, page_size: 200 });
       return response.data;
     },
   });
@@ -262,8 +271,10 @@ export default function AdminOrganizationsPage() {
     total_items: 0,
     total_pages: 0,
     current_page: page,
-    page_size: limit,
+    page_size: pageSize,
   };
+
+  const users = (usersData?.users || []) as AdminUser[];
 
   return (
     <div className="space-y-6">
@@ -286,44 +297,59 @@ export default function AdminOrganizationsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="relative">
-            <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search organizations..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Input
+            type="text"
+            placeholder="Search organizations..."
+            value={search}
+            leftIcon={<Icons.Search className="h-4 w-4" />}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
 
-          <select
+          <Select
             value={activeFilter}
             onChange={(e) => {
               setActiveFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-          </select>
+          </Select>
 
-          <button
-            onClick={() => {
-              setSearch("");
-              setActiveFilter("");
+          <Select
+            value={selectedUserId}
+            onChange={(e) => {
+              setSelectedUserId(e.target.value);
               setPage(1);
             }}
-            className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
-            Clear Filters
-          </button>
+            <option value="">All Owners</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.full_name || user.email}
+              </option>
+            ))}
+          </Select>
+
+          <div className="flex items-center justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setSearch("");
+                setActiveFilter("");
+                setSelectedUserId("");
+                setPage(1);
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -392,20 +418,19 @@ export default function AdminOrganizationsPage() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-end gap-2">
-                  <button
+                  <IconButton
                     onClick={() => setViewingOrg(org)}
-                    className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                     title="View Details"
                   >
                     <Icons.Eye className="h-4 w-4" />
-                  </button>
-                  <button
+                  </IconButton>
+                  <IconButton
                     onClick={() => setDeletingOrg(org)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Delete Organization"
+                    variant="danger"
                   >
                     <Icons.Trash className="h-4 w-4" />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
             ))}

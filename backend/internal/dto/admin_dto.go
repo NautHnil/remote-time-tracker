@@ -155,6 +155,7 @@ type AdminOrgListParams struct {
 	Page       int    `form:"page"`
 	PageSize   int    `form:"page_size"`
 	Search     string `form:"search"`
+	UserID     *uint  `form:"user_id"`
 	IsActive   *bool  `form:"is_active"`
 	IsVerified *bool  `form:"is_verified"`
 	SortBy     string `form:"sort_by"`
@@ -238,6 +239,7 @@ type AdminWorkspaceListParams struct {
 	Page       int    `form:"page"`
 	PageSize   int    `form:"page_size"`
 	Search     string `form:"search"`
+	UserID     *uint  `form:"user_id"`
 	OrgID      *uint  `form:"org_id"`
 	IsActive   *bool  `form:"is_active"`
 	IsArchived *bool  `form:"is_archived"`

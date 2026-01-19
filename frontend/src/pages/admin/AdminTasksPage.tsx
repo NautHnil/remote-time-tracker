@@ -5,10 +5,17 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Icons } from "../../components/Icons";
 import Pagination from "../../components/Pagination";
-import { adminService, AdminTask } from "../../services/adminService";
+import { Button, IconButton, Input, Select } from "../../components/ui";
+import {
+  AdminOrganization,
+  AdminTask,
+  AdminUser,
+  AdminWorkspace,
+  adminService,
+} from "../../services/adminService";
 
 // Task Detail Modal Component
 interface TaskDetailModalProps {
@@ -33,12 +40,9 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
         <div className="relative bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 z-10">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-gray-900">Task Details</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
+            <IconButton onClick={onClose} variant="ghost">
               <Icons.Close className="h-5 w-5" />
-            </button>
+            </IconButton>
           </div>
 
           <div className="space-y-4">
@@ -124,12 +128,9 @@ function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
           </div>
 
           <div className="flex justify-end pt-4 mt-4 border-t">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
+            <Button onClick={onClose} variant="secondary">
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -171,19 +172,12 @@ function DeleteConfirmModal({
           </div>
 
           <div className="flex justify-center space-x-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
+            <Button onClick={onClose} variant="secondary">
               Cancel
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={isLoading}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-            >
+            </Button>
+            <Button onClick={onConfirm} disabled={isLoading} variant="danger">
               {isLoading ? "Deleting..." : "Delete"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -194,24 +188,73 @@ function DeleteConfirmModal({
 export default function AdminTasksPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [pageSize] = useState(20);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("");
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
 
   const [viewingTask, setViewingTask] = useState<AdminTask | null>(null);
   const [deletingTask, setDeletingTask] = useState<AdminTask | null>(null);
 
   // Fetch tasks
   const { data, isLoading, error } = useQuery({
-    queryKey: ["admin-tasks", page, limit, search, statusFilter, typeFilter],
+    queryKey: [
+      "admin-tasks",
+      page,
+      pageSize,
+      search,
+      statusFilter,
+      typeFilter,
+      selectedUserId,
+      selectedOrgId,
+      selectedWorkspaceId,
+    ],
     queryFn: async () => {
-      const params: Record<string, any> = { page, limit };
+      const params: Record<string, any> = { page, page_size: pageSize };
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
       if (typeFilter) params.is_manual = typeFilter === "manual";
+      if (selectedUserId) params.user_id = Number(selectedUserId);
+      if (selectedOrgId) params.org_id = Number(selectedOrgId);
+      if (selectedOrgId && selectedWorkspaceId) {
+        params.workspace_id = Number(selectedWorkspaceId);
+      }
 
       const response = await adminService.getTasks(params);
+      return response.data;
+    },
+  });
+
+  const { data: usersData } = useQuery({
+    queryKey: ["admin-users-options"],
+    queryFn: async () => {
+      const response = await adminService.getUsers({ page: 1, page_size: 200 });
+      return response.data;
+    },
+  });
+
+  const { data: orgsData } = useQuery({
+    queryKey: ["admin-orgs-options"],
+    queryFn: async () => {
+      const response = await adminService.getOrganizations({
+        page: 1,
+        page_size: 200,
+      });
+      return response.data;
+    },
+  });
+
+  const { data: workspacesData } = useQuery({
+    queryKey: ["admin-workspaces-options", selectedOrgId],
+    queryFn: async () => {
+      const response = await adminService.getWorkspaces({
+        page: 1,
+        page_size: 200,
+        org_id: selectedOrgId ? Number(selectedOrgId) : undefined,
+      });
       return response.data;
     },
   });
@@ -264,8 +307,16 @@ export default function AdminTasksPage() {
     total_items: 0,
     total_pages: 0,
     current_page: page,
-    page_size: limit,
+    page_size: pageSize,
   };
+
+  const users = (usersData?.users || []) as AdminUser[];
+  const organizations = (orgsData?.organizations || []) as AdminOrganization[];
+  const workspaces = useMemo(() => {
+    const list = (workspacesData?.workspaces || []) as AdminWorkspace[];
+    if (!selectedOrgId) return list;
+    return list.filter((ws) => String(ws.organization_id) === selectedOrgId);
+  }, [workspacesData, selectedOrgId]);
 
   return (
     <div className="space-y-6">
@@ -286,47 +337,108 @@ export default function AdminTasksPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="relative">
-            <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+          <Input
+            type="text"
+            placeholder="Search tasks..."
+            value={search}
+            leftIcon={<Icons.Search className="h-4 w-4" />}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
 
-          <select
+          <Select
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">All Status</option>
             <option value="active">Active</option>
             <option value="completed">Completed</option>
             <option value="archived">Archived</option>
-          </select>
+          </Select>
 
-          <select
+          <Select
             value={typeFilter}
             onChange={(e) => {
               setTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">All Types</option>
             <option value="manual">Manual</option>
             <option value="auto">Auto Tracked</option>
-          </select>
+          </Select>
+
+          <Select
+            value={selectedUserId}
+            onChange={(e) => {
+              setSelectedUserId(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">All Users</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.full_name || user.email}
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            value={selectedOrgId}
+            onChange={(e) => {
+              setSelectedOrgId(e.target.value);
+              setSelectedWorkspaceId("");
+              setPage(1);
+            }}
+          >
+            <option value="">All Organizations</option>
+            {organizations.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            value={selectedWorkspaceId}
+            onChange={(e) => {
+              setSelectedWorkspaceId(e.target.value);
+              setPage(1);
+            }}
+            disabled={!selectedOrgId}
+            className={!selectedOrgId ? "bg-gray-100 cursor-not-allowed" : ""}
+          >
+            <option value="">All Workspaces</option>
+            {workspaces.map((workspace) => (
+              <option key={workspace.id} value={workspace.id}>
+                {workspace.name}
+              </option>
+            ))}
+          </Select>
+
+          <div className="flex items-center justify-end">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setSearch("");
+                setStatusFilter("");
+                setTypeFilter("");
+                setSelectedUserId("");
+                setSelectedOrgId("");
+                setSelectedWorkspaceId("");
+                setPage(1);
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -421,20 +533,19 @@ export default function AdminTasksPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        <button
+                        <IconButton
                           onClick={() => setViewingTask(task)}
-                          className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
                           title="View Details"
                         >
                           <Icons.Eye className="h-4 w-4" />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton
                           onClick={() => setDeletingTask(task)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete Task"
+                          variant="danger"
                         >
                           <Icons.Trash className="h-4 w-4" />
-                        </button>
+                        </IconButton>
                       </div>
                     </td>
                   </tr>

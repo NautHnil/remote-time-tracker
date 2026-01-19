@@ -141,7 +141,24 @@ class ApiClient {
         throw new Error(errorData.message || `HTTP ${response.status}`);
       }
 
-      const data = await response.json();
+      if (response.status === 204) {
+        return {
+          success: true,
+          message: "No Content",
+          data: null as T,
+        } as ApiResponse<T>;
+      }
+
+      const text = await response.text();
+      if (!text) {
+        return {
+          success: true,
+          message: "OK",
+          data: null as T,
+        } as ApiResponse<T>;
+      }
+
+      const data = JSON.parse(text);
       if (
         data &&
         typeof data === "object" &&
