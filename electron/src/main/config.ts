@@ -37,13 +37,17 @@ class AppConfigClass {
   constructor() {
     this.store = new Store<Config>({
       defaults: {
-        apiUrl: process.env.API_URL || "http://localhost:8080/api/v1",
+        apiUrl: process.env.VITE_API_URL || "http://localhost:8080/api/v1",
+        websiteDomain:
+          process.env.VITE_WEBSITE_DOMAIN || "http://localhost:3000",
+        inviteWebsiteDomain:
+          process.env.VITE_INVITE_WEBSITE_DOMAIN || "http://localhost:4000",
         screenshotInterval: parseInt(
-          process.env.SCREENSHOT_INTERVAL || "300000",
+          process.env.VITE_SCREENSHOT_INTERVAL || "300000",
         ), // 5 minutes
-        syncInterval: parseInt(process.env.SYNC_INTERVAL || "60000"), // 1 minute
+        syncInterval: parseInt(process.env.VITE_SYNC_INTERVAL || "60000"), // 1 minute
         presenceHeartbeatInterval: parseInt(
-          process.env.PRESENCE_HEARTBEAT_INTERVAL || "15000",
+          process.env.VITE_PRESENCE_HEARTBEAT_INTERVAL || "15000",
         ), // 15 seconds
         imageOptimization: {
           enabled: true,
@@ -58,6 +62,14 @@ class AppConfigClass {
 
   get apiUrl(): string {
     return this.store.get("apiUrl");
+  }
+
+  get websiteDomain(): string {
+    return this.store.get("websiteDomain");
+  }
+
+  get inviteWebsiteDomain(): string {
+    return this.store.get("inviteWebsiteDomain");
   }
 
   get screenshotInterval(): number {
