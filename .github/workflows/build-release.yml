@@ -110,11 +110,19 @@ jobs:
           echo "✅ .env file created successfully at: .env"
           ls -la .env
 
+      - name: Verify .env file
+        working-directory: ./electron
+        shell: bash
+        run: |
+          echo "Environment variables:"
+          cat .env
+
       - name: Upload .env file
         uses: actions/upload-artifact@v4
         with:
           name: env-file
-          path: .env
+          path: |
+            electron/.env
           retention-days: 1
           if-no-files-found: error
 
