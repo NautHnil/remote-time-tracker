@@ -22,6 +22,8 @@ export interface ImageOptimizationConfig {
 
 interface Config {
   apiUrl: string;
+  websiteDomain: string;
+  inviteWebsiteDomain: string;
   screenshotInterval: number;
   syncInterval: number;
   presenceHeartbeatInterval: number;
