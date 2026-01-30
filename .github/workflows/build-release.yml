@@ -93,12 +93,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
       - name: Create .env file from secrets
         run: |
-          cat > ${{ github.workspace }}/.env << 'EOF'
+          cat > .env << 'EOF'
           NODE_ENV=production
           VITE_API_URL=${{ env.VITE_API_URL }}
           VITE_WEBSITE_DOMAIN=${{ env.VITE_WEBSITE_DOMAIN }}
@@ -107,15 +106,14 @@ jobs:
           VITE_SYNC_INTERVAL=${{ env.VITE_SYNC_INTERVAL }}
           VITE_PRESENCE_HEARTBEAT_INTERVAL=${{ env.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
           EOF
-          echo "✅ .env file created successfully at: ${{ github.workspace }}/.env"
-          echo "Environment variables loaded:"
-          cat ${{ github.workspace }}/.env
+          echo "✅ .env file created successfully at: .env"
+          ls -la .env
 
       - name: Upload .env file
         uses: actions/upload-artifact@v4
         with:
           name: env-file
-          path: ${{ github.workspace }}/.env
+          path: .env
           retention-days: 1
           if-no-files-found: error
 
