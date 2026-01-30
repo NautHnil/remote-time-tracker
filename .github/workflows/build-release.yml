@@ -95,7 +95,7 @@ jobs:
     steps:
       - name: Create .env file from secrets
         run: |
-          cat > .env << EOF
+          cat > ${{ github.workspace }}/.env << 'EOF'
           NODE_ENV=production
           VITE_API_URL=${{ env.VITE_API_URL }}
           VITE_WEBSITE_DOMAIN=${{ env.VITE_WEBSITE_DOMAIN }}
@@ -104,15 +104,15 @@ jobs:
           VITE_SYNC_INTERVAL=${{ env.VITE_SYNC_INTERVAL }}
           VITE_PRESENCE_HEARTBEAT_INTERVAL=${{ env.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
           EOF
-          echo "✅ .env file created successfully"
+          echo "✅ .env file created successfully at: ${{ github.workspace }}/.env"
           echo "Environment variables loaded:"
-          cat .env
+          cat ${{ github.workspace }}/.env
 
       - name: Upload .env file
         uses: actions/upload-artifact@v4
         with:
           name: env-file
-          path: .env
+          path: ${{ github.workspace }}/.env
           retention-days: 1
           if-no-files-found: error
 
