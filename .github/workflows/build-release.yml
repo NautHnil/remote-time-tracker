@@ -93,6 +93,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Create .env file from secrets
         run: |
           cat > ${{ github.workspace }}/.env << 'EOF'
