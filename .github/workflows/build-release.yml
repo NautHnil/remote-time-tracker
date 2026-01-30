@@ -16,6 +16,12 @@ permissions:
 
 env:
   NODE_VERSION: "20.x"
+  VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://localhost:8080/api/v1' }}
+  VITE_WEBSITE_DOMAIN: ${{ secrets.VITE_WEBSITE_DOMAIN || 'http://localhost:3000' }}
+  VITE_INVITE_WEBSITE_DOMAIN: ${{ secrets.VITE_INVITE_WEBSITE_DOMAIN || 'http://localhost:4000' }}
+  VITE_SCREENSHOT_INTERVAL: ${{ secrets.VITE_SCREENSHOT_INTERVAL || '300000' }}
+  VITE_SYNC_INTERVAL: ${{ secrets.VITE_SYNC_INTERVAL || '60000' }}
+  VITE_PRESENCE_HEARTBEAT_INTERVAL: ${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL || '15000' }}
 
 jobs:
   # ============================================
@@ -78,12 +84,45 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
 
   # ============================================
+  # Job 1.2: Setup Environment - Create .env file
+  # ============================================
+  setup-env:
+    name: Setup Environment File
+    needs: prepare
+    if: needs.prepare.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create .env file from secrets
+        run: |
+          cat > .env << EOF
+          NODE_ENV=production
+          VITE_API_URL=${{ env.VITE_API_URL }}
+          VITE_WEBSITE_DOMAIN=${{ env.VITE_WEBSITE_DOMAIN }}
+          VITE_INVITE_WEBSITE_DOMAIN=${{ env.VITE_INVITE_WEBSITE_DOMAIN }}
+          VITE_SCREENSHOT_INTERVAL=${{ env.VITE_SCREENSHOT_INTERVAL }}
+          VITE_SYNC_INTERVAL=${{ env.VITE_SYNC_INTERVAL }}
+          VITE_PRESENCE_HEARTBEAT_INTERVAL=${{ env.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
+          EOF
+          echo "✅ .env file created successfully"
+          echo "Environment variables loaded:"
+          cat .env
+
+      - name: Upload .env file
+        uses: actions/upload-artifact@v4
+        with:
+          name: env-file
+          path: .env
+          retention-days: 1
+          if-no-files-found: error
+
+  # ============================================
   # Job 2: Build all platforms in parallel
   # Using matrix strategy for efficiency
   # ============================================
   build:
     name: Build ${{ matrix.name }}
-    needs: prepare
+    needs: [prepare, setup-env]
     if: needs.prepare.outputs.should_release == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
@@ -133,6 +172,20 @@ jobs:
         run: |
           rm -rf node_modules
           npm ci
+
+      - name: Download .env file
+        uses: actions/download-artifact@v4
+        with:
+          name: env-file
+          path: ./electron
+
+      - name: Verify .env file
+        working-directory: ./electron
+        shell: bash
+        run: |
+          echo "✅ .env file downloaded successfully"
+          echo "Environment variables:"
+          cat .env
 
       # ========== macOS specific steps ==========
       - name: Setup macOS native modules
@@ -235,7 +288,7 @@ jobs:
     name: Publish Release
     needs: [prepare, build]
     if: |
-      always() && 
+      always() &&
       needs.prepare.outputs.should_release == 'true' &&
       needs.build.result == 'success'
     runs-on: ubuntu-latest
@@ -289,7 +342,7 @@ jobs:
           # Create merged latest-mac.yml using shell
           if [ -n "$ARM64_YML" ] && [ -n "$X64_YML" ]; then
             echo "✅ Found both architecture files, merging..."
-            
+
             # Debug: show content of both files
             echo "--- ARM64 content ---"
             cat "$ARM64_YML"
@@ -297,18 +350,18 @@ jobs:
             echo "--- X64 content ---"
             cat "$X64_YML"
             echo ""
-            
+
             # Extract metadata from arm64 file
             VERSION=$(grep "^version:" "$ARM64_YML")
             RELEASE_DATE=$(grep "^releaseDate:" "$ARM64_YML")
             PATH_LINE=$(grep "^path:" "$ARM64_YML")
             SHA512_LINE=$(grep "^sha512:" "$ARM64_YML" | head -1)
-            
+
             # Extract files entries - lines starting with "  " (2 spaces) after "files:" line
             # Using grep with line numbers to find files section, then filter
             ARM64_FILES=$(awk '/^files:/{found=1; next} /^[a-zA-Z]/{found=0} found && /^  /' "$ARM64_YML")
             X64_FILES=$(awk '/^files:/{found=1; next} /^[a-zA-Z]/{found=0} found && /^  /' "$X64_YML")
-            
+
             # Build merged file
             {
               echo "$VERSION"
@@ -319,23 +372,23 @@ jobs:
               echo "$SHA512_LINE"
               echo "$RELEASE_DATE"
             } > release-files/latest-mac.yml
-            
+
             # Validate the merged file
             echo ""
             echo "📋 Merged latest-mac.yml content:"
             cat release-files/latest-mac.yml
-            
+
             # Count files entries to verify merge
             FILE_COUNT=$(grep -c "^  - url:" release-files/latest-mac.yml || echo "0")
             echo ""
             echo "✅ Total file entries: $FILE_COUNT"
-            
+
             if [ "$FILE_COUNT" -lt 2 ]; then
               echo "⚠️ Warning: Expected at least 2 file entries but got $FILE_COUNT"
               echo "Falling back to arm64 file only..."
               cp "$ARM64_YML" release-files/latest-mac.yml
             fi
-            
+
           elif [ -n "$ARM64_YML" ]; then
             echo "⚠️ Only ARM64 file found, using it directly"
             cp "$ARM64_YML" release-files/latest-mac.yml
@@ -390,14 +443,14 @@ jobs:
 
             ### 📥 Downloads
 
-            | Platform | Type | File |
-            |----------|------|------|
-            | **Windows** | Installer | `Remote Time Tracker Setup ${{ env.VERSION }}.exe` |
-            | **Windows** | Portable | `Remote Time Tracker ${{ env.VERSION }}.exe` |
-            | **macOS** | Apple Silicon (M1/M2/M3) | `Remote Time Tracker-${{ env.VERSION }}-arm64.dmg` |
-            | **macOS** | Intel (x64) | `Remote Time Tracker-${{ env.VERSION }}-x64.dmg` |
-            | **Linux** | AppImage | `Remote Time Tracker-${{ env.VERSION }}.AppImage` |
-            | **Linux** | Debian | `Remote Time Tracker-${{ env.VERSION }}.deb` |
+            | Platform | Type | Download |
+            |----------|------|----------|
+            | **Windows** | Installer | [Remote Time Tracker Setup ${{ env.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote%20Time%20Tracker%20Setup%20${{ env.VERSION }}.exe) |
+            | **Windows** | Portable | [Remote Time Tracker ${{ env.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote%20Time%20Tracker%20${{ env.VERSION }}.exe) |
+            | **macOS** | Apple Silicon (M1/M2/M3) | [Remote Time Tracker-${{ env.VERSION }}-arm64.dmg](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote%20Time%20Tracker-${{ env.VERSION }}-arm64.dmg) |
+            | **macOS** | Intel (x64) | [Remote Time Tracker-${{ env.VERSION }}-x64.dmg](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote%20Time%20Tracker-${{ env.VERSION }}-x64.dmg) |
+            | **Linux** | AppImage | [Remote Time Tracker-${{ env.VERSION }}.AppImage](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote%20Time%20Tracker-${{ env.VERSION }}.AppImage) |
+            | **Linux** | Debian | [Remote Time Tracker-${{ env.VERSION }}.deb](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote%20Time%20Tracker-${{ env.VERSION }}.deb) |
 
             ### 🔄 Auto-Update
             Existing installations will automatically update to this version.

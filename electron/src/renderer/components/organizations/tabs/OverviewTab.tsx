@@ -1,6 +1,7 @@
 /**
  * Organization Overview Tab Component
  */
+import { useEffect, useState } from "react";
 
 import { format } from "date-fns";
 import {
@@ -23,6 +24,20 @@ export default function OverviewTab({
   workspaces,
   onCopyInviteCode,
 }: OverviewTabProps) {
+  const [config, setConfig] = useState<any>({});
+
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
+    try {
+      const result = await window.electronAPI.config.get();
+      setConfig(result);
+    } catch (error) {
+      console.error("Error loading config:", error);
+    }
+  };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Stats */}
@@ -134,12 +149,12 @@ export default function OverviewTab({
                 </label>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-gray-100 dark:bg-dark-900 px-3 py-2 rounded-lg text-primary-500 dark:text-primary-400 text-xs font-mono truncate">
-                    {`${import.meta.env.VITE_WEBSITE_DOMAIN}/join/${org.invite_code}`}
+                    {`${config.inviteWebsiteDomain}/join/${org.invite_code}`}
                   </code>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(
-                        `${import.meta.env.VITE_WEBSITE_DOMAIN}/join/${org.invite_code}`,
+                        `${config.inviteWebsiteDomain}/join/${org.invite_code}`,
                       );
                       alert("Invite link copied to clipboard!");
                     }}
