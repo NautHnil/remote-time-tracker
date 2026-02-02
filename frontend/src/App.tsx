@@ -13,13 +13,25 @@ import {
   AdminWorkspacesPage,
 } from "./pages/admin";
 
-function App() {
+function InviteRoute() {
   return (
     <BrowserRouter>
       <Routes>
         {/* Public route - Join organization via invite link */}
         <Route path="/join/:inviteCode" element={<JoinOrganizationPage />} />
 
+        {/* Default redirect to home */}
+        <Route path="/" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+function BaseRoute() {
+  return (
+    <BrowserRouter>
+      <Routes>
         {/* Legacy login redirect to admin login */}
         <Route path="/login" element={<Navigate to="/admin/login" replace />} />
 
@@ -51,6 +63,14 @@ function App() {
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </BrowserRouter>
+  );
+}
+
+function App() {
+  return import.meta.env.VITE_ENABLE_INVITE_LINKS === "true" ? (
+    <InviteRoute />
+  ) : (
+    <BaseRoute />
   );
 }
 
