@@ -3,7 +3,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import { Icons } from "../Icons";
 
 export function ThemeSection() {
-  const { theme, setTheme, isDark } = useTheme();
+  const { theme, setTheme, applyThemeWithoutSaving, isDark } = useTheme();
   const [isSystemTheme, setIsSystemTheme] = useState(() => {
     return !localStorage.getItem("app-theme");
   });
@@ -12,10 +12,11 @@ export function ThemeSection() {
     if (newTheme === "system") {
       localStorage.removeItem("app-theme");
       setIsSystemTheme(true);
+      // Use applyThemeWithoutSaving to follow OS preference without persisting to localStorage
       const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
+        "(prefers-color-scheme: dark)",
       ).matches;
-      setTheme(prefersDark ? "dark" : "light");
+      applyThemeWithoutSaving(prefersDark ? "dark" : "light");
     } else {
       setIsSystemTheme(false);
       setTheme(newTheme);

@@ -12,7 +12,11 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build application
+# Copy environment file from build argument
+ARG CONFIG_FILE=.env
+RUN if [ -f "${CONFIG_FILE}" ]; then cp "${CONFIG_FILE}" .env; fi
+
+# Build application with environment variables
 RUN npm run build
 
 # Production stage with nginx
