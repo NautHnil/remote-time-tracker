@@ -1,11 +1,11 @@
 import { formatISO, subDays } from "date-fns";
 import fs from "fs";
 import path from "path";
-// @ts-ignore - screenshot-desktop doesn't have type definitions
 import screenshot from "screenshot-desktop";
 import { v4 as uuidv4 } from "uuid";
 import { AppConfig } from "../config";
 import { DatabaseService } from "./DatabaseService";
+import { dependencyChecker, DependencyCheckResult } from "./DependencyChecker";
 import { ImageOptimizer } from "./ImageOptimizer";
 
 export class ScreenshotService {
@@ -16,11 +16,92 @@ export class ScreenshotService {
   private currentOrganizationId?: number; // Current organization context
   private currentWorkspaceId?: number; // Current workspace context
   private imageOptimizer!: ImageOptimizer; // Definite assignment assertion - initialized in initializeOptimizer()
+  private dependenciesChecked = false;
+  private dependenciesAvailable = false;
 
   constructor(dbService: DatabaseService) {
     this.dbService = dbService;
     // Initialize image optimizer with settings from config
     this.initializeOptimizer();
+  }
+
+  /**
+   * Initialize the service and check dependencies
+   * Should be called once when the app starts
+   */
+  async initialize(): Promise<DependencyCheckResult> {
+    console.log("🔧 Initializing ScreenshotService...");
+
+    // Check dependencies
+    const result = await dependencyChecker.checkDependencies();
+    this.dependenciesChecked = true;
+    this.dependenciesAvailable = result.allDependenciesMet;
+
+    if (!result.allDependenciesMet) {
+      console.warn(
+        "⚠️ Screenshot dependencies not met:",
+        result.missingRequired.map((d) => d.name),
+      );
+
+      // Show dialog to user
+      const action = await dependencyChecker.showMissingDependenciesDialog();
+
+      switch (action) {
+        case "install":
+          const installResult =
+            await dependencyChecker.installMissingDependencies();
+          if (installResult.success) {
+            this.dependenciesAvailable = true;
+            console.log("✅ Dependencies installed successfully");
+          } else {
+            console.warn(
+              "⚠️ Some dependencies could not be installed:",
+              installResult.message,
+            );
+          }
+          break;
+        case "help":
+          dependencyChecker.openHelpDocumentation();
+          break;
+        case "ignore":
+          console.log("⚠️ User chose to ignore missing dependencies");
+          break;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Check if screenshot capture is available (dependencies installed)
+   */
+  isAvailable(): boolean {
+    return this.dependenciesAvailable;
+  }
+
+  /**
+   * Get dependency check status
+   */
+  getDependencyStatus(): {
+    checked: boolean;
+    available: boolean;
+    message: string;
+  } {
+    return {
+      checked: this.dependenciesChecked,
+      available: this.dependenciesAvailable,
+      message: dependencyChecker.getStatusMessage(),
+    };
+  }
+
+  /**
+   * Re-check dependencies (useful after manual installation)
+   */
+  async recheckDependencies(): Promise<DependencyCheckResult> {
+    const result = await dependencyChecker.checkDependencies();
+    this.dependenciesChecked = true;
+    this.dependenciesAvailable = result.allDependenciesMet;
+    return result;
   }
 
   /**
@@ -36,7 +117,7 @@ export class ScreenshotService {
       stripMetadata: true,
     });
     console.log(
-      `🖼️ Image optimizer initialized: ${config.format} @ ${config.quality}% quality, max ${config.maxWidth}x${config.maxHeight}`
+      `🖼️ Image optimizer initialized: ${config.format} @ ${config.quality}% quality, max ${config.maxWidth}x${config.maxHeight}`,
     );
   }
 
@@ -65,11 +146,24 @@ export class ScreenshotService {
     taskLocalId?: string,
     taskId?: number, // For manual tasks - link to existing task ID
     organizationId?: number, // Organization context
-    workspaceId?: number // Workspace context
+    workspaceId?: number, // Workspace context
   ): Promise<void> {
     if (this.isCapturing) {
       console.log("Screenshot capturing already active");
       return;
+    }
+
+    // Check dependencies if not already checked
+    if (!this.dependenciesChecked) {
+      await this.initialize();
+    }
+
+    // Warn if dependencies are not available but continue anyway
+    // (user might have installed them manually or the check might have false negatives)
+    if (!this.dependenciesAvailable) {
+      console.warn(
+        "⚠️ Starting screenshot capture despite missing dependencies. Capture may fail.",
+      );
     }
 
     this.isCapturing = true;
@@ -77,7 +171,7 @@ export class ScreenshotService {
     this.currentOrganizationId = organizationId;
     this.currentWorkspaceId = workspaceId;
     console.log(
-      `📸 Starting screenshot capture (TaskLocalID: ${taskLocalId}, TaskID: ${taskId}, WsID: ${workspaceId})...`
+      `📸 Starting screenshot capture (TaskLocalID: ${taskLocalId}, TaskID: ${taskId}, WsID: ${workspaceId})...`,
     );
 
     // Take first screenshot immediately
@@ -86,7 +180,7 @@ export class ScreenshotService {
       taskLocalId,
       taskId,
       organizationId,
-      workspaceId
+      workspaceId,
     );
 
     // Setup interval
@@ -97,7 +191,7 @@ export class ScreenshotService {
         taskLocalId,
         this.currentTaskId,
         this.currentOrganizationId,
-        this.currentWorkspaceId
+        this.currentWorkspaceId,
       );
     }, interval);
   }
@@ -169,7 +263,7 @@ export class ScreenshotService {
     taskLocalId?: string,
     taskId?: number,
     organizationId?: number,
-    workspaceId?: number
+    workspaceId?: number,
   ): Promise<void> {
     try {
       // Ensure screenshots directory exists
@@ -178,34 +272,55 @@ export class ScreenshotService {
         fs.mkdirSync(screenshotsDir, { recursive: true });
       }
 
-      // Get all screens
+      // Get all screens with their IDs (required for Windows/Linux)
       const screens = await screenshot.listDisplays();
 
-      console.log(`📸 Capturing ${screens.length} screen(s)...`);
+      console.log(
+        `📸 Capturing ${screens.length} screen(s)... Platform: ${process.platform}`,
+      );
+      console.log(
+        `📸 Displays found:`,
+        screens.map((s: { id: string | number; name: string }) => ({
+          id: s.id,
+          name: s.name,
+        })),
+      );
 
-      // Capture each screen
+      // Capture each screen using its proper ID
       for (let i = 0; i < screens.length; i++) {
+        const display = screens[i] as { id: string | number; name: string };
         await this.captureScreen(
+          display.id,
           i,
           timeLogId,
           taskLocalId,
           taskId,
           organizationId,
-          workspaceId
+          workspaceId,
         );
       }
     } catch (error) {
       console.error("Error capturing screenshots:", error);
+      // Log more details for debugging
+      if (error instanceof Error) {
+        console.error("Error details:", error.message, error.stack);
+      }
     }
   }
 
+  /**
+   * Capture a single screen
+   * @param screenId - The display ID (string for Windows/Linux, number for macOS)
+   * @param screenIndex - The index of the screen (0, 1, 2...) for naming purposes
+   */
   private async captureScreen(
-    screenNumber: number,
+    screenId: string | number,
+    screenIndex: number,
     timeLogId?: number,
     taskLocalId?: string,
     taskId?: number,
     organizationId?: number,
-    workspaceId?: number
+    workspaceId?: number,
   ): Promise<void> {
     try {
       const localId = uuidv4();
@@ -219,12 +334,21 @@ export class ScreenshotService {
       const fileExt = isOptimizationEnabled
         ? this.imageOptimizer.getOutputExtension()
         : ".png";
-      const fileName = `screenshot-${timestamp}-screen${screenNumber}${fileExt}`;
+      const fileName = `screenshot-${timestamp}-screen${screenIndex}${fileExt}`;
       const filePath = path.join(AppConfig.getScreenshotsPath(), fileName);
 
-      // Capture screenshot as buffer
-      const imgBuffer = await screenshot({ screen: screenNumber });
+      console.log(`📸 Capturing screen ${screenIndex} (ID: ${screenId})...`);
+
+      // Capture screenshot using screen ID (required for Windows/Linux)
+      // On macOS, screenId is a number (0, 1, 2...)
+      // On Windows, screenId is a string like "\\.\DISPLAY1"
+      // On Linux, screenId is a string like "HDMI-1", "eDP-1"
+      const imgBuffer = await screenshot({ screen: screenId });
       const originalSize = imgBuffer.length;
+
+      console.log(
+        `📸 Screen ${screenIndex} captured, buffer size: ${this.formatBytes(originalSize)}`,
+      );
 
       let finalFilePath = filePath;
       let finalFileName = fileName;
@@ -237,7 +361,7 @@ export class ScreenshotService {
         // Optimize image before saving (converts PNG buffer to optimized format)
         const optimizationResult = await this.imageOptimizer.optimizeBuffer(
           imgBuffer,
-          filePath
+          filePath,
         );
 
         if (optimizationResult.success) {
@@ -248,22 +372,22 @@ export class ScreenshotService {
           console.log(
             `✅ Screenshot captured & optimized: ${finalFileName} ` +
               `(${this.formatBytes(originalSize)} → ${this.formatBytes(
-                fileSize
+                fileSize,
               )}, ` +
-              `${optimizationResult.compressionRatio}% saved)`
+              `${optimizationResult.compressionRatio}% saved)`,
           );
         } else {
           // Fallback: save original buffer if optimization fails
           console.warn(
-            `⚠️ Optimization failed, saving original: ${optimizationResult.error}`
+            `⚠️ Optimization failed, saving original: ${optimizationResult.error}`,
           );
           fs.writeFileSync(filePath, imgBuffer);
           fileSize = fs.statSync(filePath).size;
           mimeType = "image/png";
           console.log(
             `✅ Screenshot captured (unoptimized): ${fileName} (${this.formatBytes(
-              fileSize
-            )})`
+              fileSize,
+            )})`,
           );
         }
       } else {
@@ -271,7 +395,7 @@ export class ScreenshotService {
         fs.writeFileSync(filePath, imgBuffer);
         fileSize = fs.statSync(filePath).size;
         console.log(
-          `✅ Screenshot captured: ${fileName} (${this.formatBytes(fileSize)})`
+          `✅ Screenshot captured: ${fileName} (${this.formatBytes(fileSize)})`,
         );
       }
 
@@ -288,14 +412,21 @@ export class ScreenshotService {
         fileSize,
         mimeType,
         capturedAt: formatISO(nowMs),
-        screenNumber,
+        screenNumber: screenIndex,
         isEncrypted: false,
         checksum: "",
         isSynced: false,
         createdAt: formatISO(nowMs),
       });
     } catch (error) {
-      console.error(`Error capturing screen ${screenNumber}:`, error);
+      console.error(
+        `Error capturing screen ${screenIndex} (ID: ${screenId}):`,
+        error,
+      );
+      // Log more details for debugging
+      if (error instanceof Error) {
+        console.error("Error details:", error.message, error.stack);
+      }
     }
   }
 
@@ -307,7 +438,12 @@ export class ScreenshotService {
       const config = AppConfig.imageOptimization;
       const isOptimizationEnabled = config.enabled;
 
+      console.log(
+        `📸 Manual capture: ${screens.length} screen(s)... Platform: ${process.platform}`,
+      );
+
       for (let i = 0; i < screens.length; i++) {
+        const display = screens[i] as { id: string | number; name: string };
         const localId = uuidv4();
         const nowMs = Date.now();
         const timestamp = formatISO(nowMs).replace(/[:.]/g, "-");
@@ -319,9 +455,15 @@ export class ScreenshotService {
         const fileName = `manual-${timestamp}-screen${i}${fileExt}`;
         const filePath = path.join(AppConfig.getScreenshotsPath(), fileName);
 
-        // Capture screenshot as buffer
-        const imgBuffer = await screenshot({ screen: i });
+        console.log(`📸 Manual capture screen ${i} (ID: ${display.id})...`);
+
+        // Capture screenshot using screen ID (required for Windows/Linux)
+        const imgBuffer = await screenshot({ screen: display.id });
         const originalSize = imgBuffer.length;
+
+        console.log(
+          `📸 Manual capture screen ${i} captured, buffer size: ${this.formatBytes(originalSize)}`,
+        );
 
         let finalFilePath = filePath;
         let finalFileName = fileName;
@@ -334,7 +476,7 @@ export class ScreenshotService {
           // Optimize image before saving
           const optimizationResult = await this.imageOptimizer.optimizeBuffer(
             imgBuffer,
-            filePath
+            filePath,
           );
 
           if (optimizationResult.success) {
@@ -345,14 +487,14 @@ export class ScreenshotService {
             console.log(
               `✅ Manual screenshot optimized: ${finalFileName} ` +
                 `(${this.formatBytes(originalSize)} → ${this.formatBytes(
-                  fileSize
+                  fileSize,
                 )}, ` +
-                `${optimizationResult.compressionRatio}% saved)`
+                `${optimizationResult.compressionRatio}% saved)`,
             );
           } else {
             // Fallback: save original if optimization fails
             console.warn(
-              `⚠️ Manual screenshot optimization failed, saving original`
+              `⚠️ Manual screenshot optimization failed, saving original`,
             );
             fs.writeFileSync(filePath, imgBuffer);
             fileSize = fs.statSync(filePath).size;
@@ -364,8 +506,8 @@ export class ScreenshotService {
           fileSize = fs.statSync(filePath).size;
           console.log(
             `✅ Manual screenshot captured: ${fileName} (${this.formatBytes(
-              fileSize
-            )})`
+              fileSize,
+            )})`,
           );
         }
 
@@ -387,6 +529,10 @@ export class ScreenshotService {
       }
     } catch (error) {
       console.error("Error in manual screenshot capture:", error);
+      // Log more details for debugging
+      if (error instanceof Error) {
+        console.error("Error details:", error.message, error.stack);
+      }
       throw error;
     }
 
@@ -408,7 +554,7 @@ export class ScreenshotService {
    * Only deletes synced screenshots to avoid data loss
    */
   async deleteOldScreenshots(
-    daysOld: number = 30
+    daysOld: number = 30,
   ): Promise<{ deletedCount: number; freedBytes: number }> {
     const cutoffDate = subDays(Date.now(), daysOld);
 
@@ -445,9 +591,8 @@ export class ScreenshotService {
           const fileSize = stats.size;
 
           // Check if screenshot is synced before deleting
-          const screenshot = await this.dbService.getScreenshotByFilePath(
-            filePath
-          );
+          const screenshot =
+            await this.dbService.getScreenshotByFilePath(filePath);
 
           if (screenshot && screenshot.isSynced) {
             // Delete synced screenshot
@@ -477,7 +622,7 @@ export class ScreenshotService {
         freedBytes /
         1024 /
         1024
-      ).toFixed(2)} MB`
+      ).toFixed(2)} MB`,
     );
 
     return { deletedCount, freedBytes };
@@ -492,7 +637,7 @@ export class ScreenshotService {
 
     const syncedScreenshots =
       await this.dbService.getSyncedScreenshotsBeforeDate(
-        formatISO(cutoffDate)
+        formatISO(cutoffDate),
       );
 
     let deletedCount = 0;
@@ -514,8 +659,8 @@ export class ScreenshotService {
 
     console.log(
       `🗑️ Cleaned up ${deletedCount} synced screenshots, freed ${this.formatBytes(
-        freedBytes
-      )}`
+        freedBytes,
+      )}`,
     );
   }
 

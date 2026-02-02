@@ -1,6 +1,14 @@
+import dotenv from "dotenv";
 import { app } from "electron";
 import Store from "electron-store";
 import path from "path";
+
+// Load .env file from project root
+const envPath = app.isPackaged
+  ? path.join(process.resourcesPath, ".env")
+  : path.join(__dirname, "../../.env");
+
+dotenv.config({ path: envPath });
 
 interface Credentials {
   accessToken: string;
@@ -39,11 +47,9 @@ class AppConfigClass {
   constructor() {
     this.store = new Store<Config>({
       defaults: {
-        apiUrl: process.env.VITE_API_URL || "http://localhost:8080/api/v1",
-        websiteDomain:
-          process.env.VITE_WEBSITE_DOMAIN || "http://localhost:3000",
-        inviteWebsiteDomain:
-          process.env.VITE_INVITE_WEBSITE_DOMAIN || "http://localhost:4000",
+        apiUrl: process.env.VITE_API_URL || "",
+        websiteDomain: process.env.VITE_WEBSITE_DOMAIN || "",
+        inviteWebsiteDomain: process.env.VITE_INVITE_WEBSITE_DOMAIN || "",
         screenshotInterval: parseInt(
           process.env.VITE_SCREENSHOT_INTERVAL || "300000",
         ), // 5 minutes
@@ -150,6 +156,23 @@ class AppConfigClass {
   setImageOptimization(config: Partial<ImageOptimizationConfig>): void {
     const current = this.imageOptimization;
     this.store.set("imageOptimization", { ...current, ...config });
+  }
+
+  // Clear all stored data
+  clearAll(): void {
+    this.store.clear();
+  }
+
+  // Reset to defaults
+  resetToDefaults(): void {
+    this.store.clear();
+    this.store.set("imageOptimization", {
+      enabled: true,
+      format: "jpeg",
+      quality: 75,
+      maxWidth: 1920,
+      maxHeight: 1080,
+    });
   }
 }
 

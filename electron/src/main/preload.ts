@@ -47,6 +47,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.invoke("screenshots:force-stop-capture"),
     getCaptureStatus: () =>
       ipcRenderer.invoke("screenshots:get-capture-status"),
+    // Dependency management
+    getDependencyStatus: () =>
+      ipcRenderer.invoke("screenshots:get-dependency-status"),
+    checkDependencies: () =>
+      ipcRenderer.invoke("screenshots:check-dependencies"),
+    isAvailable: () => ipcRenderer.invoke("screenshots:is-available"),
+    // Optimization settings
     getOptimizationSettings: () =>
       ipcRenderer.invoke("screenshots:get-optimization-settings"),
     updateOptimizationSettings: (settings: {

@@ -26,8 +26,12 @@ export default defineConfig(({ mode }) => {
       // Fix for crypto.getRandomValues in Node environment
       global: "globalThis",
       // Expose env variables to the app
-      "import.meta.env.VITE_API_URL": JSON.stringify(
-        env.VITE_API_URL || "http://localhost:8080/api/v1",
+      "import.meta.env.VITE_API_URL": JSON.stringify(env.VITE_API_URL),
+      "import.meta.env.VITE_WEBSITE_DOMAIN": JSON.stringify(
+        env.VITE_WEBSITE_DOMAIN,
+      ),
+      "import.meta.env.VITE_INVITE_WEBSITE_DOMAIN": JSON.stringify(
+        env.VITE_INVITE_WEBSITE_DOMAIN,
       ),
       "import.meta.env.VITE_SCREENSHOT_INTERVAL": JSON.stringify(
         env.VITE_SCREENSHOT_INTERVAL || "300000",
