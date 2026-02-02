@@ -19,12 +19,6 @@ permissions:
 
 env:
   NODE_VERSION: "20.x"
-  VITE_API_URL: ${{ secrets.VITE_API_URL }}
-  VITE_WEBSITE_DOMAIN: ${{ secrets.VITE_WEBSITE_DOMAIN }}
-  VITE_INVITE_WEBSITE_DOMAIN: ${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
-  VITE_SCREENSHOT_INTERVAL: ${{ secrets.VITE_SCREENSHOT_INTERVAL }}
-  VITE_SYNC_INTERVAL: ${{ secrets.VITE_SYNC_INTERVAL }}
-  VITE_PRESENCE_HEARTBEAT_INTERVAL: ${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
 
 jobs:
   # ============================================
@@ -143,22 +137,33 @@ jobs:
           rm -rf node_modules
           npm ci
 
-      - name: Create .env file from secrets
+      - name: Set environment variables and generate env.ts
         working-directory: ./electron
         shell: bash
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_WEBSITE_DOMAIN: ${{ secrets.VITE_WEBSITE_DOMAIN }}
+          VITE_INVITE_WEBSITE_DOMAIN: ${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
+          VITE_SCREENSHOT_INTERVAL: ${{ secrets.VITE_SCREENSHOT_INTERVAL }}
+          VITE_SYNC_INTERVAL: ${{ secrets.VITE_SYNC_INTERVAL }}
+          VITE_PRESENCE_HEARTBEAT_INTERVAL: ${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
         run: |
           cat > .env << 'EOF'
           NODE_ENV=production
-          VITE_API_URL=${{ env.VITE_API_URL }}
-          VITE_WEBSITE_DOMAIN=${{ env.VITE_WEBSITE_DOMAIN }}
-          VITE_INVITE_WEBSITE_DOMAIN=${{ env.VITE_INVITE_WEBSITE_DOMAIN }}
-          VITE_SCREENSHOT_INTERVAL=${{ env.VITE_SCREENSHOT_INTERVAL }}
-          VITE_SYNC_INTERVAL=${{ env.VITE_SYNC_INTERVAL }}
-          VITE_PRESENCE_HEARTBEAT_INTERVAL=${{ env.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          VITE_WEBSITE_DOMAIN=${{ secrets.VITE_WEBSITE_DOMAIN }}
+          VITE_INVITE_WEBSITE_DOMAIN=${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
+          VITE_SCREENSHOT_INTERVAL=${{ secrets.VITE_SCREENSHOT_INTERVAL }}
+          VITE_SYNC_INTERVAL=${{ secrets.VITE_SYNC_INTERVAL }}
+          VITE_PRESENCE_HEARTBEAT_INTERVAL=${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
           EOF
           echo "✅ .env file created successfully at: .env"
           ls -la .env
-          cat .env
+          echo "🔧 Generating env.ts from secrets..."
+          node scripts/generate-env.js
+          echo ""
+          echo "📋 Generated env.ts content:"
+          cat src/main/env.ts
 
       # ========== macOS specific steps ==========
       - name: Setup macOS native modules

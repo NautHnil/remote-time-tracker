@@ -1,14 +1,7 @@
-import dotenv from "dotenv";
 import { app } from "electron";
 import Store from "electron-store";
 import path from "path";
-
-// Load .env file from project root
-const envPath = app.isPackaged
-  ? path.join(process.resourcesPath, ".env")
-  : path.join(__dirname, "../../.env");
-
-dotenv.config({ path: envPath });
+import { ENV } from "./env";
 
 interface Credentials {
   accessToken: string;
@@ -47,15 +40,13 @@ class AppConfigClass {
   constructor() {
     this.store = new Store<Config>({
       defaults: {
-        apiUrl: process.env.VITE_API_URL || "",
-        websiteDomain: process.env.VITE_WEBSITE_DOMAIN || "",
-        inviteWebsiteDomain: process.env.VITE_INVITE_WEBSITE_DOMAIN || "",
-        screenshotInterval: parseInt(
-          process.env.VITE_SCREENSHOT_INTERVAL || "300000",
-        ), // 5 minutes
-        syncInterval: parseInt(process.env.VITE_SYNC_INTERVAL || "60000"), // 1 minute
+        apiUrl: ENV.VITE_API_URL || "",
+        websiteDomain: ENV.VITE_WEBSITE_DOMAIN || "",
+        inviteWebsiteDomain: ENV.VITE_INVITE_WEBSITE_DOMAIN || "",
+        screenshotInterval: parseInt(ENV.VITE_SCREENSHOT_INTERVAL || "300000"), // 5 minutes
+        syncInterval: parseInt(ENV.VITE_SYNC_INTERVAL || "60000"), // 1 minute
         presenceHeartbeatInterval: parseInt(
-          process.env.VITE_PRESENCE_HEARTBEAT_INTERVAL || "15000",
+          ENV.VITE_PRESENCE_HEARTBEAT_INTERVAL || "15000",
         ), // 15 seconds
         imageOptimization: {
           enabled: true,
