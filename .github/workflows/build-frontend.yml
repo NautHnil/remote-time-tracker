@@ -2,7 +2,7 @@ name: Build Frontend
 
 on:
   push:
-    branches: [main]
+    branches: [main, invite]
     paths:
       - "frontend/**"
       - ".github/workflows/build-frontend.yml"
@@ -36,6 +36,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set environment variables based on branch
+        id: set-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "ENV_FILE=.env.prod" >> $GITHUB_OUTPUT
+            echo "BRANCH_NAME=main" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "ENV_FILE=.env.dev" >> $GITHUB_OUTPUT
+            echo "BRANCH_NAME=dev" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/invite" ]]; then
+            echo "ENV_FILE=.env.invite" >> $GITHUB_OUTPUT
+            echo "BRANCH_NAME=invite" >> $GITHUB_OUTPUT
+          else
+            echo "ENV_FILE=.env.prod" >> $GITHUB_OUTPUT
+            echo "BRANCH_NAME=unknown" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -54,11 +71,13 @@ jobs:
           tags: |
             type=sha,prefix=
             type=raw,value=develop,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=raw,value=invite,enable=${{ github.ref == 'refs/heads/invite' }}
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=production,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' && inputs.tag != 'latest' && inputs.tag != 'develop' }}
+            type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' && inputs.tag != 'latest' && inputs.tag != 'develop' && inputs.tag != 'invite' }}
 
       - name: Create .env.prod file from secrets
+        if: github.ref == 'refs/heads/main'
         working-directory: ./frontend
         run: |
           cat > .env.prod << 'EOF'
@@ -67,6 +86,18 @@ jobs:
           VITE_INVITE_WEBSITE_DOMAIN=${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
           EOF
           echo "✅ Created .env.prod file"
+
+      - name: Create .env.invite file from secrets
+        if: github.ref == 'refs/heads/invite'
+        working-directory: ./frontend
+        run: |
+          cat > .env.invite << 'EOF'
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          VITE_WEBSITE_DOMAIN=${{ secrets.VITE_WEBSITE_DOMAIN }}
+          VITE_INVITE_WEBSITE_DOMAIN=${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
+          VITE_ENABLE_INVITE_LINKS=true
+          EOF
+          echo "✅ Created .env.invite file"
 
       - name: Build and push Docker image
         id: build
@@ -81,7 +112,7 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
           build-args: |
-            CONFIG_FILE=.env.prod
+            CONFIG_FILE=${{ steps.set-env.outputs.ENV_FILE }}
 
       - name: Generate artifact attestation
         if: github.event_name != 'pull_request'
@@ -105,5 +136,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Pull command:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ github.ref }}" == "refs/heads/invite" ]]; then
+            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:invite" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
