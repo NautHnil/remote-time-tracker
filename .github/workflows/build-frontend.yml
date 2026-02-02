@@ -2,14 +2,14 @@ name: Build Frontend
 
 on:
   push:
-    branches: [main, dev]
-    paths:
-      - "frontend/**"
-      - ".github/workflows/build-frontend.yml"
-  pull_request:
     branches: [main]
     paths:
       - "frontend/**"
+      - ".github/workflows/build-frontend.yml"
+  # pull_request:
+  #   branches: [main]
+  #   paths:
+  #     - "frontend/**"
   workflow_dispatch:
     inputs:
       tag:
@@ -52,11 +52,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
             type=sha,prefix=
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' && inputs.tag != 'latest' }}
+            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=production,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ inputs.tag }},enable=${{ inputs.tag != '' && inputs.tag != 'latest' && inputs.tag != 'develop' }}
 
       - name: Create .env.prod file from secrets
         working-directory: ./frontend

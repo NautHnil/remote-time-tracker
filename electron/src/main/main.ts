@@ -309,6 +309,18 @@ async function initializeServices() {
   );
   console.log("✅ Services created");
 
+  // Initialize screenshot service (check dependencies)
+  console.log("🔍 Checking screenshot dependencies...");
+  const depResult = await screenshotService.initialize();
+  if (depResult.allDependenciesMet) {
+    console.log("✅ Screenshot dependencies OK");
+  } else {
+    console.warn(
+      "⚠️ Some screenshot dependencies missing:",
+      depResult.missingRequired.map((d) => d.name),
+    );
+  }
+
   // Initialize time tracker (resume active session)
   await timeTrackerService.initialize();
   console.log("✅ Time tracker initialized");
@@ -432,6 +444,19 @@ function setupIpcHandlers() {
   // Get screenshot capture status
   ipcMain.handle("screenshots:get-capture-status", async () => {
     return screenshotService.getCaptureStatus();
+  });
+
+  // Screenshot dependency management
+  ipcMain.handle("screenshots:get-dependency-status", async () => {
+    return screenshotService.getDependencyStatus();
+  });
+
+  ipcMain.handle("screenshots:check-dependencies", async () => {
+    return await screenshotService.recheckDependencies();
+  });
+
+  ipcMain.handle("screenshots:is-available", async () => {
+    return screenshotService.isAvailable();
   });
 
   // Image optimization settings
