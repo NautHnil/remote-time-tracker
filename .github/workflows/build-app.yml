@@ -148,6 +148,17 @@ jobs:
           VITE_SYNC_INTERVAL: ${{ secrets.VITE_SYNC_INTERVAL }}
           VITE_PRESENCE_HEARTBEAT_INTERVAL: ${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
         run: |
+          cat > .env << 'EOF'
+          NODE_ENV=production
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          VITE_WEBSITE_DOMAIN=${{ secrets.VITE_WEBSITE_DOMAIN }}
+          VITE_INVITE_WEBSITE_DOMAIN=${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
+          VITE_SCREENSHOT_INTERVAL=${{ secrets.VITE_SCREENSHOT_INTERVAL }}
+          VITE_SYNC_INTERVAL=${{ secrets.VITE_SYNC_INTERVAL }}
+          VITE_PRESENCE_HEARTBEAT_INTERVAL=${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
+          EOF
+          echo "✅ .env file created successfully at: .env"
+          ls -la .env
           echo "🔧 Generating env.ts from secrets..."
           node scripts/generate-env.js
           echo ""
