@@ -425,7 +425,7 @@ jobs:
             | Platform | Type | Download |
             |----------|------|----------|
             | **Windows** | Installer | [Remote Time Tracker Setup ${{ env.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker.Setup.${{ env.VERSION }}.exe) |
-            | **Windows** | Portable | [Remote Time Tracker ${{ env.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker.${{ env.VERSION }}.exe) |
+            | **Windows** | Portable | [Remote Time Tracker Portable ${{ env.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker.Portable.${{ env.VERSION }}.exe) |
             | **macOS** | Apple Silicon (M1/M2/M3) | [Remote Time Tracker-${{ env.VERSION }}-arm64.dmg](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker-${{ env.VERSION }}-arm64.dmg) |
             | **macOS** | Intel (x64) | [Remote Time Tracker-${{ env.VERSION }}-x64.dmg](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker-${{ env.VERSION }}-x64.dmg) |
             | **Linux** | AppImage | [Remote Time Tracker-${{ env.VERSION }}-x86_64.AppImage](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker-${{ env.VERSION }}-x86_64.AppImage) |
