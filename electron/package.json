@@ -113,10 +113,19 @@
     },
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
-      "artifactName": "${productName} Setup ${version}.${ext}",
       "icon": "assets/icon.png",
       "compression": "maximum"
     },
@@ -130,7 +139,18 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Remote Time Tracker",
+      "artifactName": "${productName} Setup ${version}.${ext}",
+      "uninstallDisplayName": "Remote Time Tracker",
+      "perMachine": false,
+      "allowElevation": true,
+      "runAfterFinish": true
+    },
+    "portable": {
+      "artifactName": "${productName} Portable ${version}.${ext}"
     },
     "publish": [
       {
