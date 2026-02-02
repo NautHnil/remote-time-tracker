@@ -188,6 +188,7 @@ jobs:
         working-directory: ./electron
         shell: bash
         run: |
+          cat .env
           echo "📦 Packaging for ${{ matrix.platform }}..."
 
           # Build command varies by platform
