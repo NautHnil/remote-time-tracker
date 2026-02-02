@@ -1,6 +1,6 @@
 {
   "name": "remote-time-tracker-desktop",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "Desktop time tracking application with screenshot monitoring",
   "main": "dist/main/main.js",
   "author": {
@@ -10,14 +10,15 @@
   "homepage": "https://dotbraind.com",
   "license": "MIT",
   "scripts": {
-    "dev": "npm run rebuild && concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
+    "dev": "npm run rebuild && npm run generate-env && concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
     "dev:main": "NODE_ENV=development tsc -p tsconfig.main.json && NODE_ENV=development electron .",
     "dev:renderer": "vite",
-    "prod": "concurrently \"npm run prod:main\" \"npm run prod:renderer\"",
+    "prod": "npm run generate-env && concurrently \"npm run prod:main\" \"npm run prod:renderer\"",
     "prod:main": "NODE_ENV=production tsc -p tsconfig.main.json && NODE_ENV=production electron .",
     "prod:renderer": "vite",
     "create-icons": "node scripts/create-icons.js",
-    "build": "npm run create-icons && npm run build:main && npm run build:renderer",
+    "generate-env": "node scripts/generate-env.js",
+    "build": "npm run generate-env && npm run create-icons && npm run build:main && npm run build:renderer",
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
     "build:all": "npm run build && concurrently \"electron-builder --mac --publish never\" \"electron-builder --win --publish never\" \"electron-builder --linux --publish never\"",

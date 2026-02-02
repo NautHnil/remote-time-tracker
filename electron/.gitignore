@@ -10,3 +10,5 @@ screenshots/
 *.sqlite-shm
 .DS_Store
 Thumbs.db
+# Auto-generated env file
+src/main/env.ts
