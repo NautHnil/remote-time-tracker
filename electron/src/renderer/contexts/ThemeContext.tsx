@@ -20,6 +20,7 @@ export type Theme = "light" | "dark";
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  applyThemeWithoutSaving: (theme: Theme) => void;
   toggleTheme: () => void;
   isDark: boolean;
   isLight: boolean;
@@ -45,7 +46,7 @@ function getInitialTheme(): Theme {
   // Check system preference
   if (typeof window !== "undefined" && window.matchMedia) {
     const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     ).matches;
     if (prefersDark) {
       return "dark";
@@ -103,6 +104,11 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     localStorage.setItem(THEME_STORAGE_KEY, newTheme);
   }, []);
 
+  // Apply theme without saving to localStorage (for system mode)
+  const applyThemeWithoutSaving = useCallback((newTheme: Theme) => {
+    setThemeState(newTheme);
+  }, []);
+
   const toggleTheme = useCallback(() => {
     setTheme(theme === "dark" ? "light" : "dark");
   }, [theme, setTheme]);
@@ -110,6 +116,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const value: ThemeContextType = {
     theme,
     setTheme,
+    applyThemeWithoutSaving,
     toggleTheme,
     isDark: theme === "dark",
     isLight: theme === "light",
