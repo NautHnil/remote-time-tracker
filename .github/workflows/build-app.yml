@@ -158,6 +158,7 @@ jobs:
           EOF
           echo "✅ .env file created successfully at: .env"
           ls -la .env
+          cat .env
 
       # ========== macOS specific steps ==========
       - name: Setup macOS native modules
