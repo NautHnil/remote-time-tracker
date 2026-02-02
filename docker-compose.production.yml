@@ -1,0 +1,113 @@
+# Docker Compose for Production
+# Pull pre-built images from GitHub Container Registry
+#
+# Usage:
+#   1. Login to GitHub Container Registry:
+#      echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
+#
+#   2. Create .env file with required environment variables (see .env.example)
+#
+#   3. Start services:
+#      docker compose -f docker-compose.production.yml up -d
+#
+#   4. View logs:
+#      docker compose -f docker-compose.production.yml logs -f
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: rtt-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rtt_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rtt_password}
+      POSTGRES_DB: ${POSTGRES_DB:-remote_time_tracker}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-rtt_user} -d ${POSTGRES_DB:-remote_time_tracker}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rtt-network
+    restart: unless-stopped
+
+  backend:
+    # GitHub Container Registry image
+    # Replace YOUR_GITHUB_USERNAME with your actual GitHub username/org
+    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/remote-time-tracker}/backend:${BACKEND_TAG:-latest}
+    container_name: rtt-backend
+    environment:
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-rtt_user}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-rtt_password}
+      DB_NAME: ${POSTGRES_DB:-remote_time_tracker}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+
+      # Server
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      GIN_MODE: ${GIN_MODE:-release}
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+
+      # Upload
+      UPLOAD_PATH: ${UPLOAD_PATH:-/app/uploads}
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-10485760}
+
+      # CORS
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - backend_uploads:/app/uploads
+    networks:
+      - rtt-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    # GitHub Container Registry image
+    # Replace YOUR_GITHUB_USERNAME with your actual GitHub username/org
+    image: ghcr.io/${GITHUB_REPOSITORY:-your-username/remote-time-tracker}/frontend:${FRONTEND_TAG:-latest}
+    container_name: rtt-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
+    networks:
+      - rtt-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_uploads:
+    driver: local
+
+networks:
+  rtt-network:
+    driver: bridge
