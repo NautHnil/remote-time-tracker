@@ -9,7 +9,7 @@ interface LoginFormProps {
     accessToken: string,
     refreshToken: string,
     userId: number,
-    email: string
+    email: string,
   ) => void;
 }
 
@@ -129,7 +129,7 @@ function LoginForm({ onLogin }: LoginFormProps) {
       setError(
         orgMode === "create"
           ? "Organization name must be at least 2 characters"
-          : "Please enter a valid invite code"
+          : "Please enter a valid invite code",
       );
       return;
     }
@@ -190,7 +190,7 @@ function LoginForm({ onLogin }: LoginFormProps) {
   };
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-gradient-to-br from-dark-950 via-dark-900 to-dark-950">
+    <div className="dark relative flex min-h-screen overflow-hidden bg-gradient-to-br from-dark-950 via-dark-900 to-dark-950">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-primary-500/10 to-transparent rounded-full blur-3xl animate-pulse-slow" />

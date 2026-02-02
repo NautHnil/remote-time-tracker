@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 .PHONY: help start start-be start-fe start-db stop stop-be stop-fe stop-db restart logs logs-be logs-fe logs-db clean build rebuild rebuild-be rebuild-fe dev-be dev-fe dev-app build-app build-swag install-be install-fe install-app install-all test-be test-fe db-shell db-reset status debug-be health backup-db restore-db prune
 
 help: ## Show this help message
