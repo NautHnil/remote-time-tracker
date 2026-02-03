@@ -87,6 +87,15 @@
       "dist/**/*",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
     "asarUnpack": [
       "node_modules/sharp/**/*",
       "node_modules/@img/**/*",

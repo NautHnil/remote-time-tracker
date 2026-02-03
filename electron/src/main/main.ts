@@ -18,11 +18,13 @@ import { ScreenshotService } from "./services/ScreenshotService";
 import { SyncService } from "./services/SyncService";
 import { TaskService } from "./services/TaskService";
 import { TimeTrackerService } from "./services/TimeTrackerService";
+import { TrayIconHelper } from "./utils/TrayIconHelper";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 let isUpdating = false; // Flag for auto-update quit
+let isForceClose = false; // Flag for keyboard shortcut close (Cmd+Q, Alt+F4)
 let pendingDeeplink: string | null = null; // Store deeplink if received before window ready
 
 // Services
@@ -248,6 +250,10 @@ function sendPendingDeeplink() {
 }
 
 function createWindow() {
+  // Get the correct icon path using TrayIconHelper
+  const assetsPath = TrayIconHelper.getAssetsPath();
+  const windowIconPath = path.join(assetsPath, "icon.png");
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -259,8 +265,10 @@ function createWindow() {
       contextIsolation: true,
       webSecurity: false, // Allow loading local files
     },
-    icon: path.join(__dirname, "../../assets/icon.png"),
+    icon: windowIconPath,
   });
+
+  console.log("🪟 Window icon path:", windowIconPath);
 
   // Load the app
   if (process.env.NODE_ENV === "development") {
@@ -283,12 +291,39 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
   }
 
-  // Handle window close
-  mainWindow.on("close", (event) => {
-    // Allow close if quitting or updating
-    if (!isQuitting && !isUpdating) {
-      event.preventDefault();
-      mainWindow?.hide();
+  // Handle window close (X button)
+  mainWindow.on("close", async (event) => {
+    // Allow close if already quitting, updating, or force close (keyboard shortcut)
+    if (isQuitting || isUpdating || isForceClose) {
+      return;
+    }
+
+    // Prevent default close behavior
+    event.preventDefault();
+
+    // Show dialog asking what user wants to do
+    const result = await dialog.showMessageBox(mainWindow!, {
+      type: "question",
+      title: "Close Application",
+      message: "What would you like to do?",
+      detail:
+        "The app can continue running in the system tray, or you can quit completely.",
+      buttons: ["Minimize to Tray", "Quit Application", "Cancel"],
+      defaultId: 0,
+      cancelId: 2,
+      icon: getAppIcon(),
+    });
+
+    switch (result.response) {
+      case 0: // Minimize to Tray
+        mainWindow?.hide();
+        break;
+      case 1: // Quit Application
+        await quitApp();
+        break;
+      case 2: // Cancel - do nothing
+      default:
+        break;
     }
   });
 
@@ -297,60 +332,63 @@ function createWindow() {
   });
 }
 
+/**
+ * Get app icon for dialogs
+ */
+function getAppIcon(): Electron.NativeImage | undefined {
+  try {
+    const assetsPath = TrayIconHelper.getAssetsPath();
+    const iconPath = path.join(assetsPath, "icon.png");
+    const fs = require("fs");
+    if (fs.existsSync(iconPath)) {
+      return nativeImage.createFromPath(iconPath);
+    }
+  } catch (error) {
+    console.warn("⚠️ Could not load app icon for dialog:", error);
+  }
+  return undefined;
+}
+
 function createTray() {
   console.log("🎯 Creating tray icon...");
 
+  // Debug: List assets to help troubleshoot icon issues
+  TrayIconHelper.debugListAssets();
+
   try {
-    let icon: Electron.NativeImage;
+    // Use TrayIconHelper to create platform-appropriate icon
+    const iconResult = TrayIconHelper.createTrayIcon();
 
-    // Thử load icon từ file
-    const iconPath = path.join(__dirname, "../../assets/tray-icon.png");
-    const fs = require("fs");
-
-    if (fs.existsSync(iconPath)) {
-      console.log("📁 Loading icon from:", iconPath);
-      icon = nativeImage.createFromPath(iconPath);
-
-      // Resize cho phù hợp với platform
-      if (process.platform === "darwin") {
-        // macOS: 16x16 template icon
-        icon = icon.resize({ width: 16, height: 16 });
-        icon.setTemplateImage(true);
-      } else {
-        // Windows/Linux: 32x32
-        icon = icon.resize({ width: 32, height: 32 });
-      }
-    } else {
-      console.warn("⚠️ Icon file not found, using system icon");
-      // Fallback: Sử dụng system icon
-      if (process.platform === "darwin") {
-        icon = nativeImage.createFromNamedImage("NSStatusAvailable");
-      } else {
-        // Tạo icon đơn giản từ text emoji
-        icon = nativeImage.createFromDataURL(
-          "data:image/svg+xml;base64," +
-            Buffer.from(
-              '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="#3B82F6"/><text x="16" y="22" font-size="20" font-family="Arial" text-anchor="middle" fill="white" font-weight="bold">T</text></svg>',
-            ).toString("base64"),
-        );
-      }
-    }
-
-    if (icon.isEmpty()) {
+    if (iconResult.icon.isEmpty()) {
       console.error("❌ Icon is empty!");
       throw new Error("Failed to create tray icon");
     }
 
-    tray = new Tray(icon);
-    console.log("✅ Tray icon created successfully");
+    tray = new Tray(iconResult.icon);
+    console.log(
+      `✅ Tray icon created successfully (source: ${iconResult.source}${iconResult.path ? `, path: ${iconResult.path}` : ""})`,
+    );
   } catch (error) {
     console.error("❌ Failed to create tray icon:", error);
-    // Tạo tray với system default icon
+
+    // Last resort fallback using embedded icon
     try {
-      const defaultIcon = nativeImage.createFromNamedImage("NSStatusAvailable");
-      tray = new Tray(defaultIcon);
+      const fallbackResult = TrayIconHelper.createStateIcon("idle");
+      tray = new Tray(fallbackResult.icon);
+      console.log("✅ Tray created with fallback state icon");
     } catch (e) {
       console.error("❌ Failed to create tray with fallback:", e);
+      // Platform-specific final fallback
+      if (process.platform === "darwin") {
+        try {
+          const defaultIcon =
+            nativeImage.createFromNamedImage("NSStatusAvailable");
+          tray = new Tray(defaultIcon);
+          console.log("✅ Tray created with macOS system icon");
+        } catch (macError) {
+          console.error("❌ All tray icon attempts failed:", macError);
+        }
+      }
     }
   }
 
@@ -359,12 +397,20 @@ function createTray() {
       label: "Show App",
       click: () => {
         mainWindow?.show();
+        mainWindow?.focus();
       },
     },
+    { type: "separator" },
     {
       label: "Start Tracking",
       click: async () => {
         await timeTrackerService.start();
+      },
+    },
+    {
+      label: "Pause Tracking",
+      click: async () => {
+        await timeTrackerService.pause();
       },
     },
     {
@@ -386,9 +432,42 @@ function createTray() {
     tray.setContextMenu(contextMenu);
     tray.setToolTip("Remote Time Tracker");
 
-    tray.on("click", () => {
-      mainWindow?.show();
-    });
+    // Handle tray click based on platform
+    if (process.platform === "darwin") {
+      // On macOS, left-click typically shows the menu, but we can also show window
+      tray.on("double-click", () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      });
+    } else {
+      // On Windows/Linux, single click shows the window
+      tray.on("click", () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      });
+    }
+  }
+}
+
+/**
+ * Update tray icon based on tracking state
+ */
+function updateTrayIcon(state: "idle" | "tracking" | "paused") {
+  if (!tray) return;
+
+  try {
+    const iconResult = TrayIconHelper.createStateIcon(state);
+    tray.setImage(iconResult.icon);
+
+    // Update tooltip based on state
+    const tooltips: Record<string, string> = {
+      idle: "Remote Time Tracker",
+      tracking: "Remote Time Tracker - Tracking",
+      paused: "Remote Time Tracker - Paused",
+    };
+    tray.setToolTip(tooltips[state] || "Remote Time Tracker");
+  } catch (error) {
+    console.warn("⚠️ Failed to update tray icon:", error);
   }
 }
 
@@ -997,17 +1076,24 @@ app.whenReady().then(async () => {
     });
   }
 
-  // Handle before-quit event for auto-updater and tracking cleanup
+  // Handle before-quit event for auto-updater and keyboard shortcuts (Cmd+Q, Alt+F4)
+  // This is triggered by keyboard shortcuts and system quit commands
   app.on("before-quit", async (event) => {
     console.log(
-      "before-quit event, isUpdating:",
+      "📴 before-quit event, isUpdating:",
       isUpdating,
       "isQuitting:",
       isQuitting,
+      "isForceClose:",
+      isForceClose,
     );
 
+    // Set force close flag - this indicates the quit was triggered by keyboard shortcut
+    // or system command (not by clicking X button)
+    isForceClose = true;
+
     if (isUpdating) {
-      console.log("Allowing quit for update...");
+      console.log("🔄 Allowing quit for update...");
       // Don't prevent quit during update
       return;
     }
@@ -1024,7 +1110,7 @@ app.whenReady().then(async () => {
           await timeTrackerService.forceStop();
         }
       } catch (error) {
-        console.error("Error stopping tracking before quit:", error);
+        console.error("❌ Error stopping tracking before quit:", error);
       }
 
       // Now actually quit
