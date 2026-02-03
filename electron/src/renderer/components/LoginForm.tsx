@@ -20,8 +20,8 @@ function LoginForm({ onLogin }: LoginFormProps) {
   const [mode, setMode] = useState<FormMode>("login");
 
   // Login form state
-  const [email, setEmail] = useState("linhpeter0508@gmail.com");
-  const [password, setPassword] = useState("LinhPeter0508");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
