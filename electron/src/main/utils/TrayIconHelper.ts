@@ -33,13 +33,14 @@ export class TrayIconHelper {
     }
 
     // In production (packaged app), resources are in app.getPath('exe')/../Resources
-    // In development, resources are relative to the project root
+    // In development, resources are relative to the electron folder
     if (app.isPackaged) {
       // Production: Use process.resourcesPath which points to the Resources folder
       this.resourcesPath = process.resourcesPath;
     } else {
-      // Development: Use the electron folder as base
-      this.resourcesPath = path.join(__dirname, "../../../..");
+      // Development: __dirname is electron/dist/main (compiled output)
+      // Go up 3 levels to get to electron folder: main -> dist -> electron
+      this.resourcesPath = path.join(__dirname, "../../..");
     }
 
     console.log("📁 Resources path:", this.resourcesPath);
