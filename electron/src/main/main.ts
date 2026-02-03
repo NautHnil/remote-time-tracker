@@ -1,11 +1,13 @@
 import {
   app,
   BrowserWindow,
+  desktopCapturer,
   dialog,
   ipcMain,
   Menu,
   nativeImage,
   shell,
+  systemPreferences,
   Tray,
 } from "electron";
 import path from "path";
@@ -16,11 +18,13 @@ import { ScreenshotService } from "./services/ScreenshotService";
 import { SyncService } from "./services/SyncService";
 import { TaskService } from "./services/TaskService";
 import { TimeTrackerService } from "./services/TimeTrackerService";
+import { TrayIconHelper } from "./utils/TrayIconHelper";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 let isUpdating = false; // Flag for auto-update quit
+let isForceClose = false; // Flag for keyboard shortcut close (Cmd+Q, Alt+F4)
 let pendingDeeplink: string | null = null; // Store deeplink if received before window ready
 
 // Services
@@ -31,6 +35,249 @@ let taskService: TaskService;
 let timeTrackerService: TimeTrackerService;
 
 let backendUpdateService: BackendUpdateService | null = null;
+
+// Screen capture permission result interface
+interface ScreenCapturePermissionResult {
+  granted: boolean;
+  status: string;
+  platform: string;
+  message?: string;
+}
+
+/**
+ * Check if bitmap data has pixel variance (not a solid color)
+ * When screen recording permission is OFF, thumbnails are blank/solid color
+ * When ON, thumbnails have actual window content with varying pixels
+ */
+function checkBitmapHasVariance(bitmap: Buffer): boolean {
+  if (!bitmap || bitmap.length < 16) {
+    return false;
+  }
+
+  // Bitmap format is BGRA (4 bytes per pixel)
+  // Sample pixels at different positions and check if they differ
+  const bytesPerPixel = 4;
+  const totalPixels = Math.floor(bitmap.length / bytesPerPixel);
+
+  if (totalPixels < 4) {
+    return false;
+  }
+
+  // Get first pixel as reference
+  const refB = bitmap[0];
+  const refG = bitmap[1];
+  const refR = bitmap[2];
+
+  // Sample pixels at 25%, 50%, 75% positions
+  const samplePositions = [
+    Math.floor(totalPixels * 0.25),
+    Math.floor(totalPixels * 0.5),
+    Math.floor(totalPixels * 0.75),
+  ];
+
+  for (const pos of samplePositions) {
+    const offset = pos * bytesPerPixel;
+    if (offset + 3 < bitmap.length) {
+      const b = bitmap[offset];
+      const g = bitmap[offset + 1];
+      const r = bitmap[offset + 2];
+
+      // Check if this pixel differs significantly from reference
+      // Use threshold to account for minor compression artifacts
+      const threshold = 10;
+      if (
+        Math.abs(b - refB) > threshold ||
+        Math.abs(g - refG) > threshold ||
+        Math.abs(r - refR) > threshold
+      ) {
+        return true; // Found variance - real content
+      }
+    }
+  }
+
+  return false; // All sampled pixels are similar - likely blank/solid
+}
+
+/**
+ * Check and request screen capture permission on app startup
+ * - If already granted: return immediately, no dialog
+ * - If not granted: show dialog to request permission
+ */
+async function ensureScreenCapturePermission(): Promise<ScreenCapturePermissionResult> {
+  const platform = process.platform;
+  console.log(`🔐 Checking screen capture permission on ${platform}...`);
+
+  // Windows doesn't require explicit permission
+  if (platform === "win32") {
+    console.log("✅ Windows: No explicit screen capture permission required");
+    return { granted: true, status: "not_required", platform };
+  }
+
+  // Linux - try to verify screen capture works
+  if (platform === "linux") {
+    console.log("🐧 Linux: Testing screen capture availability...");
+    try {
+      const sources = await desktopCapturer.getSources({
+        types: ["screen"],
+        thumbnailSize: { width: 1, height: 1 },
+      });
+
+      if (sources && sources.length > 0) {
+        console.log(
+          `✅ Linux: Screen capture available (${sources.length} screen(s))`,
+        );
+        return { granted: true, status: "granted", platform };
+      }
+
+      // No screens detected - show warning
+      console.warn("⚠️ Linux: No screens detected");
+      await dialog.showMessageBox({
+        type: "warning",
+        title: "Screen Capture May Not Work",
+        message: "No screens detected for capture",
+        detail:
+          "Remote Time Tracker could not detect any screens.\n\n" +
+          "If you're using Wayland, screen capture may require additional permissions:\n" +
+          "• GNOME: Allow screen sharing in Settings > Privacy\n" +
+          "• KDE Plasma: Grant portal permissions when prompted\n\n" +
+          "If you're using X11, please ensure xrandr and ImageMagick are installed.",
+        buttons: ["OK"],
+      });
+      return {
+        granted: false,
+        status: "no_screens",
+        platform,
+        message: "No screens detected",
+      };
+    } catch (error) {
+      console.error("❌ Linux: Screen capture error:", error);
+      await dialog.showMessageBox({
+        type: "warning",
+        title: "Screen Capture Permission Issue",
+        message: "Could not access screen capture",
+        detail:
+          "Remote Time Tracker encountered an error accessing screen capture.\n\n" +
+          "This may happen on Wayland-based desktops. Please ensure:\n" +
+          "• Screen sharing permissions are granted\n" +
+          "• XDG Desktop Portal is running\n" +
+          "• Required packages are installed (xdg-desktop-portal, pipewire)",
+        buttons: ["OK"],
+      });
+      return {
+        granted: false,
+        status: "error",
+        platform,
+        message: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  // macOS - verify by actually trying to capture windows (most reliable method)
+  // Note: getMediaAccessStatus("screen") returns "granted" even when app is in the list but toggle is OFF
+  // When toggle is OFF, screen capture returns desktop background only (no app windows)
+  // So we check by capturing WINDOWS instead - this only works when toggle is ON
+  if (platform === "darwin") {
+    const status = systemPreferences.getMediaAccessStatus("screen");
+    console.log("📋 macOS: getMediaAccessStatus reports:", status);
+
+    // The ONLY reliable way to check is to capture WINDOWS (not screens)
+    // When permission toggle is OFF:
+    //   - Screen capture returns desktop background (appears valid but useless)
+    //   - Window capture returns empty thumbnails or no content
+    // When permission toggle is ON:
+    //   - Window capture returns actual window content
+    try {
+      console.log(
+        "🔍 macOS: Testing window capture (more reliable than screen)...",
+      );
+      const sources = await desktopCapturer.getSources({
+        types: ["window"], // Use window instead of screen!
+        thumbnailSize: { width: 100, height: 100 },
+        fetchWindowIcons: false,
+      });
+
+      console.log(`📊 macOS: Got ${sources.length} window sources`);
+
+      if (sources && sources.length > 0) {
+        // Check if ANY window thumbnail has actual content (not blank)
+        // When toggle is OFF, thumbnails will be empty or all same color
+        let validWindowCount = 0;
+
+        for (const source of sources) {
+          if (source.thumbnail && !source.thumbnail.isEmpty()) {
+            const size = source.thumbnail.getSize();
+            if (size.width > 0 && size.height > 0) {
+              // Additional check: verify thumbnail has actual pixel variance
+              // Get bitmap data and check if it's not just a solid color
+              const bitmap = source.thumbnail.toBitmap();
+              if (bitmap && bitmap.length > 0) {
+                // Check first few pixels - if all same, likely blank/placeholder
+                const hasVariance = checkBitmapHasVariance(bitmap);
+                if (hasVariance) {
+                  validWindowCount++;
+                  console.log(`✓ Window "${source.name}" has valid content`);
+                }
+              }
+            }
+          }
+        }
+
+        if (validWindowCount > 0) {
+          console.log(
+            `✅ macOS: Screen capture WORKING (${validWindowCount} windows with valid content)`,
+          );
+          return { granted: true, status: "granted", platform };
+        } else {
+          console.warn(
+            "⚠️ macOS: Windows captured but all thumbnails are blank - permission toggle is OFF",
+          );
+        }
+      } else {
+        console.warn(
+          "⚠️ macOS: No window sources returned - permission may be OFF",
+        );
+      }
+    } catch (error) {
+      console.error("❌ macOS: Error testing window capture:", error);
+    }
+
+    // If we reach here, capture didn't work properly - show guidance dialog
+    console.warn(
+      `❌ macOS: Screen capture NOT working (API status: ${status}), showing guidance dialog`,
+    );
+    await showMacOSPermissionDialog();
+    return { granted: false, status: "not_enabled", platform };
+  }
+
+  // Unknown platform - assume granted
+  console.warn(`⚠️ Unknown platform: ${platform}`);
+  return { granted: true, status: "unknown_platform", platform };
+}
+
+/**
+ * Show dialog guiding user to enable screen recording permission on macOS
+ */
+async function showMacOSPermissionDialog(): Promise<void> {
+  const result = await dialog.showMessageBox({
+    type: "warning",
+    title: "Screen Recording Permission Required",
+    message: "Remote Time Tracker needs screen recording permission",
+    detail:
+      "To capture screenshots of your work, please enable screen recording permission:\n\n" +
+      "1. Open System Settings > Privacy & Security > Screen Recording\n" +
+      "2. Enable Remote Time Tracker in the list\n" +
+      "3. Restart the app after granting permission\n\n" +
+      "Without this permission, screenshot capture will not work.",
+    buttons: ["Open System Settings", "Later"],
+    defaultId: 0,
+  });
+
+  if (result.response === 0) {
+    shell.openExternal(
+      "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+    );
+  }
+}
 
 // Deeplink handler
 function handleDeeplink(url: string) {
@@ -84,6 +331,10 @@ function sendPendingDeeplink() {
 }
 
 function createWindow() {
+  // Get the correct icon path using TrayIconHelper
+  const assetsPath = TrayIconHelper.getAssetsPath();
+  const windowIconPath = path.join(assetsPath, "icon.png");
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -95,8 +346,10 @@ function createWindow() {
       contextIsolation: true,
       webSecurity: false, // Allow loading local files
     },
-    icon: path.join(__dirname, "../../assets/icon.png"),
+    icon: windowIconPath,
   });
+
+  console.log("🪟 Window icon path:", windowIconPath);
 
   // Load the app
   if (process.env.NODE_ENV === "development") {
@@ -119,12 +372,39 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, "../renderer/index.html"));
   }
 
-  // Handle window close
-  mainWindow.on("close", (event) => {
-    // Allow close if quitting or updating
-    if (!isQuitting && !isUpdating) {
-      event.preventDefault();
-      mainWindow?.hide();
+  // Handle window close (X button)
+  mainWindow.on("close", async (event) => {
+    // Allow close if already quitting, updating, or force close (keyboard shortcut)
+    if (isQuitting || isUpdating || isForceClose) {
+      return;
+    }
+
+    // Prevent default close behavior
+    event.preventDefault();
+
+    // Show dialog asking what user wants to do
+    const result = await dialog.showMessageBox(mainWindow!, {
+      type: "question",
+      title: "Close Application",
+      message: "What would you like to do?",
+      detail:
+        "The app can continue running in the system tray, or you can quit completely.",
+      buttons: ["Minimize to Tray", "Quit Application", "Cancel"],
+      defaultId: 0,
+      cancelId: 2,
+      icon: getAppIcon(),
+    });
+
+    switch (result.response) {
+      case 0: // Minimize to Tray
+        mainWindow?.hide();
+        break;
+      case 1: // Quit Application
+        await quitApp();
+        break;
+      case 2: // Cancel - do nothing
+      default:
+        break;
     }
   });
 
@@ -133,60 +413,63 @@ function createWindow() {
   });
 }
 
+/**
+ * Get app icon for dialogs
+ */
+function getAppIcon(): Electron.NativeImage | undefined {
+  try {
+    const assetsPath = TrayIconHelper.getAssetsPath();
+    const iconPath = path.join(assetsPath, "icon.png");
+    const fs = require("fs");
+    if (fs.existsSync(iconPath)) {
+      return nativeImage.createFromPath(iconPath);
+    }
+  } catch (error) {
+    console.warn("⚠️ Could not load app icon for dialog:", error);
+  }
+  return undefined;
+}
+
 function createTray() {
   console.log("🎯 Creating tray icon...");
 
+  // Debug: List assets to help troubleshoot icon issues
+  TrayIconHelper.debugListAssets();
+
   try {
-    let icon: Electron.NativeImage;
+    // Use TrayIconHelper to create platform-appropriate icon
+    const iconResult = TrayIconHelper.createTrayIcon();
 
-    // Thử load icon từ file
-    const iconPath = path.join(__dirname, "../../assets/tray-icon.png");
-    const fs = require("fs");
-
-    if (fs.existsSync(iconPath)) {
-      console.log("📁 Loading icon from:", iconPath);
-      icon = nativeImage.createFromPath(iconPath);
-
-      // Resize cho phù hợp với platform
-      if (process.platform === "darwin") {
-        // macOS: 16x16 template icon
-        icon = icon.resize({ width: 16, height: 16 });
-        icon.setTemplateImage(true);
-      } else {
-        // Windows/Linux: 32x32
-        icon = icon.resize({ width: 32, height: 32 });
-      }
-    } else {
-      console.warn("⚠️ Icon file not found, using system icon");
-      // Fallback: Sử dụng system icon
-      if (process.platform === "darwin") {
-        icon = nativeImage.createFromNamedImage("NSStatusAvailable");
-      } else {
-        // Tạo icon đơn giản từ text emoji
-        icon = nativeImage.createFromDataURL(
-          "data:image/svg+xml;base64," +
-            Buffer.from(
-              '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="#3B82F6"/><text x="16" y="22" font-size="20" font-family="Arial" text-anchor="middle" fill="white" font-weight="bold">T</text></svg>',
-            ).toString("base64"),
-        );
-      }
-    }
-
-    if (icon.isEmpty()) {
+    if (iconResult.icon.isEmpty()) {
       console.error("❌ Icon is empty!");
       throw new Error("Failed to create tray icon");
     }
 
-    tray = new Tray(icon);
-    console.log("✅ Tray icon created successfully");
+    tray = new Tray(iconResult.icon);
+    console.log(
+      `✅ Tray icon created successfully (source: ${iconResult.source}${iconResult.path ? `, path: ${iconResult.path}` : ""})`,
+    );
   } catch (error) {
     console.error("❌ Failed to create tray icon:", error);
-    // Tạo tray với system default icon
+
+    // Last resort fallback using embedded icon
     try {
-      const defaultIcon = nativeImage.createFromNamedImage("NSStatusAvailable");
-      tray = new Tray(defaultIcon);
+      const fallbackResult = TrayIconHelper.createStateIcon("idle");
+      tray = new Tray(fallbackResult.icon);
+      console.log("✅ Tray created with fallback state icon");
     } catch (e) {
       console.error("❌ Failed to create tray with fallback:", e);
+      // Platform-specific final fallback
+      if (process.platform === "darwin") {
+        try {
+          const defaultIcon =
+            nativeImage.createFromNamedImage("NSStatusAvailable");
+          tray = new Tray(defaultIcon);
+          console.log("✅ Tray created with macOS system icon");
+        } catch (macError) {
+          console.error("❌ All tray icon attempts failed:", macError);
+        }
+      }
     }
   }
 
@@ -195,12 +478,20 @@ function createTray() {
       label: "Show App",
       click: () => {
         mainWindow?.show();
+        mainWindow?.focus();
       },
     },
+    { type: "separator" },
     {
       label: "Start Tracking",
       click: async () => {
         await timeTrackerService.start();
+      },
+    },
+    {
+      label: "Pause Tracking",
+      click: async () => {
+        await timeTrackerService.pause();
       },
     },
     {
@@ -222,9 +513,42 @@ function createTray() {
     tray.setContextMenu(contextMenu);
     tray.setToolTip("Remote Time Tracker");
 
-    tray.on("click", () => {
-      mainWindow?.show();
-    });
+    // Handle tray click based on platform
+    if (process.platform === "darwin") {
+      // On macOS, left-click typically shows the menu, but we can also show window
+      tray.on("double-click", () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      });
+    } else {
+      // On Windows/Linux, single click shows the window
+      tray.on("click", () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      });
+    }
+  }
+}
+
+/**
+ * Update tray icon based on tracking state
+ */
+function updateTrayIcon(state: "idle" | "tracking" | "paused") {
+  if (!tray) return;
+
+  try {
+    const iconResult = TrayIconHelper.createStateIcon(state);
+    tray.setImage(iconResult.icon);
+
+    // Update tooltip based on state
+    const tooltips: Record<string, string> = {
+      idle: "Remote Time Tracker",
+      tracking: "Remote Time Tracker - Tracking",
+      paused: "Remote Time Tracker - Paused",
+    };
+    tray.setToolTip(tooltips[state] || "Remote Time Tracker");
+  } catch (error) {
+    console.warn("⚠️ Failed to update tray icon:", error);
   }
 }
 
@@ -449,6 +773,37 @@ function setupIpcHandlers() {
   // Screenshot dependency management
   ipcMain.handle("screenshots:get-dependency-status", async () => {
     return screenshotService.getDependencyStatus();
+  });
+
+  // Screen capture permission (macOS/Linux)
+  ipcMain.handle("screenshots:get-permission-status", async () => {
+    const platform = process.platform;
+
+    if (platform === "win32") {
+      return { granted: true, status: "not_required", platform };
+    }
+
+    if (platform === "darwin") {
+      const status = systemPreferences.getMediaAccessStatus("screen");
+      return {
+        granted: status === "granted",
+        status,
+        platform,
+      };
+    }
+
+    // For Linux, we can't really check permission status
+    // We just return that we need to test capture
+    return {
+      granted: true, // Assume granted, actual check happens during capture
+      status: "unknown",
+      platform,
+      message: "Linux permissions are checked during capture",
+    };
+  });
+
+  ipcMain.handle("screenshots:request-permission", async () => {
+    return await ensureScreenCapturePermission();
   });
 
   ipcMain.handle("screenshots:check-dependencies", async () => {
@@ -776,6 +1131,12 @@ app.whenReady().then(async () => {
   await initializeServices();
   createWindow();
 
+  // Check screen capture permission on app start
+  // - If granted: app runs normally, no dialog
+  // - If not granted: show dialog to request permission
+  const permissionResult = await ensureScreenCapturePermission();
+  console.log("🔐 Screen capture permission result:", permissionResult);
+
   // Attach backend update service to window
   if (backendUpdateService && mainWindow) {
     backendUpdateService.setWindow(mainWindow);
@@ -798,17 +1159,24 @@ app.whenReady().then(async () => {
     });
   }
 
-  // Handle before-quit event for auto-updater and tracking cleanup
+  // Handle before-quit event for auto-updater and keyboard shortcuts (Cmd+Q, Alt+F4)
+  // This is triggered by keyboard shortcuts and system quit commands
   app.on("before-quit", async (event) => {
     console.log(
-      "before-quit event, isUpdating:",
+      "📴 before-quit event, isUpdating:",
       isUpdating,
       "isQuitting:",
       isQuitting,
+      "isForceClose:",
+      isForceClose,
     );
 
+    // Set force close flag - this indicates the quit was triggered by keyboard shortcut
+    // or system command (not by clicking X button)
+    isForceClose = true;
+
     if (isUpdating) {
-      console.log("Allowing quit for update...");
+      console.log("🔄 Allowing quit for update...");
       // Don't prevent quit during update
       return;
     }
@@ -825,7 +1193,7 @@ app.whenReady().then(async () => {
           await timeTrackerService.forceStop();
         }
       } catch (error) {
-        console.error("Error stopping tracking before quit:", error);
+        console.error("❌ Error stopping tracking before quit:", error);
       }
 
       // Now actually quit

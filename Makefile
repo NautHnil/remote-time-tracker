@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: help start start-be start-fe start-db stop stop-be stop-fe stop-db restart logs logs-be logs-fe logs-db clean build rebuild rebuild-be rebuild-fe dev-be dev-fe dev-app build-app build-swag install-be install-fe install-app install-all test-be test-fe db-shell db-reset status debug-be health backup-db restore-db prune
+.PHONY: help start start-be start-fe start-db stop stop-be stop-fe stop-db restart logs logs-be logs-fe logs-db clean build rebuild rebuild-be rebuild-fe dev-be dev-fe dev-app build-app build-swag install-be install-fe install-app install-all test-be test-fe db-shell db-reset db-reset-postgres db-reset-sqlite status debug-be health backup-db restore-db prune
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -142,8 +142,34 @@ test-fe: ## Run frontend tests
 db-shell: ## Connect to PostgreSQL shell
 	docker-compose exec postgres psql -U rtt_user -d remote_time_tracker
 
-db-reset: ## Reset database (WARNING: This will delete all data)
-	@echo "⚠️  WARNING: This will delete all data!"
+db-reset: ## Reset ALL databases - PostgreSQL + SQLite (WARNING: This will delete all data)
+	@echo "⚠️  WARNING: This will delete ALL data (PostgreSQL + SQLite)!"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		echo "🗄️  Resetting PostgreSQL..."; \
+		docker-compose down -v; \
+		docker-compose up -d postgres; \
+		sleep 5; \
+		docker-compose up -d backend; \
+		echo "✅ PostgreSQL reset complete!"; \
+		echo ""; \
+		echo "📱 Resetting SQLite (Electron app)..."; \
+		SQLITE_PATH="$$HOME/Library/Application Support/remote-time-tracker/database.sqlite"; \
+		if [ -f "$$SQLITE_PATH" ]; then \
+			rm -f "$$SQLITE_PATH"; \
+			rm -f "$$SQLITE_PATH-wal"; \
+			rm -f "$$SQLITE_PATH-shm"; \
+			echo "✅ SQLite database deleted: $$SQLITE_PATH"; \
+		else \
+			echo "ℹ️  SQLite database not found at: $$SQLITE_PATH"; \
+		fi; \
+		echo ""; \
+		echo "✅ All databases reset complete!"; \
+	fi
+
+db-reset-postgres: ## Reset only PostgreSQL database (WARNING: This will delete all data)
+	@echo "⚠️  WARNING: This will delete all PostgreSQL data!"
 	@read -p "Are you sure? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
@@ -151,7 +177,34 @@ db-reset: ## Reset database (WARNING: This will delete all data)
 		docker-compose up -d postgres; \
 		sleep 5; \
 		docker-compose up -d backend; \
-		echo "✅ Database reset complete!"; \
+		echo "✅ PostgreSQL reset complete!"; \
+	fi
+
+db-reset-sqlite: ## Reset only SQLite database on Electron app (WARNING: This will delete all local data)
+	@echo "⚠️  WARNING: This will delete all local SQLite data on Electron app!"
+	@echo "📍 Default paths:"
+	@echo "   macOS: ~/Library/Application Support/remote-time-tracker/database.sqlite"
+	@echo "   Linux: ~/.config/remote-time-tracker/database.sqlite"
+	@echo "   Windows: %APPDATA%/remote-time-tracker/database.sqlite"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		if [ "$$(uname)" = "Darwin" ]; then \
+			SQLITE_PATH="$$HOME/Library/Application Support/remote-time-tracker/database.sqlite"; \
+		elif [ "$$(uname)" = "Linux" ]; then \
+			SQLITE_PATH="$$HOME/.config/remote-time-tracker/database.sqlite"; \
+		else \
+			echo "❌ Windows not supported via Makefile. Please delete manually."; \
+			exit 1; \
+		fi; \
+		if [ -f "$$SQLITE_PATH" ]; then \
+			rm -f "$$SQLITE_PATH"; \
+			rm -f "$$SQLITE_PATH-wal"; \
+			rm -f "$$SQLITE_PATH-shm"; \
+			echo "✅ SQLite database deleted: $$SQLITE_PATH"; \
+		else \
+			echo "ℹ️  SQLite database not found at: $$SQLITE_PATH"; \
+		fi; \
 	fi
 
 status: ## Show status of all services

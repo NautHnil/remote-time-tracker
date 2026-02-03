@@ -71,6 +71,19 @@ interface ElectronAPI {
       hasTimer: boolean;
       currentTaskId?: number;
     }>;
+    // Screen capture permission (macOS/Linux)
+    getPermissionStatus: () => Promise<{
+      granted: boolean;
+      status: string;
+      platform: string;
+      message?: string;
+    }>;
+    requestPermission: () => Promise<{
+      granted: boolean;
+      status: string;
+      platform: string;
+      message?: string;
+    }>;
     getOptimizationSettings: () => Promise<ImageOptimizationSettings>;
     updateOptimizationSettings: (
       settings: Partial<ImageOptimizationSettings>,

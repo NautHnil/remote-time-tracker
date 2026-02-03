@@ -150,6 +150,17 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
   const handleStartTask = useCallback(
     async (task: Task) => {
       try {
+        // Check screen capture permission first (macOS/Linux)
+        // This will show the native permission dialog if not granted
+        const permissionResult =
+          await window.electronAPI.screenshots.requestPermission();
+        console.log("🔐 Permission check result:", permissionResult);
+
+        if (!permissionResult.granted) {
+          // Permission not granted - dialog was already shown by main process
+          return;
+        }
+
         // Only allow starting manual tasks
         if (!task.is_manual) {
           alert(

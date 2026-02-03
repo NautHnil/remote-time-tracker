@@ -53,6 +53,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
     checkDependencies: () =>
       ipcRenderer.invoke("screenshots:check-dependencies"),
     isAvailable: () => ipcRenderer.invoke("screenshots:is-available"),
+    // Screen capture permission (macOS)
+    getPermissionStatus: () =>
+      ipcRenderer.invoke("screenshots:get-permission-status"),
+    requestPermission: () =>
+      ipcRenderer.invoke("screenshots:request-permission"),
     // Optimization settings
     getOptimizationSettings: () =>
       ipcRenderer.invoke("screenshots:get-optimization-settings"),
@@ -171,6 +176,33 @@ export interface ElectronAPI {
     getAll: () => Promise<any[]>;
     getByTimeLog: (timeLogId: number) => Promise<any[]>;
     getByTask: (taskId: number) => Promise<any>;
+    forceStopCapture: () => Promise<{ success: boolean; message: string }>;
+    getCaptureStatus: () => Promise<{
+      isCapturing: boolean;
+      hasTimer: boolean;
+      currentTaskId?: number;
+    }>;
+    getDependencyStatus: () => Promise<{
+      checked: boolean;
+      available: boolean;
+      message: string;
+    }>;
+    checkDependencies: () => Promise<any>;
+    isAvailable: () => Promise<boolean>;
+    getPermissionStatus: () => Promise<{
+      granted: boolean;
+      status: string;
+      platform: string;
+      message?: string;
+    }>;
+    requestPermission: () => Promise<{
+      granted: boolean;
+      status: string;
+      platform: string;
+      message?: string;
+    }>;
+    getOptimizationSettings: () => Promise<any>;
+    updateOptimizationSettings: (settings: any) => Promise<any>;
   };
   tasks: {
     getAll: () => Promise<any>;
