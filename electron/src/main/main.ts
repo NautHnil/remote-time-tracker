@@ -44,8 +44,66 @@ interface ScreenCapturePermissionResult {
   message?: string;
 }
 
-// Request screen capture permission on macOS and check Linux availability
-async function requestScreenCapturePermission(): Promise<ScreenCapturePermissionResult> {
+/**
+ * Check if bitmap data has pixel variance (not a solid color)
+ * When screen recording permission is OFF, thumbnails are blank/solid color
+ * When ON, thumbnails have actual window content with varying pixels
+ */
+function checkBitmapHasVariance(bitmap: Buffer): boolean {
+  if (!bitmap || bitmap.length < 16) {
+    return false;
+  }
+
+  // Bitmap format is BGRA (4 bytes per pixel)
+  // Sample pixels at different positions and check if they differ
+  const bytesPerPixel = 4;
+  const totalPixels = Math.floor(bitmap.length / bytesPerPixel);
+
+  if (totalPixels < 4) {
+    return false;
+  }
+
+  // Get first pixel as reference
+  const refB = bitmap[0];
+  const refG = bitmap[1];
+  const refR = bitmap[2];
+
+  // Sample pixels at 25%, 50%, 75% positions
+  const samplePositions = [
+    Math.floor(totalPixels * 0.25),
+    Math.floor(totalPixels * 0.5),
+    Math.floor(totalPixels * 0.75),
+  ];
+
+  for (const pos of samplePositions) {
+    const offset = pos * bytesPerPixel;
+    if (offset + 3 < bitmap.length) {
+      const b = bitmap[offset];
+      const g = bitmap[offset + 1];
+      const r = bitmap[offset + 2];
+
+      // Check if this pixel differs significantly from reference
+      // Use threshold to account for minor compression artifacts
+      const threshold = 10;
+      if (
+        Math.abs(b - refB) > threshold ||
+        Math.abs(g - refG) > threshold ||
+        Math.abs(r - refR) > threshold
+      ) {
+        return true; // Found variance - real content
+      }
+    }
+  }
+
+  return false; // All sampled pixels are similar - likely blank/solid
+}
+
+/**
+ * Check and request screen capture permission on app startup
+ * - If already granted: return immediately, no dialog
+ * - If not granted: show dialog to request permission
+ */
+async function ensureScreenCapturePermission(): Promise<ScreenCapturePermissionResult> {
   const platform = process.platform;
   console.log(`🔐 Checking screen capture permission on ${platform}...`);
 
@@ -55,12 +113,10 @@ async function requestScreenCapturePermission(): Promise<ScreenCapturePermission
     return { granted: true, status: "not_required", platform };
   }
 
-  // Linux handling - check if we can capture screens
+  // Linux - try to verify screen capture works
   if (platform === "linux") {
-    console.log("🐧 Linux: Checking screen capture availability...");
-
+    console.log("🐧 Linux: Testing screen capture availability...");
     try {
-      // Try to get screen sources to verify capture works
       const sources = await desktopCapturer.getSources({
         types: ["screen"],
         thumbnailSize: { width: 1, height: 1 },
@@ -68,36 +124,33 @@ async function requestScreenCapturePermission(): Promise<ScreenCapturePermission
 
       if (sources && sources.length > 0) {
         console.log(
-          `✅ Linux: Screen capture available (${sources.length} screen(s) detected)`,
+          `✅ Linux: Screen capture available (${sources.length} screen(s))`,
         );
         return { granted: true, status: "granted", platform };
-      } else {
-        console.warn("⚠️ Linux: No screens detected - capture may not work");
-        // Show warning dialog for Linux users
-        await dialog.showMessageBox({
-          type: "warning",
-          title: "Screen Capture May Not Work",
-          message: "No screens detected for capture",
-          detail:
-            "Remote Time Tracker could not detect any screens.\n\n" +
-            "If you're using Wayland, screen capture may require additional permissions:\n" +
-            "• GNOME: Allow screen sharing in Settings > Privacy\n" +
-            "• KDE Plasma: Grant portal permissions when prompted\n\n" +
-            "If you're using X11, please ensure xrandr and ImageMagick are installed.\n\n" +
-            "Screenshot capture may not work correctly without these permissions.",
-          buttons: ["OK"],
-        });
-        return {
-          granted: false,
-          status: "no_screens",
-          platform,
-          message: "No screens detected",
-        };
       }
-    } catch (error) {
-      console.error("❌ Linux: Error checking screen capture:", error);
 
-      // Show dialog about potential Wayland/permission issues
+      // No screens detected - show warning
+      console.warn("⚠️ Linux: No screens detected");
+      await dialog.showMessageBox({
+        type: "warning",
+        title: "Screen Capture May Not Work",
+        message: "No screens detected for capture",
+        detail:
+          "Remote Time Tracker could not detect any screens.\n\n" +
+          "If you're using Wayland, screen capture may require additional permissions:\n" +
+          "• GNOME: Allow screen sharing in Settings > Privacy\n" +
+          "• KDE Plasma: Grant portal permissions when prompted\n\n" +
+          "If you're using X11, please ensure xrandr and ImageMagick are installed.",
+        buttons: ["OK"],
+      });
+      return {
+        granted: false,
+        status: "no_screens",
+        platform,
+        message: "No screens detected",
+      };
+    } catch (error) {
+      console.error("❌ Linux: Screen capture error:", error);
       await dialog.showMessageBox({
         type: "warning",
         title: "Screen Capture Permission Issue",
@@ -107,12 +160,9 @@ async function requestScreenCapturePermission(): Promise<ScreenCapturePermission
           "This may happen on Wayland-based desktops. Please ensure:\n" +
           "• Screen sharing permissions are granted\n" +
           "• XDG Desktop Portal is running\n" +
-          "• Required packages are installed (xdg-desktop-portal, pipewire)\n\n" +
-          "For X11 systems, ensure ImageMagick and xrandr are installed.\n\n" +
-          "Screenshot capture will not work until this is resolved.",
+          "• Required packages are installed (xdg-desktop-portal, pipewire)",
         buttons: ["OK"],
       });
-
       return {
         granted: false,
         status: "error",
@@ -122,80 +172,111 @@ async function requestScreenCapturePermission(): Promise<ScreenCapturePermission
     }
   }
 
-  // macOS handling
+  // macOS - verify by actually trying to capture windows (most reliable method)
+  // Note: getMediaAccessStatus("screen") returns "granted" even when app is in the list but toggle is OFF
+  // When toggle is OFF, screen capture returns desktop background only (no app windows)
+  // So we check by capturing WINDOWS instead - this only works when toggle is ON
   if (platform === "darwin") {
-    // Check current permission status
     const status = systemPreferences.getMediaAccessStatus("screen");
-    console.log("📋 macOS: Current screen capture status:", status);
+    console.log("📋 macOS: getMediaAccessStatus reports:", status);
 
-    if (status === "granted") {
-      console.log("✅ macOS: Screen capture permission already granted");
-      return { granted: true, status, platform };
-    }
-
-    // On macOS, we need to trigger a screen capture to prompt for permission
-    console.log("🔐 macOS: Requesting screen capture permission...");
-
+    // The ONLY reliable way to check is to capture WINDOWS (not screens)
+    // When permission toggle is OFF:
+    //   - Screen capture returns desktop background (appears valid but useless)
+    //   - Window capture returns empty thumbnails or no content
+    // When permission toggle is ON:
+    //   - Window capture returns actual window content
     try {
-      // Use desktopCapturer to trigger the permission prompt
-      await desktopCapturer.getSources({
-        types: ["screen"],
-        thumbnailSize: { width: 1, height: 1 },
+      console.log(
+        "🔍 macOS: Testing window capture (more reliable than screen)...",
+      );
+      const sources = await desktopCapturer.getSources({
+        types: ["window"], // Use window instead of screen!
+        thumbnailSize: { width: 100, height: 100 },
+        fetchWindowIcons: false,
       });
 
-      // Check permission status again after the attempt
-      const newStatus = systemPreferences.getMediaAccessStatus("screen");
-      console.log("📋 macOS: Screen capture status after request:", newStatus);
+      console.log(`📊 macOS: Got ${sources.length} window sources`);
 
-      if (newStatus === "granted") {
-        console.log("✅ macOS: Screen capture permission granted");
-        return { granted: true, status: newStatus, platform };
-      } else if (newStatus === "denied") {
-        console.warn("❌ macOS: Screen capture permission denied");
-        // Show dialog to guide user to System Preferences
-        const result = await dialog.showMessageBox({
-          type: "warning",
-          title: "Screen Recording Permission Required",
-          message: "Remote Time Tracker needs screen recording permission",
-          detail:
-            "To capture screenshots of your work, please enable screen recording permission:\n\n" +
-            "1. Open System Settings > Privacy & Security > Screen Recording\n" +
-            "2. Enable Remote Time Tracker in the list\n" +
-            "3. You may need to restart the app\n\n" +
-            "Without this permission, screenshot capture will not work.",
-          buttons: ["Open System Settings", "Later"],
-          defaultId: 0,
-        });
+      if (sources && sources.length > 0) {
+        // Check if ANY window thumbnail has actual content (not blank)
+        // When toggle is OFF, thumbnails will be empty or all same color
+        let validWindowCount = 0;
 
-        if (result.response === 0) {
-          // Open System Preferences to Screen Recording
-          shell.openExternal(
-            "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+        for (const source of sources) {
+          if (source.thumbnail && !source.thumbnail.isEmpty()) {
+            const size = source.thumbnail.getSize();
+            if (size.width > 0 && size.height > 0) {
+              // Additional check: verify thumbnail has actual pixel variance
+              // Get bitmap data and check if it's not just a solid color
+              const bitmap = source.thumbnail.toBitmap();
+              if (bitmap && bitmap.length > 0) {
+                // Check first few pixels - if all same, likely blank/placeholder
+                const hasVariance = checkBitmapHasVariance(bitmap);
+                if (hasVariance) {
+                  validWindowCount++;
+                  console.log(`✓ Window "${source.name}" has valid content`);
+                }
+              }
+            }
+          }
+        }
+
+        if (validWindowCount > 0) {
+          console.log(
+            `✅ macOS: Screen capture WORKING (${validWindowCount} windows with valid content)`,
+          );
+          return { granted: true, status: "granted", platform };
+        } else {
+          console.warn(
+            "⚠️ macOS: Windows captured but all thumbnails are blank - permission toggle is OFF",
           );
         }
-        return { granted: false, status: newStatus, platform };
       } else {
-        // Status might be 'not-determined' or 'restricted'
-        console.log("⚠️ macOS: Screen capture permission status:", newStatus);
-        return { granted: false, status: newStatus, platform };
+        console.warn(
+          "⚠️ macOS: No window sources returned - permission may be OFF",
+        );
       }
     } catch (error) {
-      console.error(
-        "❌ macOS: Error requesting screen capture permission:",
-        error,
-      );
-      return {
-        granted: false,
-        status: "error",
-        platform,
-        message: error instanceof Error ? error.message : "Unknown error",
-      };
+      console.error("❌ macOS: Error testing window capture:", error);
     }
+
+    // If we reach here, capture didn't work properly - show guidance dialog
+    console.warn(
+      `❌ macOS: Screen capture NOT working (API status: ${status}), showing guidance dialog`,
+    );
+    await showMacOSPermissionDialog();
+    return { granted: false, status: "not_enabled", platform };
   }
 
-  // Unknown platform
+  // Unknown platform - assume granted
   console.warn(`⚠️ Unknown platform: ${platform}`);
   return { granted: true, status: "unknown_platform", platform };
+}
+
+/**
+ * Show dialog guiding user to enable screen recording permission on macOS
+ */
+async function showMacOSPermissionDialog(): Promise<void> {
+  const result = await dialog.showMessageBox({
+    type: "warning",
+    title: "Screen Recording Permission Required",
+    message: "Remote Time Tracker needs screen recording permission",
+    detail:
+      "To capture screenshots of your work, please enable screen recording permission:\n\n" +
+      "1. Open System Settings > Privacy & Security > Screen Recording\n" +
+      "2. Enable Remote Time Tracker in the list\n" +
+      "3. Restart the app after granting permission\n\n" +
+      "Without this permission, screenshot capture will not work.",
+    buttons: ["Open System Settings", "Later"],
+    defaultId: 0,
+  });
+
+  if (result.response === 0) {
+    shell.openExternal(
+      "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture",
+    );
+  }
 }
 
 // Deeplink handler
@@ -722,7 +803,7 @@ function setupIpcHandlers() {
   });
 
   ipcMain.handle("screenshots:request-permission", async () => {
-    return await requestScreenCapturePermission();
+    return await ensureScreenCapturePermission();
   });
 
   ipcMain.handle("screenshots:check-dependencies", async () => {
@@ -1050,8 +1131,10 @@ app.whenReady().then(async () => {
   await initializeServices();
   createWindow();
 
-  // Request screen capture permission immediately on app start (macOS/Linux)
-  const permissionResult = await requestScreenCapturePermission();
+  // Check screen capture permission on app start
+  // - If granted: app runs normally, no dialog
+  // - If not granted: show dialog to request permission
+  const permissionResult = await ensureScreenCapturePermission();
   console.log("🔐 Screen capture permission result:", permissionResult);
 
   // Attach backend update service to window

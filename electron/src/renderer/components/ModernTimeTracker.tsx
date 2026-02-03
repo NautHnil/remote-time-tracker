@@ -231,6 +231,18 @@ function ModernTimeTracker() {
     try {
       setLoading(true);
 
+      // Check screen capture permission first (macOS/Linux)
+      // This will show the native permission dialog if not granted
+      const permissionResult =
+        await window.electronAPI.screenshots.requestPermission();
+      console.log("🔐 Permission check result:", permissionResult);
+
+      if (!permissionResult.granted) {
+        // Permission not granted - dialog was already shown by main process
+        setLoading(false);
+        return;
+      }
+
       // Load server screenshot count (fixed for this session)
       await loadServerScreenshotCount();
 
