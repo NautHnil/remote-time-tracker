@@ -46,6 +46,7 @@ type DatabaseConfig struct {
 	DBName   string
 	SSLMode  string
 	TimeZone string
+	Schema   string
 }
 
 // JWTConfig holds JWT-related configuration
@@ -104,6 +105,7 @@ func Load() (*Config, error) {
 			DBName:   getEnv("DB_NAME", "remote_time_tracker"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 			TimeZone: getEnv("DB_TIMEZONE", "UTC"),
+			Schema:   getEnv("DB_SCHEMA", ""),
 		},
 		JWT: JWTConfig{
 			Secret:        getEnv("JWT_SECRET", "change-this-secret"),
@@ -141,7 +143,7 @@ func Load() (*Config, error) {
 
 // GetDSN returns the database connection string
 func (c *DatabaseConfig) GetDSN() string {
-	return fmt.Sprintf(
+	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s",
 		c.Host,
 		c.User,
@@ -151,6 +153,12 @@ func (c *DatabaseConfig) GetDSN() string {
 		c.SSLMode,
 		c.TimeZone,
 	)
+
+	if c.Schema != "" {
+		dsn += fmt.Sprintf(" search_path=%s", c.Schema)
+	}
+
+	return dsn
 }
 
 // Helper functions

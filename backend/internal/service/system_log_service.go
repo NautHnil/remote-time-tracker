@@ -277,7 +277,7 @@ func (s *systemLogService) processQueue() {
 
 func encodeJSON(value interface{}) string {
 	if value == nil {
-		return ""
+		return "null"
 	}
 
 	data, err := json.Marshal(value)

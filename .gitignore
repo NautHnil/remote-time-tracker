@@ -47,6 +47,7 @@ yarn-error.log*
 *.out
 coverage.txt
 .gocache
+.gocache_*
 
 # Screenshots (keep folder structure but ignore files)
 screenshots/

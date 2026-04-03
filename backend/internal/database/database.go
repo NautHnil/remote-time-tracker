@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/beuphecan/remote-time-tracker/internal/config"
@@ -45,7 +46,11 @@ func Connect(cfg *config.DatabaseConfig) (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	DB = db
-	log.Println("✅ Database connected successfully")
+	if cfg.Schema != "" {
+		log.Printf("✅ Database connected successfully (search_path=%s)", cfg.Schema)
+	} else {
+		log.Println("✅ Database connected successfully")
+	}
 
 	return db, nil
 }
@@ -75,6 +80,13 @@ func AutoMigrate(db *gorm.DB) error {
 	)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "permission denied for schema") {
+			return fmt.Errorf(
+				"failed to run migrations: %w. The configured database role does not have CREATE permission on the target schema. Grant CREATE on that schema or set DB_SCHEMA to a schema owned by this role",
+				err,
+			)
+		}
+
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 

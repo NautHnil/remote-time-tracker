@@ -1,6 +1,9 @@
 package models
 
 import (
+	"encoding/json"
+	"fmt"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -265,6 +268,15 @@ func (SystemLog) TableName() string {
 	return "system_logs"
 }
 
+func (s *SystemLog) BeforeSave(tx *gorm.DB) error {
+	normalized, err := normalizeJSONBString(s.Details, "null")
+	if err != nil {
+		return fmt.Errorf("invalid system_log details json: %w", err)
+	}
+	s.Details = normalized
+	return nil
+}
+
 // SystemConfig represents system-wide persisted configuration values.
 type SystemConfig struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
@@ -304,6 +316,15 @@ type AuditLog struct {
 // TableName overrides the table name
 func (AuditLog) TableName() string {
 	return "audit_logs"
+}
+
+func (a *AuditLog) BeforeSave(tx *gorm.DB) error {
+	normalized, err := normalizeJSONBString(a.Details, "null")
+	if err != nil {
+		return fmt.Errorf("invalid audit_log details json: %w", err)
+	}
+	a.Details = normalized
+	return nil
 }
 
 // ============================================================================
@@ -394,6 +415,29 @@ type WorkspaceRole struct {
 // TableName overrides the table name
 func (WorkspaceRole) TableName() string {
 	return "workspace_roles"
+}
+
+func (w *WorkspaceRole) BeforeSave(tx *gorm.DB) error {
+	normalized, err := normalizeJSONBString(w.Permissions, "{}")
+	if err != nil {
+		return fmt.Errorf("invalid workspace_role permissions json: %w", err)
+	}
+	w.Permissions = normalized
+	return nil
+}
+
+func normalizeJSONBString(value string, fallback string) (string, error) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return fallback, nil
+	}
+
+	var raw json.RawMessage
+	if err := json.Unmarshal([]byte(trimmed), &raw); err != nil {
+		return "", err
+	}
+
+	return trimmed, nil
 }
 
 // Workspace represents a project within an organization
