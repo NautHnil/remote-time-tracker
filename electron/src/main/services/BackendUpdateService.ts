@@ -44,6 +44,10 @@ export interface DownloadProgress {
   bytesPerSecond: number;
 }
 
+interface UpdateCheckOptions {
+  allowDevelopment?: boolean;
+}
+
 export type BackendUpdateEvent =
   | { type: "checking-for-update" }
   | { type: "update-available"; info: UpdateCheckResponse }
@@ -187,17 +191,18 @@ export class BackendUpdateService {
   /**
    * Check for updates via backend proxy
    */
-  async checkForUpdates(): Promise<{
+  async checkForUpdates(options: UpdateCheckOptions = {}): Promise<{
     success: boolean;
     updateAvailable?: boolean;
     info?: UpdateCheckResponse;
     error?: string;
   }> {
     try {
-      // Skip in development unless testing
+      // Skip in development by default, but allow explicit manual checks.
       if (
         process.env.NODE_ENV === "development" &&
-        process.env.TEST_UPDATES !== "true"
+        process.env.TEST_UPDATES !== "true" &&
+        !options.allowDevelopment
       ) {
         log.info("Skipping update check in development mode");
         this.sendEvent({ type: "update-not-available" });
@@ -247,7 +252,8 @@ export class BackendUpdateService {
    * Download update file through backend proxy
    */
   async downloadUpdate(
-    updateInfo?: UpdateCheckResponse
+    updateInfo?: UpdateCheckResponse,
+    options: UpdateCheckOptions = {}
   ): Promise<{ success: boolean; filePath?: string; error?: string }> {
     try {
       if (this.isDownloading) {
@@ -260,7 +266,7 @@ export class BackendUpdateService {
       const info = updateInfo || this.downloadedUpdateInfo;
       if (!info || !info.files || info.files.length === 0) {
         // Fetch latest update info
-        const checkResult = await this.checkForUpdates();
+        const checkResult = await this.checkForUpdates(options);
         if (!checkResult.updateAvailable || !checkResult.info?.files?.length) {
           this.isDownloading = false;
           return { success: false, error: "No update available to download" };

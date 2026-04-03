@@ -30,12 +30,14 @@ export class SyncService {
   private static readonly TIME_LOG_BATCH_SIZE = 100;
   private static readonly SCREENSHOT_BATCH_SIZE = 10;
   private static readonly SYSTEM_LOG_BATCH_SIZE = 200;
+  private static readonly SYNC_BATCH_ENDPOINT = "/sync/batch";
 
   private dbService: DatabaseService;
   private apiClient: AxiosInstance;
   private syncTimer: NodeJS.Timeout | null = null;
   private isSyncing = false;
   private lastSyncTime: Date | null = null;
+  private isBatchSyncUnavailable = false;
 
   constructor(dbService: DatabaseService) {
     this.dbService = dbService;
@@ -268,7 +270,7 @@ export class SyncService {
       SyncService.TIME_LOG_BATCH_SIZE
     )) {
       try {
-        const response = await this.apiClient.post("/sync/batch", {
+        const response = await this.postSyncBatch({
           ...contextPayload,
           time_logs: batch.map((timeLog) => this.timeLogToDTO(timeLog)),
           screenshots: [],
@@ -331,7 +333,7 @@ export class SyncService {
       }
 
       try {
-        const response = await this.apiClient.post("/sync/batch", {
+        const response = await this.postSyncBatch({
           ...contextPayload,
           time_logs: [],
           screenshots: batchPayload,
@@ -365,7 +367,7 @@ export class SyncService {
       SyncService.SYSTEM_LOG_BATCH_SIZE
     )) {
       try {
-        const response = await this.apiClient.post("/sync/batch", {
+        const response = await this.postSyncBatch({
           ...contextPayload,
           time_logs: [],
           screenshots: [],
@@ -378,6 +380,14 @@ export class SyncService {
           synced++;
         }
       } catch (error) {
+        if (this.isIgnorableSystemLogSyncError(error)) {
+          console.warn(
+            "System log sync skipped because backend does not support the sync endpoint yet:",
+            error
+          );
+          break;
+        }
+
         console.error("System log sync batch failed:", error);
         errors.push(this.getReadableSyncError(error, "system logs"));
         break;
@@ -447,11 +457,55 @@ export class SyncService {
     return chunks;
   }
 
+  private async postSyncBatch(payload: Record<string, any>) {
+    if (this.isBatchSyncUnavailable) {
+      throw new Error(
+        `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
+      );
+    }
+
+    try {
+      return await this.apiClient.post(SyncService.SYNC_BATCH_ENDPOINT, payload);
+    } catch (error: any) {
+      if (this.isBatchSyncEndpointMissing(error)) {
+        this.isBatchSyncUnavailable = true;
+        console.warn(
+          `Batch sync endpoint ${SyncService.SYNC_BATCH_ENDPOINT} is unavailable on ${AppConfig.apiUrl}. Sync attempts will be paused until app restart.`
+        );
+        throw new Error(
+          `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  private isBatchSyncEndpointMissing(error: any): boolean {
+    return (
+      error?.response?.status === 404 &&
+      error?.config?.url === SyncService.SYNC_BATCH_ENDPOINT
+    );
+  }
+
+  private isIgnorableSystemLogSyncError(error: any): boolean {
+    return (
+      error?.response?.status === 404 ||
+      error?.message ===
+        `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
+    );
+  }
+
   private getReadableSyncError(error: any, scope = "sync"): string {
     const errorCode = error?.code;
     const status = error?.response?.status;
+    const requestUrl = error?.config?.url || error?.request?.path;
     const serverMessage =
       error?.response?.data?.message || error?.response?.data?.error;
+
+    if (status === 404 && requestUrl) {
+      return `${scope}: endpoint not found (${requestUrl}). Admin system log APIs may exist, but the desktop sync route is missing or different.`;
+    }
 
     if (status && serverMessage) {
       return `${scope}: ${serverMessage} (HTTP ${status})`;
