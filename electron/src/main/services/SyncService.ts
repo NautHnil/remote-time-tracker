@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { formatISO, subDays } from "date-fns";
 import { app } from "electron";
+// @ts-ignore
 import fs from "fs";
 import { AppConfig } from "../config";
 import {
@@ -37,7 +38,6 @@ export class SyncService {
   private syncTimer: NodeJS.Timeout | null = null;
   private isSyncing = false;
   private lastSyncTime: Date | null = null;
-  private isBatchSyncUnavailable = false;
 
   constructor(dbService: DatabaseService) {
     this.dbService = dbService;
@@ -78,7 +78,7 @@ export class SyncService {
               }
             );
 
-            const { access_token, refresh_token } = response.data.data;
+            const {access_token, refresh_token} = response.data.data;
 
             AppConfig.setCredentials({
               ...credentials,
@@ -458,19 +458,17 @@ export class SyncService {
   }
 
   private async postSyncBatch(payload: Record<string, any>) {
-    if (this.isBatchSyncUnavailable) {
-      throw new Error(
-        `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
-      );
-    }
+    const credentials = AppConfig.getCredentials();
+    const hasAccessToken = Boolean(credentials?.accessToken);
 
     try {
       return await this.apiClient.post(SyncService.SYNC_BATCH_ENDPOINT, payload);
     } catch (error: any) {
       if (this.isBatchSyncEndpointMissing(error)) {
-        this.isBatchSyncUnavailable = true;
+        const responseServer = error?.response?.headers?.server;
+        const responseType = error?.response?.headers?.["content-type"];
         console.warn(
-          `Batch sync endpoint ${SyncService.SYNC_BATCH_ENDPOINT} is unavailable on ${AppConfig.apiUrl}. Sync attempts will be paused until app restart.`
+          `Batch sync endpoint ${SyncService.SYNC_BATCH_ENDPOINT} returned 404 on ${AppConfig.apiUrl} (server=${responseServer || "unknown"}, content-type=${responseType || "unknown"}, auth=${hasAccessToken}).`
         );
         throw new Error(
           `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
@@ -492,7 +490,7 @@ export class SyncService {
     return (
       error?.response?.status === 404 ||
       error?.message ===
-        `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
+      `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
     );
   }
 
