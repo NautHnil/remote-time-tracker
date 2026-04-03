@@ -34,6 +34,7 @@ type RouterConfig struct {
 	// Services for middleware
 	OrganizationService service.OrganizationService
 	WorkspaceService    service.WorkspaceService
+	SystemLogService    service.SystemLogService
 }
 
 // SetupRouter configures and returns the Gin router
@@ -60,7 +61,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 	router := gin.Default()
 
 	// Apply middleware
-	router.Use(middleware.Logger())
+	router.Use(middleware.Logger(cfg.SystemLogService))
 	router.Use(middleware.CORSMiddleware())
 
 	// Serve static files (screenshots)
@@ -70,7 +71,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 	router.GET("/health", middleware.HealthCheck)
 
 	// Swagger documentation
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
@@ -114,7 +115,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			publicDownloads := v1.Group("/public/downloads")
 			{
 				publicDownloads.GET("/latest", cfg.UpdateController.GetPublicDownloadLinks)
-				publicDownloads.GET("/file/:version/:filename", cfg.UpdateController.DownloadAsset) // Reuse existing handler
+				publicDownloads.GET("/file/:version/:filename", cfg.UpdateController.DownloadPublicAsset)
 			}
 		}
 
@@ -211,7 +212,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 				{
 					orgs.GET("", cfg.OrganizationController.List)
 					orgs.POST("", cfg.OrganizationController.Create)
-					orgs.GET("/join/:invite_code", cfg.OrganizationController.GetOrgByInviteCode)
+					orgs.GET("/join/:invite_code", cfg.OrganizationController.GetProtectedOrgByInviteCode)
 					orgs.POST("/join/:invite_code", cfg.OrganizationController.JoinByInviteCode)
 
 					// Organization-specific routes (require org membership)
@@ -358,6 +359,21 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 						screenshots.GET("/:id/view", cfg.AdminController.ViewScreenshot)
 						screenshots.DELETE("/:id", cfg.AdminController.DeleteScreenshot)
 						screenshots.POST("/bulk-delete", cfg.AdminController.BulkDeleteScreenshots)
+					}
+
+					systemLogs := admin.Group("/system-logs")
+					{
+						systemLogs.GET("", cfg.AdminController.ListSystemLogs)
+						systemLogs.GET("/policy", cfg.AdminController.GetSystemLogPolicy)
+						systemLogs.PUT("/policy", cfg.AdminController.UpdateSystemLogPolicy)
+						systemLogs.GET("/:id", cfg.AdminController.GetSystemLog)
+						systemLogs.POST("/cleanup", cfg.AdminController.CleanupSystemLogs)
+					}
+
+					systemConfigs := admin.Group("/system-configs")
+					{
+						systemConfigs.GET("", cfg.AdminController.ListSystemConfigs)
+						systemConfigs.PUT("/:key", cfg.AdminController.UpdateSystemConfig)
 					}
 
 					// Statistics & Reports

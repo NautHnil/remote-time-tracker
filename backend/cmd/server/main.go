@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,11 +10,13 @@ import (
 	"github.com/beuphecan/remote-time-tracker/internal/config"
 	"github.com/beuphecan/remote-time-tracker/internal/controller"
 	"github.com/beuphecan/remote-time-tracker/internal/database"
+	"github.com/beuphecan/remote-time-tracker/internal/logging"
 	"github.com/beuphecan/remote-time-tracker/internal/repository"
 	"github.com/beuphecan/remote-time-tracker/internal/router"
 	"github.com/beuphecan/remote-time-tracker/internal/service"
 
 	_ "github.com/beuphecan/remote-time-tracker/docs" // Swagger generated docs
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // @title Remote Time Tracker API
@@ -48,6 +51,9 @@ import (
 
 // @tag.name sync
 // @tag.description Data synchronization from Electron desktop app
+
+// @tag.name presence
+// @tag.description User presence and live activity endpoints
 
 // @tag.name organizations
 // @tag.description Organization management - Create, manage organizations and members
@@ -122,6 +128,8 @@ func main() {
 	screenshotRepo := repository.NewScreenshotRepository(db)
 	deviceRepo := repository.NewDeviceRepository(db)
 	syncLogRepo := repository.NewSyncLogRepository(db)
+	systemLogRepo := repository.NewSystemLogRepository(db)
+	systemConfigRepo := repository.NewSystemConfigRepository(db)
 	orgRepo := repository.NewOrganizationRepository(db)
 	workspaceRepo := repository.NewWorkspaceRepository(db)
 	invitationRepo := repository.NewInvitationRepository(db)
@@ -131,17 +139,20 @@ func main() {
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, orgRepo, invitationRepo, workspaceRepo)
-	taskService := service.NewTaskService(taskRepo)
+	taskService := service.NewTaskService(taskRepo, screenshotRepo)
 	timeLogService := service.NewTimeLogService(timeLogRepo, deviceRepo, userRepo)
 	presenceService := service.NewPresenceService(userRepo, deviceRepo)
-	syncService := service.NewSyncService(timeLogRepo, screenshotRepo, deviceRepo, syncLogRepo, taskRepo)
+	systemLogService := service.NewSystemLogService(systemLogRepo, systemConfigRepo)
+	log.SetOutput(io.MultiWriter(os.Stdout, logging.NewSystemLogWriter(systemLogService, "stdlib-log")))
+	db.Config.Logger = logging.NewGormSystemLogger(gormlogger.Default.LogMode(gormlogger.Info), systemLogService)
+	syncService := service.NewSyncService(timeLogRepo, screenshotRepo, deviceRepo, syncLogRepo, taskRepo, systemLogService)
 	screenshotService := service.NewScreenshotService(screenshotRepo, timeLogRepo, taskRepo)
 	organizationService := service.NewOrganizationService(orgRepo, workspaceRepo, userRepo)
 	workspaceService := service.NewWorkspaceService(workspaceRepo, orgRepo, userRepo)
 	invitationService := service.NewInvitationService(invitationRepo, orgRepo, workspaceRepo, userRepo)
 	roleService := service.NewRoleService(workspaceRepo, orgRepo)
 	updateService := service.NewUpdateService()
-	systemService := service.NewSystemService(userRepo)
+	systemService := service.NewSystemService(userRepo, systemConfigRepo, systemLogService)
 	adminService := service.NewAdminService(
 		adminRepo,
 		userRepo,
@@ -150,6 +161,10 @@ func main() {
 		taskRepo,
 		timeLogRepo,
 		screenshotRepo,
+	)
+	systemLogService.StartRetentionWorker(
+		cfg.Log.SystemLogRetentionDays,
+		cfg.Log.SystemLogCleanupInterval,
 	)
 
 	log.Println("✅ Services initialized")
@@ -165,7 +180,7 @@ func main() {
 	organizationController := controller.NewOrganizationController(organizationService, workspaceService, invitationService, roleService)
 	workspaceController := controller.NewWorkspaceController(workspaceService)
 	invitationController := controller.NewInvitationController(invitationService)
-	adminController := controller.NewAdminController(adminService)
+	adminController := controller.NewAdminController(adminService, systemService, systemLogService)
 	adminPresenceController := controller.NewAdminPresenceController()
 	updateController := controller.NewUpdateController(updateService)
 
@@ -188,6 +203,7 @@ func main() {
 		UpdateController:        updateController,
 		OrganizationService:     organizationService,
 		WorkspaceService:        workspaceService,
+		SystemLogService:        systemLogService,
 	})
 
 	// Start server

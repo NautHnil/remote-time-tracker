@@ -351,8 +351,28 @@ func (c *OrganizationController) RemoveMember(ctx *gin.Context) {
 // @Success 200 {object} dto.SuccessResponse "Organization found"
 // @Failure 400 {object} dto.ErrorResponse "Invite code required"
 // @Failure 404 {object} dto.ErrorResponse "Organization not found"
-// @Router /organizations/join/{invite_code} [get]
+// @Router /public/organizations/invite/{invite_code} [get]
 func (c *OrganizationController) GetOrgByInviteCode(ctx *gin.Context) {
+	c.getOrgByInviteCode(ctx)
+}
+
+// GetProtectedOrgByInviteCode gets organization info by invite code for authenticated users
+// @Summary Get organization by invite code
+// @Description Get organization info by invite code for authenticated users before joining
+// @Tags organizations
+// @Produce json
+// @Security BearerAuth
+// @Param invite_code path string true "Invite code"
+// @Success 200 {object} dto.SuccessResponse "Organization found"
+// @Failure 400 {object} dto.ErrorResponse "Invite code required"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 404 {object} dto.ErrorResponse "Organization not found"
+// @Router /organizations/join/{invite_code} [get]
+func (c *OrganizationController) GetProtectedOrgByInviteCode(ctx *gin.Context) {
+	c.getOrgByInviteCode(ctx)
+}
+
+func (c *OrganizationController) getOrgByInviteCode(ctx *gin.Context) {
 	code := ctx.Param("invite_code")
 	if code == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invite code is required"})
@@ -384,7 +404,7 @@ func (c *OrganizationController) GetOrgByInviteCode(ctx *gin.Context) {
 // @Failure 401 {object} dto.ErrorResponse "Unauthorized"
 // @Router /organizations/join/{invite_code} [post]
 func (c *OrganizationController) JoinByInviteCode(ctx *gin.Context) {
-	code := ctx.Param("code")
+	code := ctx.Param("invite_code")
 	if code == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invite code is required"})
 		return

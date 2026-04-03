@@ -226,7 +226,7 @@ export default function AdminUsersPage() {
       activeFilter,
     ],
     queryFn: async () => {
-      const params: Record<string, any> = { page, limit };
+      const params: Record<string, any> = { page, page_size: limit };
       if (search) params.search = search;
       if (roleFilter) params.role = roleFilter;
       if (systemRoleFilter) params.system_role = systemRoleFilter;
@@ -398,10 +398,12 @@ export default function AdminUsersPage() {
   // Handle undefined data
   const users = data?.users || [];
   const pagination = data?.pagination || {
+    page,
     total_items: 0,
     total_pages: 0,
-    current_page: page,
     page_size: limit,
+    has_next: false,
+    has_prev: false,
   };
 
   return (

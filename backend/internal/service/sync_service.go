@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/beuphecan/remote-time-tracker/internal/dto"
@@ -23,6 +24,7 @@ type syncService struct {
 	deviceRepo     repository.DeviceRepository
 	syncLogRepo    repository.SyncLogRepository
 	taskRepo       repository.TaskRepository
+	systemLogSvc   SystemLogService
 }
 
 // NewSyncService creates a new sync service
@@ -32,6 +34,7 @@ func NewSyncService(
 	deviceRepo repository.DeviceRepository,
 	syncLogRepo repository.SyncLogRepository,
 	taskRepo repository.TaskRepository,
+	systemLogSvc SystemLogService,
 ) SyncService {
 	return &syncService{
 		timeLogRepo:    timeLogRepo,
@@ -39,6 +42,7 @@ func NewSyncService(
 		deviceRepo:     deviceRepo,
 		syncLogRepo:    syncLogRepo,
 		taskRepo:       taskRepo,
+		systemLogSvc:   systemLogSvc,
 	}
 }
 
@@ -81,15 +85,35 @@ func (s *syncService) BatchSync(userID uint, req *dto.BatchSyncRequest) (*dto.Ba
 		response.ScreenshotsSync = s.syncScreenshots(userID, device, req.Screenshots, req.OrganizationID, req.WorkspaceID)
 	}
 
+	// Sync system logs
+	if len(req.SystemLogs) > 0 {
+		response.SystemLogsSync = s.systemLogSvc.SyncClientLogs(userID, device, req.SystemLogs, req.OrganizationID, req.WorkspaceID)
+	}
+
+	totalItems := len(req.TimeLogs) + len(req.Screenshots) + len(req.SystemLogs)
+	totalSuccess := response.TimeLogsSync.Success + response.ScreenshotsSync.Success + response.SystemLogsSync.Success
+	totalFailed := response.TimeLogsSync.Failed + response.ScreenshotsSync.Failed + response.SystemLogsSync.Failed
+
+	syncStatus := "success"
+	if totalFailed > 0 {
+		response.Success = false
+		response.Message = "Batch sync completed with errors"
+		if totalSuccess == 0 {
+			syncStatus = "failed"
+		} else {
+			syncStatus = "partial_failed"
+		}
+	}
+
 	// Create sync log
 	duration := time.Since(startTime).Milliseconds()
 	syncLog := &models.SyncLog{
 		UserID:       userID,
 		SyncType:     "batch",
-		Status:       "success",
-		ItemsCount:   len(req.TimeLogs) + len(req.Screenshots),
-		SuccessCount: response.TimeLogsSync.Success + response.ScreenshotsSync.Success,
-		FailedCount:  response.TimeLogsSync.Failed + response.ScreenshotsSync.Failed,
+		Status:       syncStatus,
+		ItemsCount:   totalItems,
+		SuccessCount: totalSuccess,
+		FailedCount:  totalFailed,
 		StartedAt:    startTime,
 		CompletedAt:  utils.Ptr(time.Now()),
 		Duration:     duration,
@@ -101,7 +125,67 @@ func (s *syncService) BatchSync(userID uint, req *dto.BatchSyncRequest) (*dto.Ba
 
 	s.syncLogRepo.Create(syncLog)
 
+	if totalFailed > 0 {
+		s.logSyncOutcome(userID, device, req, response, "warn", syncStatus)
+	}
+
 	return response, nil
+}
+
+func (s *syncService) logSyncOutcome(
+	userID uint,
+	device *models.DeviceInfo,
+	req *dto.BatchSyncRequest,
+	response *dto.BatchSyncResponse,
+	level string,
+	status string,
+) {
+	if s.systemLogSvc == nil {
+		return
+	}
+
+	var deviceID *uint
+	var deviceUUID string
+	if device != nil {
+		deviceID = &device.ID
+		deviceUUID = device.DeviceUUID
+	} else if req.DeviceInfo != nil {
+		deviceUUID = req.DeviceInfo.DeviceUUID
+	}
+
+	details := map[string]interface{}{
+		"status":             status,
+		"time_logs_total":    response.TimeLogsSync.Total,
+		"time_logs_failed":   response.TimeLogsSync.Failed,
+		"screenshots_total":  response.ScreenshotsSync.Total,
+		"screenshots_failed": response.ScreenshotsSync.Failed,
+		"system_logs_total":  response.SystemLogsSync.Total,
+		"system_logs_failed": response.SystemLogsSync.Failed,
+	}
+
+	if len(response.TimeLogsSync.Errors) > 0 {
+		details["time_log_errors"] = response.TimeLogsSync.Errors
+	}
+	if len(response.ScreenshotsSync.Errors) > 0 {
+		details["screenshot_errors"] = response.ScreenshotsSync.Errors
+	}
+	if len(response.SystemLogsSync.Errors) > 0 {
+		details["system_log_errors"] = response.SystemLogsSync.Errors
+	}
+
+	s.systemLogSvc.LogBackend(BackendSystemLogInput{
+		UserID:         &userID,
+		DeviceID:       deviceID,
+		OrganizationID: req.OrganizationID,
+		WorkspaceID:    req.WorkspaceID,
+		Source:         "backend-sync",
+		Level:          level,
+		Component:      "sync-service",
+		Message:        response.Message,
+		Details:        details,
+		DeviceUUID:     deviceUUID,
+		OccurredAt:     time.Now().UTC(),
+	})
 }
 
 func (s *syncService) syncDeviceInfo(userID uint, deviceInfo *dto.SyncDeviceInfoItem) (*models.DeviceInfo, error) {
@@ -146,7 +230,7 @@ func (s *syncService) syncDeviceInfo(userID uint, deviceInfo *dto.SyncDeviceInfo
 
 func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items []dto.SyncTimeLogItem, defaultOrgID *uint, defaultWsID *uint) dto.SyncResult {
 	// Debug logging
-	fmt.Printf("🔄 syncTimeLogs called with defaultOrgID=%v, defaultWsID=%v\n", defaultOrgID, defaultWsID)
+	log.Printf("🔄 syncTimeLogs called with defaultOrgID=%v, defaultWsID=%v", defaultOrgID, defaultWsID)
 
 	result := dto.SyncResult{
 		Total:   len(items),
@@ -168,7 +252,7 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 		}
 
 		// Debug logging for resolved IDs
-		fmt.Printf("📋 TimeLog item: LocalID=%s, item.OrgID=%v, item.WsID=%v, resolved orgID=%v, wsID=%v\n",
+		log.Printf("📋 TimeLog item: LocalID=%s, item.OrgID=%v, item.WsID=%v, resolved orgID=%v, wsID=%v",
 			item.LocalID, item.OrganizationID, item.WorkspaceID, orgID, wsID)
 
 		// Handle task creation/lookup
@@ -181,9 +265,9 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 			existingTask, err := s.taskRepo.FindByID(*item.TaskID)
 			if err == nil && existingTask != nil && existingTask.UserID == userID {
 				taskID = item.TaskID
-				fmt.Printf("🎯 Using existing manual task ID: %d (Title: %s)\n", *taskID, existingTask.Title)
+				log.Printf("🎯 Using existing manual task ID: %d (Title: %s)", *taskID, existingTask.Title)
 			} else {
-				fmt.Printf("⚠️  Manual task ID %d not found or not owned by user, will create new\n", *item.TaskID)
+				log.Printf("⚠️  Manual task ID %d not found or not owned by user, will create new", *item.TaskID)
 			}
 		}
 
@@ -193,7 +277,7 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 			existingTask, _ := s.taskRepo.FindByLocalID(item.TaskLocalID, userID)
 			if existingTask != nil {
 				taskID = &existingTask.ID
-				fmt.Printf("🔍 Found existing task by LocalID: %s (ID: %d)\n", item.TaskLocalID, existingTask.ID)
+				log.Printf("🔍 Found existing task by LocalID: %s (ID: %d)", item.TaskLocalID, existingTask.ID)
 			} else if item.TaskTitle != "" {
 				// Create new task with LocalID and Title
 				taskStatus := "completed"
@@ -214,9 +298,9 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 				}
 				if err := s.taskRepo.Create(task); err == nil {
 					taskID = &task.ID
-					fmt.Printf("✅ Created task with LocalID: %s (Title: %s, ID: %d, WsID: %v)\n", item.TaskLocalID, item.TaskTitle, task.ID, wsID)
+					log.Printf("✅ Created task with LocalID: %s (Title: %s, ID: %d, WsID: %v)", item.TaskLocalID, item.TaskTitle, task.ID, wsID)
 				} else {
-					fmt.Printf("⚠️  Failed to create task: %s - %v\n", item.TaskTitle, err)
+					log.Printf("⚠️  Failed to create task: %s - %v", item.TaskTitle, err)
 				}
 			}
 		}
@@ -241,9 +325,9 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 			}
 			if err := s.taskRepo.Create(task); err == nil {
 				taskID = &task.ID
-				fmt.Printf("✅ Auto-created task: %s (ID: %d, WsID: %v)\n", item.TaskTitle, task.ID, wsID)
+				log.Printf("✅ Auto-created task: %s (ID: %d, WsID: %v)", item.TaskTitle, task.ID, wsID)
 			} else {
-				fmt.Printf("⚠️  Failed to create task: %s - %v\n", item.TaskTitle, err)
+				log.Printf("⚠️  Failed to create task: %s - %v", item.TaskTitle, err)
 			}
 		}
 
@@ -251,11 +335,8 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 		existing, _ := s.timeLogRepo.FindByLocalID(item.LocalID, userID)
 		if existing != nil {
 			// Debug logging for UPDATE
-			fmt.Printf("🔄 Backend updating existing TimeLog (LocalID: %s):\n", item.LocalID)
-			fmt.Printf("   Old Duration: %d seconds\n", existing.Duration)
-			fmt.Printf("   New Duration: %d seconds\n", item.Duration)
-			fmt.Printf("   Old PausedTotal: %d seconds\n", existing.PausedTotal)
-			fmt.Printf("   New PausedTotal: %d seconds\n", item.PausedTotal)
+			log.Printf("🔄 Backend updating existing TimeLog (LocalID: %s): old duration=%d, new duration=%d, old paused_total=%d, new paused_total=%d",
+				item.LocalID, existing.Duration, item.Duration, existing.PausedTotal, item.PausedTotal)
 
 			// Update existing
 			existing.EndTime = item.EndTime
@@ -294,20 +375,15 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 				}
 				if err := s.taskRepo.Create(newTask); err == nil {
 					taskID = &newTask.ID
-					fmt.Printf("✅ Auto-created task: %s (ID: %d, WsID: %v)\n", newTask.Title, newTask.ID, wsID)
+					log.Printf("✅ Auto-created task: %s (ID: %d, WsID: %v)", newTask.Title, newTask.ID, wsID)
 				} else {
-					fmt.Printf("⚠️  Failed to create task: %v\n", err)
+					log.Printf("⚠️  Failed to create task: %v", err)
 				}
 			}
 
 			// Debug logging
-			fmt.Printf("🔍 Backend received TimeLog data:\n")
-			fmt.Printf("   Duration: %d seconds\n", item.Duration)
-			fmt.Printf("   PausedTotal: %d seconds\n", item.PausedTotal)
-			fmt.Printf("   TaskTitle: %s\n", item.TaskTitle)
-			fmt.Printf("   StartTime: %v\n", item.StartTime)
-			fmt.Printf("   EndTime: %v\n", item.EndTime)
-			fmt.Printf("   WorkspaceID: %v\n", wsID)
+			log.Printf("🔍 Backend received TimeLog data: duration=%d, paused_total=%d, task_title=%s, start_time=%v, end_time=%v, workspace_id=%v",
+				item.Duration, item.PausedTotal, item.TaskTitle, item.StartTime, item.EndTime, wsID)
 
 			// Create new
 			timeLog := &models.TimeLog{
@@ -390,7 +466,7 @@ func (s *syncService) syncScreenshots(userID uint, device *models.DeviceInfo, it
 				continue
 			}
 			// File missing, delete old record and re-upload
-			fmt.Printf("⚠️  Screenshot file missing, re-uploading: %s\n", existing.FilePath)
+			log.Printf("⚠️  Screenshot file missing, re-uploading: %s", existing.FilePath)
 			s.screenshotRepo.Delete(existing.ID)
 		}
 
@@ -417,7 +493,7 @@ func (s *syncService) syncScreenshots(userID uint, device *models.DeviceInfo, it
 			continue
 		}
 
-		fmt.Printf("✅ Screenshot saved: %s (size: %d bytes)\n", filePath, item.FileSize)
+		log.Printf("✅ Screenshot saved: %s (size: %d bytes)", filePath, item.FileSize)
 
 		// IMPORTANT: TimeLogID from Electron is LOCAL ID, not server ID
 		// We need to find the actual TimeLog by LocalID if provided
@@ -427,7 +503,7 @@ func (s *syncService) syncScreenshots(userID uint, device *models.DeviceInfo, it
 			if err == nil && timeLog != nil {
 				serverTimeLogID = &timeLog.ID
 			} else {
-				fmt.Printf("⚠️  TimeLog not found for LocalID: %s, screenshot will have null timelog_id\n", item.TimeLogLocalID)
+				log.Printf("⚠️  TimeLog not found for LocalID: %s, screenshot will have null timelog_id", item.TimeLogLocalID)
 			}
 		}
 
@@ -439,7 +515,7 @@ func (s *syncService) syncScreenshots(userID uint, device *models.DeviceInfo, it
 			task, err := s.taskRepo.FindByID(*item.TaskID)
 			if err == nil && task != nil {
 				serverTaskID = &task.ID
-				fmt.Printf("✅ Screenshot task found by TaskID: %d\n", *serverTaskID)
+				log.Printf("✅ Screenshot task found by TaskID: %d", *serverTaskID)
 			}
 		}
 		if serverTaskID == nil && item.TaskLocalID != "" {
@@ -447,9 +523,9 @@ func (s *syncService) syncScreenshots(userID uint, device *models.DeviceInfo, it
 			task, err := s.taskRepo.FindByLocalID(item.TaskLocalID, userID)
 			if err == nil && task != nil {
 				serverTaskID = &task.ID
-				fmt.Printf("✅ Screenshot task found by TaskLocalID: %s -> TaskID: %d\n", item.TaskLocalID, *serverTaskID)
+				log.Printf("✅ Screenshot task found by TaskLocalID: %s -> TaskID: %d", item.TaskLocalID, *serverTaskID)
 			} else {
-				fmt.Printf("⚠️  Task not found for TaskLocalID: %s\n", item.TaskLocalID)
+				log.Printf("⚠️  Task not found for TaskLocalID: %s", item.TaskLocalID)
 			}
 		}
 

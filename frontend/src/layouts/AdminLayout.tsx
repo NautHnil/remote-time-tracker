@@ -143,6 +143,50 @@ const navItems = [
     ),
   },
   {
+    name: "System Settings",
+    path: "/admin/system-settings",
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M10.325 4.317a1 1 0 011.35-.936l1.8.789a1 1 0 00.813 0l1.8-.789a1 1 0 011.35.936l.173 1.958a1 1 0 00.49.785l1.623 1.169a1 1 0 01.204 1.52l-1.286 1.487a1 1 0 00-.244.776l.354 1.933a1 1 0 01-1.108 1.134l-1.948-.262a1 1 0 00-.764.208l-1.58 1.246a1 1 0 01-1.533 0l-1.58-1.246a1 1 0 00-.764-.208l-1.948.262a1 1 0 01-1.108-1.134l.354-1.933a1 1 0 00-.244-.776L2.42 9.603a1 1 0 01.204-1.52l1.623-1.169a1 1 0 00.49-.785l.173-1.958z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 15a3 3 0 100-6 3 3 0 000 6z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "System Logs",
+    path: "/admin/system-logs",
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+      </svg>
+    ),
+  },
+  {
     name: "Statistics",
     path: "/admin/statistics",
     icon: (

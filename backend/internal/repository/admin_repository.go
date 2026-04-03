@@ -38,10 +38,14 @@ type AdminRepository interface {
 	// Screenshots
 	FindScreenshotsWithFilters(params *dto.AdminScreenshotListParams) ([]models.Screenshot, int64, error)
 
+	// System Logs
+	FindSystemLogsWithFilters(params *dto.AdminSystemLogListParams) ([]models.SystemLog, int64, error)
+	FindSystemLogByID(id uint) (*models.SystemLog, error)
+
 	// Statistics
 	GetOverviewStats() (*dto.AdminOverviewStats, error)
 	GetTrendStats(period string, startDate, endDate time.Time) (*dto.AdminTrendStats, error)
-	GetUserPerformanceStats(limit int) ([]dto.AdminUserPerformance, error)
+	GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID *uint) ([]dto.AdminUserPerformance, error)
 	GetOrgDistributionStats() (*dto.AdminOrgStats, error)
 	GetActivityStats() (*dto.AdminActivityStats, error)
 }
@@ -647,6 +651,114 @@ func (r *adminRepository) FindScreenshotsWithFilters(params *dto.AdminScreenshot
 }
 
 // ============================================================================
+// SYSTEM LOG METHODS
+// ============================================================================
+
+func (r *adminRepository) FindSystemLogsWithFilters(params *dto.AdminSystemLogListParams) ([]models.SystemLog, int64, error) {
+	var systemLogs []models.SystemLog
+	var total int64
+
+	query := r.db.Model(&models.SystemLog{}).
+		Preload("User").
+		Preload("Device").
+		Preload("Organization").
+		Preload("Workspace")
+
+	if params.Search != "" {
+		searchPattern := "%" + params.Search + "%"
+		query = query.Where(
+			"message ILIKE ? OR component ILIKE ? OR source ILIKE ? OR request_id ILIKE ? OR session_local_id ILIKE ? OR device_uuid ILIKE ?",
+			searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern,
+		)
+	}
+
+	if params.UserID != nil {
+		query = query.Where("user_id = ?", *params.UserID)
+	}
+
+	if params.OrgID != nil {
+		query = query.Where("organization_id = ?", *params.OrgID)
+	}
+
+	if params.WorkspaceID != nil {
+		query = query.Where("workspace_id = ?", *params.WorkspaceID)
+	}
+
+	if params.Source != "" {
+		query = query.Where("source = ?", params.Source)
+	}
+
+	if params.Level != "" {
+		query = query.Where("level = ?", params.Level)
+	}
+
+	if params.DeviceUUID != "" {
+		query = query.Where("device_uuid ILIKE ?", "%"+params.DeviceUUID+"%")
+	}
+
+	if params.StartDate != nil {
+		query = query.Where("occurred_at >= ?", *params.StartDate)
+	}
+
+	if params.EndDate != nil {
+		query = query.Where("occurred_at <= ?", *params.EndDate)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	sortBy := sanitizeSystemLogSortBy(params.SortBy)
+	sortOrder := "DESC"
+	if params.SortOrder == "asc" {
+		sortOrder = "ASC"
+	}
+	query = query.Order(sortBy + " " + sortOrder)
+
+	if params.Page < 1 {
+		params.Page = 1
+	}
+	if params.PageSize < 1 || params.PageSize > 100 {
+		params.PageSize = 20
+	}
+	offset := (params.Page - 1) * params.PageSize
+	query = query.Offset(offset).Limit(params.PageSize)
+
+	if err := query.Find(&systemLogs).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return systemLogs, total, nil
+}
+
+func (r *adminRepository) FindSystemLogByID(id uint) (*models.SystemLog, error) {
+	var systemLog models.SystemLog
+	if err := r.db.
+		Preload("User").
+		Preload("Device").
+		Preload("Organization").
+		Preload("Workspace").
+		First(&systemLog, id).Error; err != nil {
+		return nil, err
+	}
+
+	return &systemLog, nil
+}
+
+func sanitizeSystemLogSortBy(sortBy string) string {
+	switch sortBy {
+	case "created_at":
+		return "created_at"
+	case "level":
+		return "level"
+	case "source":
+		return "source"
+	default:
+		return "occurred_at"
+	}
+}
+
+// ============================================================================
 // STATISTICS METHODS
 // ============================================================================
 
@@ -754,25 +866,100 @@ func (r *adminRepository) GetTrendStats(period string, startDate, endDate time.T
 	return stats, nil
 }
 
-func (r *adminRepository) GetUserPerformanceStats(limit int) ([]dto.AdminUserPerformance, error) {
+func (r *adminRepository) GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID *uint) ([]dto.AdminUserPerformance, error) {
 	var performers []dto.AdminUserPerformance
+	timeLogArgs := []interface{}{}
+	screenshotArgs := []interface{}{}
+	timeLogFilters := "WHERE deleted_at IS NULL"
+	screenshotFilters := "WHERE deleted_at IS NULL"
+	userFilters := "WHERE users.deleted_at IS NULL"
+
+	if startDate != nil {
+		timeLogFilters += " AND start_time >= ?"
+		timeLogArgs = append(timeLogArgs, *startDate)
+		screenshotFilters += " AND captured_at >= ?"
+		screenshotArgs = append(screenshotArgs, *startDate)
+	}
+
+	if endDate != nil {
+		timeLogFilters += " AND start_time < ?"
+		timeLogArgs = append(timeLogArgs, endDate.Add(24*time.Hour))
+		screenshotFilters += " AND captured_at < ?"
+		screenshotArgs = append(screenshotArgs, endDate.Add(24*time.Hour))
+	}
+
+	if userID != nil {
+		userFilters += " AND users.id = ?"
+	}
+
+	if orgID != nil {
+		timeLogFilters += " AND organization_id = ?"
+		timeLogArgs = append(timeLogArgs, *orgID)
+		screenshotFilters += " AND organization_id = ?"
+		screenshotArgs = append(screenshotArgs, *orgID)
+	}
+
+	if workspaceID != nil {
+		timeLogFilters += " AND workspace_id = ?"
+		timeLogArgs = append(timeLogArgs, *workspaceID)
+		screenshotFilters += " AND workspace_id = ?"
+		screenshotArgs = append(screenshotArgs, *workspaceID)
+	}
+
+	args := append([]interface{}{}, timeLogArgs...)
+	args = append(args, screenshotArgs...)
+	if userID != nil {
+		args = append(args, *userID)
+	}
+	args = append(args, limit)
 
 	r.db.Raw(`
 		SELECT 
 			users.id as user_id,
 			CONCAT(users.first_name, ' ', users.last_name) as user_name,
 			users.email,
-			COALESCE(SUM(time_logs.duration), 0) as total_duration,
-			COUNT(DISTINCT tasks.id) as task_count,
-			ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(time_logs.duration), 0) DESC) as rank
+			COALESCE(time_log_stats.total_duration, 0) as total_duration,
+			COALESCE(time_log_stats.approved_duration, 0) as approved_duration,
+			COALESCE(time_log_stats.task_count, 0) as task_count,
+			COALESCE(time_log_stats.session_count, 0) as session_count,
+			COALESCE(time_log_stats.approved_sessions, 0) as approved_sessions,
+			COALESCE(time_log_stats.active_days, 0) as active_days,
+			COALESCE(time_log_stats.avg_daily_duration, 0) as avg_daily_duration,
+			COALESCE(time_log_stats.avg_session_duration, 0) as avg_session_duration,
+			COALESCE(screenshot_stats.screenshot_count, 0) as screenshot_count,
+			time_log_stats.last_activity_at as last_activity_at,
+			ROW_NUMBER() OVER (
+				ORDER BY COALESCE(time_log_stats.total_duration, 0) DESC, users.id ASC
+			) as rank
 		FROM users
-		LEFT JOIN time_logs ON time_logs.user_id = users.id
-		LEFT JOIN tasks ON tasks.user_id = users.id
-		WHERE users.deleted_at IS NULL
-		GROUP BY users.id, users.first_name, users.last_name, users.email
-		ORDER BY total_duration DESC
+		LEFT JOIN (
+			SELECT
+				user_id,
+				COALESCE(SUM(duration), 0) as total_duration,
+				COALESCE(SUM(CASE WHEN is_approved = true THEN duration ELSE 0 END), 0) as approved_duration,
+				COUNT(*) as session_count,
+				COALESCE(SUM(CASE WHEN is_approved = true THEN 1 ELSE 0 END), 0) as approved_sessions,
+				COUNT(DISTINCT DATE(start_time)) as active_days,
+				COUNT(DISTINCT COALESCE(NULLIF(task_local_id, ''), CONCAT('task:', COALESCE(task_id::text, '0')))) as task_count,
+				COALESCE(SUM(duration) / NULLIF(COUNT(DISTINCT DATE(start_time)), 0), 0) as avg_daily_duration,
+				COALESCE(SUM(duration) / NULLIF(COUNT(*), 0), 0) as avg_session_duration,
+				MAX(COALESCE(end_time, start_time)) as last_activity_at
+			FROM time_logs
+			`+timeLogFilters+`
+			GROUP BY user_id
+		) as time_log_stats ON time_log_stats.user_id = users.id
+		LEFT JOIN (
+			SELECT
+				user_id,
+				COUNT(*) as screenshot_count
+			FROM screenshots
+			`+screenshotFilters+`
+			GROUP BY user_id
+		) as screenshot_stats ON screenshot_stats.user_id = users.id
+		`+userFilters+`
+		ORDER BY COALESCE(time_log_stats.total_duration, 0) DESC, users.id ASC
 		LIMIT ?
-	`, limit).Scan(&performers)
+	`, args...).Scan(&performers)
 
 	return performers, nil
 }
@@ -839,7 +1026,15 @@ func (r *adminRepository) GetActivityStats() (*dto.AdminActivityStats, error) {
 	r.db.Model(&models.TimeLog{}).
 		Select("COUNT(DISTINCT user_id)").
 		Where("start_time >= ?", today).
-		Scan(&stats.TodayActiveUsers)
+		Scan(&stats.UsersWithActivityToday)
+
+	stats.TodayActiveUsers = stats.UsersWithActivityToday
+
+	r.db.Model(&models.User{}).
+		Where("presence_status = ?", models.UserPresenceWorking).
+		Where("last_presence_at IS NOT NULL").
+		Where("last_presence_at >= ?", time.Now().UTC().Add(-45*time.Second)).
+		Count(&stats.WorkingUsersRealtime)
 
 	r.db.Model(&models.Screenshot{}).
 		Where("captured_at >= ?", today).

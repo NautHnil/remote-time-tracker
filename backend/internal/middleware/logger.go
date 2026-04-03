@@ -1,14 +1,14 @@
 package middleware
 
 import (
-	"log"
 	"time"
 
+	"github.com/beuphecan/remote-time-tracker/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 // Logger middleware logs request details
-func Logger() gin.HandlerFunc {
+func Logger(systemLogService service.SystemLogService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
 
@@ -26,14 +26,31 @@ func Logger() gin.HandlerFunc {
 		path := c.Request.URL.Path
 		clientIP := c.ClientIP()
 
-		// Log
-		log.Printf("[%s] %s %s | Status: %d | Latency: %v | IP: %s",
-			time.Now().Format("2006-01-02 15:04:05"),
-			method,
-			path,
-			statusCode,
-			latency,
-			clientIP,
-		)
+		if systemLogService != nil {
+			systemLogService.LogBackend(service.BackendSystemLogInput{
+				Source:     "backend-api",
+				Level:      levelFromStatus(statusCode),
+				Component:  "http-middleware",
+				Message:    method + " " + path,
+				OccurredAt: time.Now().UTC(),
+				Details: gin.H{
+					"status_code": statusCode,
+					"latency_ms":  latency.Milliseconds(),
+					"client_ip":   clientIP,
+					"user_agent":  c.Request.UserAgent(),
+					"query":       c.Request.URL.RawQuery,
+				},
+			})
+		}
 	}
+}
+
+func levelFromStatus(statusCode int) string {
+	if statusCode >= 500 {
+		return "error"
+	}
+	if statusCode >= 400 {
+		return "warn"
+	}
+	return "info"
 }

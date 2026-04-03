@@ -16,6 +16,8 @@ interface TimeTrackerStatus {
 }
 
 export class TimeTrackerService {
+  private static readonly HEARTBEAT_SYNC_INTERVAL_MS = 60000;
+
   private dbService: DatabaseService;
   private screenshotService: ScreenshotService;
   private syncService: SyncService;
@@ -28,6 +30,7 @@ export class TimeTrackerService {
   private isManualTask = false; // Track if current task is a manual task
   private manualTaskTitle = ""; // Store manual task title
   private lastPersistAt = 0;
+  private lastHeartbeatSyncAt = 0;
 
   private trackingTimer: NodeJS.Timeout | null = null;
 
@@ -97,6 +100,7 @@ export class TimeTrackerService {
 
         // Start timer
         this.startTimer();
+        this.triggerPresenceHeartbeat("working", "resume-active-running");
       } else if (activeTimeLog.status === "paused") {
         // Session was paused - load state but don't resume
         this.pauseTimestamp = getTime(parseISO(activeTimeLog.pausedAt!));
@@ -111,6 +115,7 @@ export class TimeTrackerService {
         );
 
         // Don't start timer or screenshots when paused
+        this.triggerPresenceHeartbeat("idle", "resume-active-paused");
       } else {
         // Invalid state - should not happen
         console.warn(
@@ -134,6 +139,7 @@ export class TimeTrackerService {
       this.frozenDuration = 0;
       this.isManualTask = false;
       this.manualTaskTitle = "";
+      this.lastHeartbeatSyncAt = 0;
     }
   }
 
@@ -187,6 +193,7 @@ export class TimeTrackerService {
     this.totalPausedTime = 0;
     this.frozenDuration = 0;
     this.lastPersistAt = nowMs;
+    this.lastHeartbeatSyncAt = 0;
 
     // Start screenshot capturing with taskLocalId and taskId (for manual tasks)
     await this.screenshotService.startCapturing(
@@ -203,6 +210,9 @@ export class TimeTrackerService {
     console.log(
       `▶️  Time tracking started (Manual: ${this.isManualTask}, TaskID: ${taskId}, TaskLocalID: ${taskLocalId}, WsID: ${workspaceId})`,
     );
+
+    this.triggerPresenceHeartbeat("working", "start");
+    this.triggerBackgroundSync("start");
 
     return this.getStatus();
   }
@@ -275,7 +285,8 @@ export class TimeTrackerService {
     } else {
       // Background sync after 1 second delay
       setTimeout(() => {
-        this.syncService.syncNow();
+        this.triggerPresenceHeartbeat("idle", "stop");
+        this.triggerBackgroundSync("stop");
       }, 1000);
     }
 
@@ -289,6 +300,7 @@ export class TimeTrackerService {
     this.frozenDuration = 0;
     this.isManualTask = false;
     this.manualTaskTitle = "";
+    this.lastHeartbeatSyncAt = 0;
 
     return status;
   }
@@ -321,6 +333,9 @@ export class TimeTrackerService {
     await this.screenshotService.stopCapturing();
 
     console.log("⏸️  Time tracking paused");
+
+    this.triggerPresenceHeartbeat("idle", "pause");
+    this.triggerBackgroundSync("pause");
 
     return this.getStatus();
   }
@@ -366,6 +381,9 @@ export class TimeTrackerService {
     this.startTimer();
 
     console.log("▶️  Time tracking resumed");
+
+    this.triggerPresenceHeartbeat("working", "resume");
+    this.triggerBackgroundSync("resume");
 
     return this.getStatus();
   }
@@ -432,8 +450,18 @@ export class TimeTrackerService {
           await this.dbService.updateTimeLog(this.currentTimeLog.id!, {
             duration, // Store in milliseconds locally
             pausedTotal: this.totalPausedTime, // Store in milliseconds locally
+            isSynced: false,
           });
           this.lastPersistAt = now;
+        }
+
+        if (
+          now - this.lastHeartbeatSyncAt >=
+          TimeTrackerService.HEARTBEAT_SYNC_INTERVAL_MS
+        ) {
+          this.lastHeartbeatSyncAt = now;
+          this.triggerPresenceHeartbeat("working", "heartbeat");
+          this.triggerBackgroundSync("heartbeat");
         }
       }
     }, 1000);
@@ -492,13 +520,33 @@ export class TimeTrackerService {
     this.frozenDuration = 0;
     this.isManualTask = false;
     this.manualTaskTitle = "";
+    this.lastHeartbeatSyncAt = 0;
 
     console.log("✅ Force stop completed");
+    this.triggerPresenceHeartbeat("idle", "force-stop");
   }
 
   async cleanup(): Promise<void> {
     console.log("🧹 Cleaning up TimeTrackerService...");
     this.stopTimer();
     await this.screenshotService.stopCapturing();
+  }
+
+  private triggerBackgroundSync(reason: string): void {
+    void this.syncService.syncNow().catch((error) => {
+      console.error(`❌ Background sync failed after ${reason}:`, error);
+    });
+  }
+
+  private triggerPresenceHeartbeat(
+    status: "working" | "idle",
+    reason: string
+  ): void {
+    void this.syncService.updatePresence(status).catch((error) => {
+      console.error(
+        `❌ Presence heartbeat failed after ${reason} (${status}):`,
+        error
+      );
+    });
   }
 }

@@ -6,6 +6,8 @@ import {
   AdminLoginPage,
   AdminOrganizationsPage,
   AdminScreenshotsPage,
+  AdminSystemLogsPage,
+  AdminSystemSettingsPage,
   AdminStatisticsPage,
   AdminTasksPage,
   AdminTimeLogsPage,
@@ -55,6 +57,8 @@ function BaseRoute() {
           <Route path="tasks" element={<AdminTasksPage />} />
           <Route path="timelogs" element={<AdminTimeLogsPage />} />
           <Route path="screenshots" element={<AdminScreenshotsPage />} />
+          <Route path="system-logs" element={<AdminSystemLogsPage />} />
+          <Route path="system-settings" element={<AdminSystemSettingsPage />} />
           <Route path="statistics" element={<AdminStatisticsPage />} />
         </Route>
 

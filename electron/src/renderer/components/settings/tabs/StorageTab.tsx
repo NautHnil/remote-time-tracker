@@ -19,6 +19,8 @@ interface ScreenshotPathInfo {
 export function StorageTab() {
   const [storageSize, setStorageSize] = useState<number>(0);
   const [cleaningUp, setCleaningUp] = useState(false);
+  const [clearingAppCache, setClearingAppCache] = useState(false);
+  const [clearingSqliteCache, setClearingSqliteCache] = useState(false);
   const [screenshotPath, setScreenshotPath] =
     useState<ScreenshotPathInfo | null>(null);
   const [changingPath, setChangingPath] = useState(false);
@@ -288,6 +290,87 @@ export function StorageTab() {
     }
   };
 
+  const handleClearAppCache = async () => {
+    confirmDialog.show({
+      title: "Clear Application Cache",
+      message:
+        "This clears temporary Chromium and app cache files.\n\nTracked data, screenshots, and settings will remain intact.\n\nContinue?",
+      confirmText: "Clear Cache",
+      onConfirm: async () => {
+        confirmDialog.close();
+        try {
+          setClearingAppCache(true);
+          const result = await window.electronAPI.storage.clearAppCache();
+
+          if (result.success) {
+            alertDialog.show({
+              title: "Success",
+              message: `Application cache cleared.\n\nFreed: ${formatBytes(result.clearedBytes || 0)}`,
+              type: "success",
+            });
+            await loadStorageSize();
+          } else {
+            alertDialog.show({
+              title: "Failed",
+              message:
+                "Failed to clear application cache: " +
+                (result.error || "Unknown error"),
+              type: "error",
+            });
+          }
+        } catch (error: any) {
+          alertDialog.show({
+            title: "Failed",
+            message: "Failed to clear application cache: " + error.message,
+            type: "error",
+          });
+        } finally {
+          setClearingAppCache(false);
+        }
+      },
+    });
+  };
+
+  const handleClearSqliteCache = async () => {
+    confirmDialog.show({
+      title: "Optimize SQLite Storage",
+      message:
+        "This clears SQLite temporary cache and compacts the local database.\n\nYour tracked data will be kept.\n\nContinue?",
+      confirmText: "Optimize",
+      onConfirm: async () => {
+        confirmDialog.close();
+        try {
+          setClearingSqliteCache(true);
+          const result = await window.electronAPI.storage.clearSqliteCache();
+
+          if (result.success) {
+            alertDialog.show({
+              title: "Success",
+              message: `SQLite cache cleared successfully.\n\nFreed: ${formatBytes(result.clearedBytes || 0)}`,
+              type: "success",
+            });
+          } else {
+            alertDialog.show({
+              title: "Failed",
+              message:
+                "Failed to clear SQLite cache: " +
+                (result.error || "Unknown error"),
+              type: "error",
+            });
+          }
+        } catch (error: any) {
+          alertDialog.show({
+            title: "Failed",
+            message: "Failed to clear SQLite cache: " + error.message,
+            type: "error",
+          });
+        } finally {
+          setClearingSqliteCache(false);
+        }
+      },
+    });
+  };
+
   return (
     <>
       <Card className="p-6">
@@ -369,6 +452,56 @@ export function StorageTab() {
         </div>
 
         <div className="space-y-4">
+          <div className="p-4 rounded-xl border border-sky-200 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-500/10">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                <Icons.RefreshCw className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Clear Application Cache
+                </h4>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Remove temporary Chromium cache and other app cache files
+                  without touching tracked data.
+                </p>
+                <button
+                  onClick={handleClearAppCache}
+                  disabled={clearingAppCache}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+                >
+                  <Icons.RefreshCw className="w-4 h-4" />
+                  {clearingAppCache ? "Clearing..." : "Clear Cache"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl border border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                <Icons.Database className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Clear SQLite Cache
+                </h4>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Truncate SQLite WAL/SHM cache and compact the local database
+                  while keeping tracking records intact.
+                </p>
+                <button
+                  onClick={handleClearSqliteCache}
+                  disabled={clearingSqliteCache}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+                >
+                  <Icons.Database className="w-4 h-4" />
+                  {clearingSqliteCache ? "Optimizing..." : "Optimize DB"}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="p-4 rounded-xl border border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600 dark:text-orange-400">

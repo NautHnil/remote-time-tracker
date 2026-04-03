@@ -230,6 +230,59 @@ func (SyncLog) TableName() string {
 	return "sync_logs"
 }
 
+// SystemLog represents an application/system log entry from backend or desktop client
+type SystemLog struct {
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	UserID         *uint     `gorm:"index" json:"user_id"`
+	DeviceID       *uint     `gorm:"index" json:"device_id"`
+	OrganizationID *uint     `gorm:"index" json:"organization_id"`
+	WorkspaceID    *uint     `gorm:"index" json:"workspace_id"`
+	Source         string    `gorm:"size:50;not null;index" json:"source"` // electron-main, electron-renderer, backend-api, backend-app
+	Level          string    `gorm:"size:20;not null;index" json:"level"`  // debug, info, warn, error
+	Component      string    `gorm:"size:100;index" json:"component"`
+	Message        string    `gorm:"type:text;not null" json:"message"`
+	Details        string    `gorm:"type:jsonb" json:"details"`
+	StackTrace     string    `gorm:"type:text" json:"stack_trace"`
+	AppVersion     string    `gorm:"size:50" json:"app_version"`
+	DeviceUUID     string    `gorm:"size:100;index" json:"device_uuid"`
+	OccurredAt     time.Time `gorm:"not null;index" json:"occurred_at"`
+	RequestID      string    `gorm:"size:100;index" json:"request_id"`
+	SessionLocalID string    `gorm:"size:100;index" json:"session_local_id"`
+
+	// Relations
+	User         *User         `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Device       *DeviceInfo   `gorm:"foreignKey:DeviceID" json:"device,omitempty"`
+	Organization *Organization `gorm:"foreignKey:OrganizationID" json:"organization,omitempty"`
+	Workspace    *Workspace    `gorm:"foreignKey:WorkspaceID" json:"workspace,omitempty"`
+}
+
+// TableName overrides the table name
+func (SystemLog) TableName() string {
+	return "system_logs"
+}
+
+// SystemConfig represents system-wide persisted configuration values.
+type SystemConfig struct {
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	Key         string `gorm:"size:100;uniqueIndex;not null" json:"key"`
+	Value       string `gorm:"type:text;not null" json:"value"`
+	ValueType   string `gorm:"size:20;not null;default:'string'" json:"value_type"`
+	Description string `gorm:"type:text" json:"description"`
+}
+
+// TableName overrides the table name
+func (SystemConfig) TableName() string {
+	return "system_configs"
+}
+
 // AuditLog represents an audit trail entry
 type AuditLog struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`

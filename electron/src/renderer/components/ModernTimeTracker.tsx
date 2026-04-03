@@ -27,6 +27,12 @@ interface Task {
   status?: string;
 }
 
+const NON_SELECTABLE_MANUAL_TASK_STATUSES = new Set([
+  "in_progress",
+  "completed",
+  "cancelled",
+]);
+
 function ModernTimeTracker() {
   const [config, setConfig] = useState<any>({});
   const [status, setStatus] = useState<TimeTrackerStatus>({
@@ -108,6 +114,13 @@ function ModernTimeTracker() {
       stopPresenceHeartbeat();
     };
   }, [status.status, config?.presenceHeartbeatInterval]);
+
+  const getSelectableManualTasks = (tasks: Task[]) =>
+    tasks.filter(
+      (task) =>
+        task.is_manual &&
+        !NON_SELECTABLE_MANUAL_TASK_STATUSES.has(task.status || ""),
+    );
 
   const loadTasks = async () => {
     try {
@@ -264,6 +277,12 @@ function ModernTimeTracker() {
         task?.is_manual ? task.title : undefined, // Pass title for manual task
       );
 
+      if (task?.is_manual) {
+        await window.electronAPI.tasks.update(task.id, {
+          status: "in_progress",
+        });
+      }
+
       await presenceService.heartbeat("working");
 
       // Update current task name
@@ -324,6 +343,13 @@ function ModernTimeTracker() {
 
         // Stop tracking with the manual task's title
         await window.electronAPI.timeTracker.stop(manualTaskTitle);
+
+        if (selectedTask?.id) {
+          await window.electronAPI.tasks.update(selectedTask.id, {
+            status: "completed",
+          });
+        }
+
         await presenceService.heartbeat("idle");
         await loadStatus();
         await loadTasks(); // Reload to update stats
@@ -449,8 +475,7 @@ function ModernTimeTracker() {
   };
 
   const getEstimatedScreenshots = () => {
-    // Calculate based on config interval (default 5 minutes = 300000ms)
-    const interval = config.screenshotInterval || 300000;
+    const interval = config.screenshotIntervalMs || 300000;
     return status.isTracking ? Math.floor(status.elapsedTime / interval) : 0;
   };
 
@@ -562,24 +587,16 @@ function ModernTimeTracker() {
                 className="input w-full"
               >
                 <option value="">New Task (Auto-created)</option>
-                {availableTasks
-                  .filter(
-                    (t) =>
-                      t.is_manual &&
-                      (t.status === undefined ||
-                        t.status === "pending" ||
-                        t.status === "new"),
-                  )
-                  .map((task) => (
-                    <option key={task.id} value={task.id}>
-                      {task.title}
-                      {task.duration
-                        ? ` (${Math.floor(task.duration / 3600)}h ${Math.floor(
-                            (task.duration % 3600) / 60,
-                          )}m)`
-                        : ""}
-                    </option>
-                  ))}
+                {getSelectableManualTasks(availableTasks).map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.title}
+                    {task.duration
+                      ? ` (${Math.floor(task.duration / 3600)}h ${Math.floor(
+                          (task.duration % 3600) / 60,
+                        )}m)`
+                      : ""}
+                  </option>
+                ))}
               </select>
               <p className="text-xs text-gray-500 dark:text-dark-500 mt-1">
                 Choose an existing manual task or leave empty to create a new
@@ -697,7 +714,7 @@ function ModernTimeTracker() {
             </h3>
             <p className="text-sm text-gray-500 dark:text-dark-400 leading-relaxed">
               Screenshots are captured every{" "}
-              {formatDurationFull(config.screenshotInterval || 300000)} while
+              {formatDurationFull(config.screenshotIntervalMs || 300000)} while
               tracking. All data is encrypted and synced securely to your
               account.
             </p>

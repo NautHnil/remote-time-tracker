@@ -22,6 +22,8 @@ interface CreateTaskRequest {
   priority?: Task["priority"];
   status?: Task["status"];
   is_manual?: boolean; // Default to true when creating manually
+  organization_id?: number;
+  workspace_id?: number;
 }
 
 interface UpdateTaskRequest {
@@ -206,11 +208,24 @@ export class TaskService {
         };
       }
 
+      const credentials = AppConfig.getCredentials();
+
       // Convert priority string to number for backend
       const backendRequest = {
         ...request,
         priority: this.priorityToNumber(request.priority),
+        organization_id:
+          request.organization_id ?? credentials?.organizationId ?? undefined,
+        workspace_id:
+          request.workspace_id ?? credentials?.workspaceId ?? undefined,
       };
+
+      console.log("[TaskService] Creating manual task with context:", {
+        organization_id: backendRequest.organization_id,
+        workspace_id: backendRequest.workspace_id,
+        is_manual: backendRequest.is_manual,
+        title: backendRequest.title,
+      });
 
       const response = await this.makeRequest("/tasks", {
         method: "POST",

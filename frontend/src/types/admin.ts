@@ -357,6 +357,54 @@ export interface AdminScreenshotListResponse {
 }
 
 // ============================================================================
+// SYSTEM LOGS
+// ============================================================================
+
+export interface AdminSystemLog {
+  id: number;
+  user_id: number | null;
+  user_email: string;
+  user_name: string;
+  device_id: number | null;
+  organization_id: number | null;
+  org_name: string;
+  workspace_id: number | null;
+  workspace_name: string;
+  source: string;
+  level: string;
+  component: string;
+  message: string;
+  details: string;
+  stack_trace: string;
+  app_version: string;
+  device_uuid: string;
+  request_id: string;
+  session_local_id: string;
+  occurred_at: string;
+  created_at: string;
+}
+
+export interface AdminSystemLogListResponse {
+  system_logs: AdminSystemLog[];
+  pagination: AdminPagination;
+}
+
+export interface AdminSystemConfig {
+  key: string;
+  label: string;
+  description: string;
+  category: string;
+  value_type: string;
+  value: string;
+  default: string;
+  updated_at: string | null;
+}
+
+export interface AdminSystemConfigListResponse {
+  configs: AdminSystemConfig[];
+}
+
+// ============================================================================
 // STATISTICS
 // ============================================================================
 
@@ -407,8 +455,16 @@ export interface AdminUserPerformance {
   first_name?: string;
   last_name?: string;
   total_duration: number;
+  approved_duration?: number;
   total_hours?: number;
   task_count: number;
+  session_count?: number;
+  approved_sessions?: number;
+  active_days?: number;
+  avg_daily_duration?: number;
+  avg_session_duration?: number;
+  screenshot_count?: number;
+  last_activity_at?: string | null;
   total_tasks?: number;
   rank: number;
 }
@@ -434,6 +490,8 @@ export interface AdminTopWorkspace {
 export interface AdminActivityStats {
   today_duration: number;
   today_active_users: number;
+  users_with_activity_today: number;
+  working_users_realtime: number;
   today_screenshots: number;
   activity_by_hour: AdminHourlyStat[];
   peak_hour: number;
@@ -524,6 +582,26 @@ export interface AdminScreenshotFilterParams {
   end_date?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";
+}
+
+export interface AdminSystemLogFilterParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  user_id?: number;
+  org_id?: number;
+  workspace_id?: number;
+  source?: string;
+  level?: string;
+  device_uuid?: string;
+  start_date?: string;
+  end_date?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+}
+
+export interface AdminUpdateSystemConfigRequest {
+  value: string;
 }
 
 export interface AdminTrendFilterParams {
