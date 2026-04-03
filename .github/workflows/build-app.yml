@@ -146,6 +146,7 @@ jobs:
           VITE_INVITE_WEBSITE_DOMAIN: ${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
           VITE_SCREENSHOT_INTERVAL: ${{ secrets.VITE_SCREENSHOT_INTERVAL }}
           VITE_SYNC_INTERVAL: ${{ secrets.VITE_SYNC_INTERVAL }}
+          VITE_SYSTEM_LOG_RETENTION_DAYS: ${{ secrets.VITE_SYSTEM_LOG_RETENTION_DAYS }}
           VITE_PRESENCE_HEARTBEAT_INTERVAL: ${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
         run: |
           cat > .env << 'EOF'
@@ -155,6 +156,7 @@ jobs:
           VITE_INVITE_WEBSITE_DOMAIN=${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
           VITE_SCREENSHOT_INTERVAL=${{ secrets.VITE_SCREENSHOT_INTERVAL }}
           VITE_SYNC_INTERVAL=${{ secrets.VITE_SYNC_INTERVAL }}
+          VITE_SYSTEM_LOG_RETENTION_DAYS=${{ secrets.VITE_SYSTEM_LOG_RETENTION_DAYS }}
           VITE_PRESENCE_HEARTBEAT_INTERVAL=${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
           EOF
           echo "✅ .env file created successfully at: .env"
