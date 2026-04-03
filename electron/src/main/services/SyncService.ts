@@ -3,17 +3,34 @@ import { formatISO, subDays } from "date-fns";
 import { app } from "electron";
 import fs from "fs";
 import { AppConfig } from "../config";
-import { DatabaseService, Screenshot, TimeLog } from "./DatabaseService";
+import {
+  DatabaseService,
+  Screenshot,
+  SystemLog,
+  TimeLog,
+} from "./DatabaseService";
 
 interface SyncResult {
   success: boolean;
   message: string;
   timeLogsSynced: number;
   screenshotsSynced: number;
+  systemLogsSynced: number;
   errors: string[];
 }
 
+interface SyncBatchApiResult {
+  total?: number;
+  success?: number;
+  failed?: number;
+  errors?: string[];
+}
+
 export class SyncService {
+  private static readonly TIME_LOG_BATCH_SIZE = 100;
+  private static readonly SCREENSHOT_BATCH_SIZE = 10;
+  private static readonly SYSTEM_LOG_BATCH_SIZE = 200;
+
   private dbService: DatabaseService;
   private apiClient: AxiosInstance;
   private syncTimer: NodeJS.Timeout | null = null;
@@ -115,6 +132,7 @@ export class SyncService {
         message: "Sync already in progress",
         timeLogsSynced: 0,
         screenshotsSynced: 0,
+        systemLogsSynced: 0,
         errors: [],
       };
     }
@@ -127,6 +145,7 @@ export class SyncService {
         message: "Not authenticated",
         timeLogsSynced: 0,
         screenshotsSynced: 0,
+        systemLogsSynced: 0,
         errors: ["Not authenticated"],
       };
     }
@@ -135,6 +154,7 @@ export class SyncService {
     const errors: string[] = [];
     let timeLogsSynced = 0;
     let screenshotsSynced = 0;
+    let systemLogsSynced = 0;
 
     try {
       console.log("🔄 Starting sync...");
@@ -142,98 +162,83 @@ export class SyncService {
       // Get unsynced data
       const unsyncedTimeLogs = await this.dbService.getUnsyncedTimeLogs();
       const unsyncedScreenshots = await this.dbService.getUnsyncedScreenshots();
+      const unsyncedSystemLogs = await this.dbService.getUnsyncedSystemLogs();
 
       console.log(
-        `Found ${unsyncedTimeLogs.length} time logs and ${unsyncedScreenshots.length} screenshots to sync`
+        `Found ${unsyncedTimeLogs.length} time logs, ${unsyncedScreenshots.length} screenshots and ${unsyncedSystemLogs.length} system logs to sync`
       );
 
-      if (unsyncedTimeLogs.length === 0 && unsyncedScreenshots.length === 0) {
+      if (
+        unsyncedTimeLogs.length === 0 &&
+        unsyncedScreenshots.length === 0 &&
+        unsyncedSystemLogs.length === 0
+      ) {
         this.lastSyncTime = new Date(Date.now());
         return {
           success: true,
           message: "Nothing to sync",
           timeLogsSynced: 0,
           screenshotsSynced: 0,
+          systemLogsSynced: 0,
           errors: [],
         };
       }
 
-      // Get current workspace context from stored credentials
       const workspaceContext = this.getWorkspaceContext();
       console.log(
         `🏢 Workspace context for sync: org=${workspaceContext.organizationId}, ws=${workspaceContext.workspaceId}`
       );
 
-      // Prepare batch sync payload
-      const batchPayload = {
+      const contextPayload = {
         device_uuid: this.getDeviceUUID(),
         device_info: this.getDeviceInfo(),
         organization_id: workspaceContext.organizationId,
         workspace_id: workspaceContext.workspaceId,
-        time_logs: unsyncedTimeLogs.map((tl) => this.timeLogToDTO(tl)),
-        screenshots: await Promise.all(
-          unsyncedScreenshots.map(async (screenshot) => {
-            try {
-              const base64Data = fs
-                .readFileSync(screenshot.filePath)
-                .toString("base64");
-              return await this.screenshotToDTO(screenshot, base64Data);
-            } catch (error) {
-              console.error(
-                `Error reading screenshot ${screenshot.fileName}:`,
-                error
-              );
-              errors.push(`Failed to read ${screenshot.fileName}`);
-              return null;
-            }
-          })
-        ).then((results) => results.filter((r) => r !== null)),
       };
 
-      // Send batch sync request
-      const response = await this.apiClient.post("/sync/batch", batchPayload);
-
-      if (response.data.success) {
-        const syncData = response.data.data;
-
-        // Mark time logs as synced
-        for (const timeLog of unsyncedTimeLogs) {
-          await this.dbService.markTimeLogAsSynced(timeLog.localId);
-          timeLogsSynced++;
-        }
-
-        // Delete screenshots immediately after successful sync
-        // This prevents duplicate entries and frees disk space
-        for (const screenshot of unsyncedScreenshots) {
-          try {
-            // Delete file from filesystem
-            if (fs.existsSync(screenshot.filePath)) {
-              fs.unlinkSync(screenshot.filePath);
-            }
-            // Delete from database
-            await this.dbService.deleteScreenshotByFilePath(
-              screenshot.filePath
-            );
-            screenshotsSynced++;
-          } catch (error) {
-            console.error(
-              `Failed to delete screenshot ${screenshot.fileName}:`,
-              error
-            );
-            // Mark as synced even if deletion fails to avoid re-uploading
-            await this.dbService.markScreenshotAsSynced(screenshot.localId);
-            screenshotsSynced++;
-          }
-        }
-
-        this.lastSyncTime = new Date(Date.now());
-        console.log(
-          `✅ Sync completed: ${timeLogsSynced} time logs, ${screenshotsSynced} screenshots synced and deleted`
+      if (unsyncedTimeLogs.length > 0) {
+        const timeLogResult = await this.syncTimeLogBatches(
+          unsyncedTimeLogs,
+          contextPayload,
+          errors
         );
+        timeLogsSynced += timeLogResult;
       }
+
+      if (unsyncedScreenshots.length > 0) {
+        const screenshotResult = await this.syncScreenshotBatches(
+          unsyncedScreenshots,
+          contextPayload,
+          errors
+        );
+        screenshotsSynced += screenshotResult;
+      }
+
+      if (unsyncedSystemLogs.length > 0) {
+        const systemLogResult = await this.syncSystemLogBatches(
+          unsyncedSystemLogs,
+          contextPayload,
+          errors
+        );
+        systemLogsSynced += systemLogResult;
+      }
+
+      if (
+        timeLogsSynced > 0 ||
+        screenshotsSynced > 0 ||
+        systemLogsSynced > 0 ||
+        errors.length === 0
+      ) {
+        this.lastSyncTime = new Date(Date.now());
+      }
+
+      await this.cleanupSyncedSystemLogs();
+      console.log(
+        `✅ Sync finished: ${timeLogsSynced} time logs, ${screenshotsSynced} screenshots, ${systemLogsSynced} system logs synced`
+      );
     } catch (error: any) {
       console.error("Sync error:", error);
-      errors.push(error.message || "Unknown sync error");
+      errors.push(this.getReadableSyncError(error));
     } finally {
       this.isSyncing = false;
     }
@@ -246,8 +251,225 @@ export class SyncService {
           : "Sync completed with errors",
       timeLogsSynced,
       screenshotsSynced,
+      systemLogsSynced,
       errors,
     };
+  }
+
+  private async syncTimeLogBatches(
+    timeLogs: TimeLog[],
+    contextPayload: Record<string, any>,
+    errors: string[]
+  ): Promise<number> {
+    let synced = 0;
+
+    for (const batch of this.chunkArray(
+      timeLogs,
+      SyncService.TIME_LOG_BATCH_SIZE
+    )) {
+      try {
+        const response = await this.apiClient.post("/sync/batch", {
+          ...contextPayload,
+          time_logs: batch.map((timeLog) => this.timeLogToDTO(timeLog)),
+          screenshots: [],
+          system_logs: [],
+        });
+        this.ensureBatchAccepted(response.data, "time_logs", "time logs");
+
+        for (const timeLog of batch) {
+          await this.dbService.markTimeLogAsSynced(timeLog.localId);
+          synced++;
+        }
+      } catch (error) {
+        console.error("Time log sync batch failed:", error);
+        errors.push(this.getReadableSyncError(error, "time logs"));
+        break;
+      }
+    }
+
+    return synced;
+  }
+
+  private async syncScreenshotBatches(
+    screenshots: Screenshot[],
+    contextPayload: Record<string, any>,
+    errors: string[]
+  ): Promise<number> {
+    let synced = 0;
+
+    for (const batch of this.chunkArray(
+      screenshots,
+      SyncService.SCREENSHOT_BATCH_SIZE
+    )) {
+      const batchPayload = [];
+      const preparedScreenshots: Screenshot[] = [];
+
+      for (const screenshot of batch) {
+        try {
+          if (!fs.existsSync(screenshot.filePath)) {
+            await this.discardMissingScreenshot(screenshot);
+            errors.push(`Removed missing local screenshot ${screenshot.fileName}`);
+            continue;
+          }
+
+          const base64Data = fs
+            .readFileSync(screenshot.filePath)
+            .toString("base64");
+          batchPayload.push(await this.screenshotToDTO(screenshot, base64Data));
+          preparedScreenshots.push(screenshot);
+        } catch (error) {
+          console.error(
+            `Error preparing screenshot ${screenshot.fileName} for sync:`,
+            error
+          );
+          errors.push(`Failed to prepare screenshot ${screenshot.fileName}`);
+        }
+      }
+
+      if (batchPayload.length === 0) {
+        continue;
+      }
+
+      try {
+        const response = await this.apiClient.post("/sync/batch", {
+          ...contextPayload,
+          time_logs: [],
+          screenshots: batchPayload,
+          system_logs: [],
+        });
+        this.ensureBatchAccepted(response.data, "screenshots", "screenshots");
+
+        for (const screenshot of preparedScreenshots) {
+          await this.finalizeSyncedScreenshot(screenshot);
+          synced++;
+        }
+      } catch (error) {
+        console.error("Screenshot sync batch failed:", error);
+        errors.push(this.getReadableSyncError(error, "screenshots"));
+        break;
+      }
+    }
+
+    return synced;
+  }
+
+  private async syncSystemLogBatches(
+    systemLogs: SystemLog[],
+    contextPayload: Record<string, any>,
+    errors: string[]
+  ): Promise<number> {
+    let synced = 0;
+
+    for (const batch of this.chunkArray(
+      systemLogs,
+      SyncService.SYSTEM_LOG_BATCH_SIZE
+    )) {
+      try {
+        const response = await this.apiClient.post("/sync/batch", {
+          ...contextPayload,
+          time_logs: [],
+          screenshots: [],
+          system_logs: batch.map((systemLog) => this.systemLogToDTO(systemLog)),
+        });
+        this.ensureBatchAccepted(response.data, "system_logs", "system logs");
+
+        for (const systemLog of batch) {
+          await this.dbService.markSystemLogAsSynced(systemLog.localId);
+          synced++;
+        }
+      } catch (error) {
+        console.error("System log sync batch failed:", error);
+        errors.push(this.getReadableSyncError(error, "system logs"));
+        break;
+      }
+    }
+
+    return synced;
+  }
+
+  private async discardMissingScreenshot(screenshot: Screenshot): Promise<void> {
+    try {
+      await this.dbService.deleteScreenshotByFilePath(screenshot.filePath);
+    } catch (error) {
+      console.error(
+        `Failed to remove missing screenshot record ${screenshot.fileName}:`,
+        error
+      );
+    }
+  }
+
+  private async finalizeSyncedScreenshot(screenshot: Screenshot): Promise<void> {
+    try {
+      if (fs.existsSync(screenshot.filePath)) {
+        fs.unlinkSync(screenshot.filePath);
+      }
+      await this.dbService.deleteScreenshotByFilePath(screenshot.filePath);
+    } catch (error) {
+      console.error(`Failed to delete screenshot ${screenshot.fileName}:`, error);
+      await this.dbService.markScreenshotAsSynced(screenshot.localId);
+    }
+  }
+
+  private ensureBatchAccepted(
+    responseBody: any,
+    dataKey: "time_logs" | "screenshots" | "system_logs",
+    scope: string
+  ): void {
+    if (!responseBody?.success) {
+      throw new Error(responseBody?.message || `${scope}: sync request failed`);
+    }
+
+    const resultMap: Record<string, SyncBatchApiResult | undefined> = {
+      time_logs: responseBody?.data?.time_logs_sync,
+      screenshots: responseBody?.data?.screenshots_sync,
+      system_logs: responseBody?.data?.system_logs_sync,
+    };
+
+    const batchResult = resultMap[dataKey];
+    if (!batchResult) {
+      return;
+    }
+
+    if ((batchResult.failed || 0) > 0) {
+      const detail =
+        batchResult.errors && batchResult.errors.length > 0
+          ? batchResult.errors.join(", ")
+          : `only synced ${batchResult.success || 0}/${batchResult.total || 0}`;
+      throw new Error(`${scope}: ${detail}`);
+    }
+  }
+
+  private chunkArray<T>(items: T[], chunkSize: number): T[][] {
+    const chunks: T[][] = [];
+    for (let index = 0; index < items.length; index += chunkSize) {
+      chunks.push(items.slice(index, index + chunkSize));
+    }
+    return chunks;
+  }
+
+  private getReadableSyncError(error: any, scope = "sync"): string {
+    const errorCode = error?.code;
+    const status = error?.response?.status;
+    const serverMessage =
+      error?.response?.data?.message || error?.response?.data?.error;
+
+    if (status && serverMessage) {
+      return `${scope}: ${serverMessage} (HTTP ${status})`;
+    }
+
+    if (errorCode === "EPIPE") {
+      return `${scope}: connection closed while uploading data (EPIPE). Local backlog is likely too large; sync now retries in smaller batches.`;
+    }
+
+    if (errorCode === "ECONNRESET") {
+      return `${scope}: connection was reset while uploading data`;
+    }
+
+    if (errorCode === "ECONNABORTED") {
+      return `${scope}: request timed out while uploading data`;
+    }
+
+    return `${scope}: ${error?.message || "Unknown sync error"}`;
   }
 
   getSyncStatus() {
@@ -256,6 +478,20 @@ export class SyncService {
       lastSyncTime: this.lastSyncTime,
       autoSyncEnabled: this.syncTimer !== null,
     };
+  }
+
+  async updatePresence(status: "working" | "idle"): Promise<void> {
+    const credentials = AppConfig.getCredentials();
+    if (!credentials?.accessToken) {
+      return;
+    }
+
+    try {
+      await this.apiClient.post("/presence/heartbeat", { status });
+    } catch (error) {
+      console.error(`Failed to update presence to ${status}:`, error);
+      throw error;
+    }
   }
 
   /**
@@ -340,6 +576,34 @@ export class SyncService {
     };
   }
 
+  private systemLogToDTO(systemLog: SystemLog) {
+    return {
+      local_id: systemLog.localId,
+      organization_id: systemLog.organizationId,
+      workspace_id: systemLog.workspaceId,
+      source: systemLog.source,
+      level: systemLog.level,
+      component: systemLog.component,
+      message: systemLog.message,
+      details: this.parseLogDetails(systemLog.details),
+      stack_trace: systemLog.stackTrace,
+      app_version: systemLog.appVersion,
+      device_uuid: systemLog.deviceUUID,
+      occurred_at: systemLog.occurredAt,
+      request_id: systemLog.requestId,
+      session_local_id: systemLog.sessionLocalId,
+    };
+  }
+
+  private parseLogDetails(details?: string) {
+    if (!details) return null;
+    try {
+      return JSON.parse(details);
+    } catch {
+      return { raw: details };
+    }
+  }
+
   private getDeviceUUID(): string {
     const { machineId } = require("node-machine-id");
     try {
@@ -420,5 +684,26 @@ export class SyncService {
 
   async cleanup(): Promise<void> {
     this.stopAutoSync();
+    await this.cleanupSyncedSystemLogs();
+  }
+
+  private async cleanupSyncedSystemLogs(): Promise<void> {
+    try {
+      const retentionDays = AppConfig.systemLogRetentionDays;
+      if (!retentionDays || retentionDays <= 0) return;
+
+      const cutoff = subDays(Date.now(), retentionDays);
+      const deleted = await this.dbService.cleanupSyncedSystemLogsBeforeDate(
+        formatISO(cutoff),
+      );
+
+      if (deleted > 0) {
+        console.log(
+          `🧹 System log cleanup: removed ${deleted} synced logs older than ${retentionDays} days`,
+        );
+      }
+    } catch (error) {
+      console.error("Error during system log cleanup:", error);
+    }
   }
 }

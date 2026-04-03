@@ -297,10 +297,12 @@ export default function AdminScreenshotsPage() {
   // Handle undefined data
   const screenshots = data?.screenshots || [];
   const pagination = data?.pagination || {
+    page,
     total_items: 0,
     total_pages: 0,
-    current_page: page,
     page_size: pageSize,
+    has_next: false,
+    has_prev: false,
   };
 
   const users = (usersData?.users || []) as AdminUser[];

@@ -1,5 +1,145 @@
 import { contextBridge, ipcRenderer } from "electron";
 
+type RendererLogLevel = "debug" | "info" | "warn" | "error";
+
+const originalConsole = {
+  log: console.log.bind(console),
+  info: console.info.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+  debug: console.debug.bind(console),
+};
+
+const rendererGlobal = globalThis as typeof globalThis & {
+  addEventListener?: (type: string, listener: (event: any) => void) => void;
+};
+
+function normalizeRendererArgs(args: unknown[]) {
+  const firstError = args.find((value) => value instanceof Error) as
+    | Error
+    | undefined;
+
+  return {
+    message: args
+      .map((value) => {
+        if (value instanceof Error) {
+          return value.message;
+        }
+        if (typeof value === "string") {
+          return value;
+        }
+        try {
+          return JSON.stringify(value);
+        } catch {
+          return String(value);
+        }
+      })
+      .join(" ")
+      .slice(0, 8000),
+    details:
+      args.length > 1 || typeof args[0] !== "string"
+        ? args.map((value) =>
+            value instanceof Error
+              ? {
+                  name: value.name,
+                  message: value.message,
+                  stack: value.stack,
+                }
+              : value,
+          )
+        : undefined,
+    stackTrace: firstError?.stack,
+  };
+}
+
+function forwardRendererLog(level: RendererLogLevel, args: unknown[]) {
+  const payload = normalizeRendererArgs(args);
+  ipcRenderer.send("system-log:renderer", {
+    level,
+    component: "renderer-console",
+    message: payload.message,
+    details: payload.details,
+    stackTrace: payload.stackTrace,
+  });
+}
+
+function forwardRendererErrorEvent(level: RendererLogLevel, payload: {
+  component: string;
+  message: string;
+  details?: unknown;
+  stackTrace?: string;
+}) {
+  ipcRenderer.send("system-log:renderer", {
+    level,
+    component: payload.component,
+    message: payload.message,
+    details: payload.details,
+    stackTrace: payload.stackTrace,
+  });
+}
+
+console.log = (...args: unknown[]) => {
+  originalConsole.log(...args);
+  forwardRendererLog("info", args);
+};
+console.info = (...args: unknown[]) => {
+  originalConsole.info(...args);
+  forwardRendererLog("info", args);
+};
+console.warn = (...args: unknown[]) => {
+  originalConsole.warn(...args);
+  forwardRendererLog("warn", args);
+};
+console.error = (...args: unknown[]) => {
+  originalConsole.error(...args);
+  forwardRendererLog("error", args);
+};
+console.debug = (...args: unknown[]) => {
+  originalConsole.debug(...args);
+  forwardRendererLog("debug", args);
+};
+
+rendererGlobal.addEventListener?.("error", (event: any) => {
+  forwardRendererErrorEvent("error", {
+    component: "renderer-global",
+    message: event.message || "Unhandled renderer error",
+    details: {
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+      error:
+        event.error instanceof Error
+          ? {
+              name: event.error.name,
+              message: event.error.message,
+              stack: event.error.stack,
+            }
+          : event.error,
+    },
+    stackTrace: event.error instanceof Error ? event.error.stack : undefined,
+  });
+});
+
+rendererGlobal.addEventListener?.("unhandledrejection", (event: any) => {
+  const reason = event.reason;
+  forwardRendererErrorEvent("error", {
+    component: "renderer-global",
+    message:
+      reason instanceof Error
+        ? `Unhandled promise rejection: ${reason.message}`
+        : "Unhandled promise rejection in renderer",
+    details:
+      reason instanceof Error
+        ? {
+            name: reason.name,
+            message: reason.message,
+            stack: reason.stack,
+          }
+        : reason,
+    stackTrace: reason instanceof Error ? reason.stack : undefined,
+  });
+});
+
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld("electronAPI", {
@@ -103,6 +243,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getSize: () => ipcRenderer.invoke("storage:get-size"),
     deleteOld: (daysOld?: number) =>
       ipcRenderer.invoke("storage:delete-old", daysOld),
+    clearAppCache: () => ipcRenderer.invoke("storage:clear-app-cache"),
+    clearSqliteCache: () => ipcRenderer.invoke("storage:clear-sqlite-cache"),
     getScreenshotPath: () => ipcRenderer.invoke("storage:get-screenshot-path"),
     setScreenshotPath: (customPath: string | null) =>
       ipcRenderer.invoke("storage:set-screenshot-path", customPath),
@@ -220,6 +362,16 @@ export interface ElectronAPI {
     cleanupSynced: (keepDays?: number) => Promise<any>;
     getSize: () => Promise<any>;
     deleteOld: (daysOld?: number) => Promise<any>;
+    clearAppCache: () => Promise<{
+      success: boolean;
+      clearedBytes?: number;
+      error?: string;
+    }>;
+    clearSqliteCache: () => Promise<{
+      success: boolean;
+      clearedBytes?: number;
+      error?: string;
+    }>;
     getScreenshotPath: () => Promise<{
       success: boolean;
       path?: string;

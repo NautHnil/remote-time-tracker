@@ -5,10 +5,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Icons } from "../../components/Icons";
-import { Button, Input } from "../../components/ui";
+import { Input, Select } from "../../components/ui";
 import { adminService } from "../../services/adminService";
+import type { AdminOrganization, AdminUser, AdminWorkspace } from "../../types/admin";
 
 // Stat Card Component
 interface StatCardProps {
@@ -96,17 +97,56 @@ function StatCard({
   );
 }
 
-// Activity Chart Placeholder
-function ActivityChart() {
+interface ActivityChartProps {
+  hourlyStats: Array<{ hour: number; count: number }>;
+  peakHour: number;
+  peakHourCount: number;
+}
+
+function ActivityChart({
+  hourlyStats,
+  peakHour,
+  peakHourCount,
+}: ActivityChartProps) {
+  const maxCount = Math.max(...hourlyStats.map((item) => item.count), 1);
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Activity Overview
-      </h3>
-      <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-        <div className="text-center">
-          <Icons.BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500 text-sm">Activity chart coming soon</p>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          Activity Overview
+        </h3>
+        <p className="text-sm text-gray-500">
+          Peak hour: {peakHourCount > 0 ? `${peakHour}:00` : "N/A"}
+        </p>
+      </div>
+      <div className="h-64 rounded-lg border border-gray-100 bg-gray-50/70 p-4">
+        <div className="flex h-full items-end gap-2">
+          {hourlyStats.map((item) => {
+            const height = Math.max((item.count / maxCount) * 100, 4);
+            const isPeak = item.hour === peakHour && item.count === peakHourCount;
+
+            return (
+              <div
+                key={item.hour}
+                className="flex flex-1 flex-col items-center justify-end gap-2"
+                title={`${item.hour}:00 - ${item.count} events`}
+              >
+                <div className="w-full rounded-t-md bg-blue-100">
+                  <div
+                    className={`w-full rounded-t-md transition-all ${
+                      isPeak ? "bg-blue-600" : "bg-blue-400"
+                    }`}
+                    style={{ height: `${height}%`, minHeight: item.count > 0 ? 10 : 4 }}
+                  />
+                </div>
+                <span className="text-[10px] text-gray-500">{item.hour}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-3 text-xs text-gray-500">
+          Total peak events: {peakHourCount}
         </div>
       </div>
     </div>
@@ -115,6 +155,7 @@ function ActivityChart() {
 
 // Recent Activity List
 interface RecentActivityProps {
+  isLoading?: boolean;
   activities: Array<{
     id: number;
     type: string;
@@ -124,13 +165,28 @@ interface RecentActivityProps {
   }>;
 }
 
-function RecentActivity({ activities }: RecentActivityProps) {
+function RecentActivity({ activities, isLoading = false }: RecentActivityProps) {
+  const getTone = (type: string) => {
+    switch (type) {
+      case "error":
+        return "bg-red-100 text-red-600";
+      case "warn":
+        return "bg-yellow-100 text-yellow-700";
+      default:
+        return "bg-blue-100 text-blue-600";
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">
         Recent Activity
       </h3>
-      {activities.length === 0 ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+        </div>
+      ) : activities.length === 0 ? (
         <div className="text-center py-8">
           <Icons.Activity className="h-12 w-12 text-gray-300 mx-auto mb-2" />
           <p className="text-gray-500 text-sm">No recent activity</p>
@@ -139,8 +195,12 @@ function RecentActivity({ activities }: RecentActivityProps) {
         <div className="space-y-4">
           {activities.map((activity) => (
             <div key={activity.id} className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <Icons.Activity className="h-4 w-4 text-gray-500" />
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getTone(
+                  activity.type,
+                )}`}
+              >
+                <Icons.Activity className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-900">
@@ -165,8 +225,16 @@ interface TopUser {
   first_name?: string;
   last_name?: string;
   total_duration: number;
+  approved_duration?: number;
   total_hours?: number;
   task_count: number;
+  session_count?: number;
+  approved_sessions?: number;
+  active_days?: number;
+  avg_daily_duration?: number;
+  avg_session_duration?: number;
+  screenshot_count?: number;
+  last_activity_at?: string | null;
   total_tasks?: number;
   rank: number;
 }
@@ -174,15 +242,17 @@ interface TopUser {
 interface TopUsersTableProps {
   users: TopUser[];
   isLoading: boolean;
+  filters: React.ReactNode;
 }
 
-function TopUsersTable({ users, isLoading }: TopUsersTableProps) {
+function TopUsersTable({ users, isLoading, filters }: TopUsersTableProps) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200">
+      <div className="px-6 py-4 border-b border-gray-200 space-y-4">
         <h3 className="text-lg font-semibold text-gray-900">
-          Top Active Users
+          Top Users By Tracked Time
         </h3>
+        {filters}
       </div>
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
@@ -191,7 +261,7 @@ function TopUsersTable({ users, isLoading }: TopUsersTableProps) {
       ) : users.length === 0 ? (
         <div className="text-center py-12">
           <Icons.Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No user activity data</p>
+          <p className="text-gray-500">No tracked time data</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -248,13 +318,355 @@ function TopUsersTable({ users, isLoading }: TopUsersTableProps) {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="text-sm text-gray-900">-</span>
+                    <span className="text-sm text-gray-900">
+                      {user.screenshot_count ?? 0}
+                    </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    -
+                    {user.last_activity_at
+                      ? format(new Date(user.last_activity_at), "MMM d, HH:mm")
+                      : "No activity"}
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface TrackerOverviewProps {
+  users: TopUser[];
+  isLoading: boolean;
+  filters: React.ReactNode;
+}
+
+function formatDurationHours(seconds: number | undefined): string {
+  const safeSeconds = Number(seconds || 0);
+  return `${(safeSeconds / 3600).toFixed(1)}h`;
+}
+
+function formatDurationCompact(seconds: number | undefined): string {
+  const totalSeconds = Math.max(0, Math.floor(Number(seconds || 0)));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function TrackerOverview({
+  users,
+  isLoading,
+  filters,
+}: TrackerOverviewProps) {
+  const summary = useMemo(() => {
+    return users.reduce(
+      (acc, user) => {
+        acc.totalDuration += Number(user.total_duration || 0);
+        acc.approvedDuration += Number(user.approved_duration || 0);
+        acc.totalSessions += Number(user.session_count || 0);
+        acc.activeDays += Number(user.active_days || 0);
+        return acc;
+      },
+      { totalDuration: 0, approvedDuration: 0, totalSessions: 0, activeDays: 0 },
+    );
+  }, [users]);
+
+  const avgHoursPerUser =
+    users.length > 0 ? summary.totalDuration / users.length / 3600 : 0;
+
+  const approvalRate =
+    summary.totalDuration > 0
+      ? Math.round((summary.approvedDuration / summary.totalDuration) * 100)
+      : 0;
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div className="flex-1 space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Tracker Overview For Selected Range
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Use these numbers to review tracked workload across the selected range.
+            </p>
+          </div>
+          {filters}
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-500">Users in report</p>
+          <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+        </div>
+      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Total tracked</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {formatDurationHours(summary.totalDuration)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Approved tracked</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {formatDurationHours(summary.approvedDuration)}
+            </p>
+          </div>
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Sessions logged</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {summary.totalSessions.toLocaleString()}
+            </p>
+          </div>
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <p className="text-sm text-gray-500">Avg tracked per user</p>
+            <p className="text-2xl font-semibold text-gray-900">
+              {avgHoursPerUser.toFixed(1)}h
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Approval rate {approvalRate}% • Active days {summary.activeDays}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface StatsFilterState {
+  orgId: string;
+  workspaceId: string;
+  userId: string;
+}
+
+interface BoxFiltersProps {
+  organizations: AdminOrganization[];
+  workspaces: AdminWorkspace[];
+  users: AdminUser[];
+  value: StatsFilterState;
+  onChange: (next: StatsFilterState) => void;
+}
+
+function BoxFilters({
+  organizations,
+  workspaces,
+  users,
+  value,
+  onChange,
+}: BoxFiltersProps) {
+  const filteredWorkspaces = useMemo(() => {
+    if (!value.orgId) return workspaces;
+    return workspaces.filter((ws) => String(ws.organization_id) === value.orgId);
+  }, [workspaces, value.orgId]);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <Select
+        value={value.orgId}
+        onChange={(e) =>
+          onChange({
+            ...value,
+            orgId: e.target.value,
+            workspaceId: "",
+          })
+        }
+      >
+        <option value="">All Organizations</option>
+        {organizations.map((org) => (
+          <option key={org.id} value={org.id}>
+            {org.name}
+          </option>
+        ))}
+      </Select>
+      <Select
+        value={value.workspaceId}
+        onChange={(e) =>
+          onChange({
+            ...value,
+            workspaceId: e.target.value,
+          })
+        }
+      >
+        <option value="">All Workspaces</option>
+        {filteredWorkspaces.map((workspace) => (
+          <option key={workspace.id} value={workspace.id}>
+            {workspace.name}
+          </option>
+        ))}
+      </Select>
+      <Select
+        value={value.userId}
+        onChange={(e) =>
+          onChange({
+            ...value,
+            userId: e.target.value,
+          })
+        }
+      >
+        <option value="">All Users</option>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {user.full_name || `${user.first_name} ${user.last_name}`}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
+}
+
+interface UserPerformanceTableProps {
+  users: TopUser[];
+  search: string;
+  onSearchChange: (value: string) => void;
+  isLoading: boolean;
+  filters: React.ReactNode;
+}
+
+function UserPerformanceTable({
+  users,
+  search,
+  onSearchChange,
+  isLoading,
+  filters,
+}: UserPerformanceTableProps) {
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-200 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            User Time Tracker Performance
+          </h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Detailed per-user breakdown for tracked work review.
+          </p>
+        </div>
+        {filters}
+        <div className="w-full lg:w-72">
+          <Input
+            type="text"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            leftIcon={<Icons.Search className="h-4 w-4" />}
+            placeholder="Filter by user or email"
+          />
+        </div>
+      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+      ) : users.length === 0 ? (
+        <div className="text-center py-12">
+          <Icons.Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No user matches the selected range</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tracked
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Approved
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Sessions
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Active Days
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Avg/Day
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Avg/Session
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tasks
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Screenshots
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last Activity
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {users.map((user) => {
+                const approvalRate =
+                  Number(user.total_duration || 0) > 0
+                    ? Math.round(
+                        (Number(user.approved_duration || 0) /
+                          Number(user.total_duration || 0)) *
+                          100,
+                      )
+                    : 0;
+
+                return (
+                  <tr key={user.user_id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.user_name || "Unknown"}
+                        </p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatDurationHours(user.total_duration)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatDurationHours(user.approved_duration)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {approvalRate}% approved
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {user.session_count ?? 0}
+                      <div className="text-xs text-gray-500">
+                        {user.approved_sessions ?? 0} approved
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {user.active_days ?? 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatDurationCompact(user.avg_daily_duration)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatDurationCompact(user.avg_session_duration)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {user.task_count || user.total_tasks || 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {user.screenshot_count ?? 0}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {user.last_activity_at
+                        ? format(new Date(user.last_activity_at), "MMM d, yyyy HH:mm")
+                        : "No activity"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -268,6 +680,22 @@ export default function AdminStatisticsPage() {
     start: format(subDays(new Date(), 30), "yyyy-MM-dd"),
     end: format(new Date(), "yyyy-MM-dd"),
   });
+  const [userSearch, setUserSearch] = useState("");
+  const [overviewFilters, setOverviewFilters] = useState<StatsFilterState>({
+    orgId: "",
+    workspaceId: "",
+    userId: "",
+  });
+  const [topUsersFilters, setTopUsersFilters] = useState<StatsFilterState>({
+    orgId: "",
+    workspaceId: "",
+    userId: "",
+  });
+  const [performanceFilters, setPerformanceFilters] = useState<StatsFilterState>({
+    orgId: "",
+    workspaceId: "",
+    userId: "",
+  });
 
   // Fetch system stats
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -278,11 +706,106 @@ export default function AdminStatisticsPage() {
     },
   });
 
-  // Fetch user activities (using user-performance endpoint)
-  const { data: userActivities, isLoading: activitiesLoading } = useQuery({
-    queryKey: ["admin-user-activities", dateRange],
+  const { data: activityStats, isLoading: activityLoading } = useQuery({
+    queryKey: ["admin-activity-stats"],
     queryFn: async () => {
-      const response = await adminService.getUserPerformance(10);
+      const response = await adminService.getActivityStats();
+      return response.data;
+    },
+  });
+
+  const { data: recentLogs, isLoading: recentLogsLoading } = useQuery({
+    queryKey: ["admin-recent-system-activity"],
+    queryFn: async () => {
+      const response = await adminService.getSystemLogs({
+        page: 1,
+        page_size: 8,
+        sort_by: "created_at",
+        sort_order: "desc",
+      });
+      return response.data?.system_logs || [];
+    },
+  });
+
+  const { data: usersData } = useQuery({
+    queryKey: ["admin-users-stats-options"],
+    queryFn: async () => {
+      const response = await adminService.getUsers({ page: 1, page_size: 200 });
+      return response.data?.users || [];
+    },
+  });
+
+  const { data: orgsData } = useQuery({
+    queryKey: ["admin-orgs-stats-options"],
+    queryFn: async () => {
+      const response = await adminService.getOrganizations({
+        page: 1,
+        page_size: 200,
+      });
+      return response.data?.organizations || [];
+    },
+  });
+
+  const { data: workspacesData } = useQuery({
+    queryKey: ["admin-workspaces-stats-options"],
+    queryFn: async () => {
+      const response = await adminService.getWorkspaces({
+        page: 1,
+        page_size: 200,
+      });
+      return response.data?.workspaces || [];
+    },
+  });
+
+  const buildPerformanceFilters = (filters: StatsFilterState) => ({
+    start_date: dateRange.start,
+    end_date: dateRange.end,
+    org_id: filters.orgId ? Number(filters.orgId) : undefined,
+    workspace_id: filters.workspaceId ? Number(filters.workspaceId) : undefined,
+    user_id: filters.userId ? Number(filters.userId) : undefined,
+  });
+
+  const { data: overviewActivities, isLoading: overviewLoading } = useQuery({
+    queryKey: [
+      "admin-overview-user-activities",
+      dateRange,
+      overviewFilters,
+    ],
+    queryFn: async () => {
+      const response = await adminService.getUserPerformance(
+        100,
+        buildPerformanceFilters(overviewFilters),
+      );
+      return { users: response.data || [] };
+    },
+  });
+
+  const { data: topUsersActivities, isLoading: topUsersLoading } = useQuery({
+    queryKey: [
+      "admin-top-users-activities",
+      dateRange,
+      topUsersFilters,
+    ],
+    queryFn: async () => {
+      const response = await adminService.getUserPerformance(
+        100,
+        buildPerformanceFilters(topUsersFilters),
+      );
+      return { users: response.data || [] };
+    },
+  });
+
+  const { data: performanceActivities, isLoading: performanceLoading } = useQuery({
+    queryKey: [
+      "admin-user-performance-activities",
+      dateRange,
+      performanceFilters,
+    ],
+    queryFn: async () => {
+      const response = await adminService.getUserPerformance(
+        100,
+        buildPerformanceFilters(performanceFilters),
+      );
       return { users: response.data || [] };
     },
   });
@@ -300,14 +823,30 @@ export default function AdminStatisticsPage() {
     return `${hours.toFixed(1)}h`;
   };
 
-  // Mock recent activities (would come from audit logs in production)
-  const recentActivities: Array<{
-    id: number;
-    type: string;
-    user: string;
-    action: string;
-    time: string;
-  }> = [];
+  const recentActivities =
+    recentLogs?.map((log) => ({
+      id: log.id,
+      type: log.level || "info",
+      user: log.user_name || log.user_email || log.source || "System",
+      action: `${log.component ? `[${log.component}] ` : ""}${log.message}`,
+      time: format(new Date(log.occurred_at), "MMM d, yyyy HH:mm"),
+    })) || [];
+
+  const users = (usersData || []) as AdminUser[];
+  const organizations = (orgsData || []) as AdminOrganization[];
+  const workspaces = (workspacesData || []) as AdminWorkspace[];
+
+  const filteredPerformanceUsers = useMemo(() => {
+    const list = performanceActivities?.users || [];
+    const search = userSearch.trim().toLowerCase();
+    if (!search) return list;
+
+    return list.filter((user) =>
+      [user.user_name, user.email]
+        .filter(Boolean)
+        .some((value) => value!.toLowerCase().includes(search)),
+    );
+  }, [performanceActivities?.users, userSearch]);
 
   return (
     <div className="space-y-6">
@@ -322,7 +861,7 @@ export default function AdminStatisticsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Input
               type="date"
               value={dateRange.start}
@@ -345,7 +884,7 @@ export default function AdminStatisticsPage() {
       </div>
 
       {/* Stats Grid */}
-      {statsLoading ? (
+      {statsLoading || activityLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
         </div>
@@ -364,10 +903,24 @@ export default function AdminStatisticsPage() {
             color="blue"
           />
           <StatCard
-            title="Active Users"
+            title="Enabled Accounts"
             value={formatNumber(stats?.active_users)}
             icon={Icons.UserCheck}
-            description="Users active in last 30 days"
+            description="Accounts currently enabled in the system"
+            color="green"
+          />
+          <StatCard
+            title="Users With Activity Today"
+            value={formatNumber(activityStats?.users_with_activity_today)}
+            icon={Icons.Activity}
+            description="Users who logged work today"
+            color="cyan"
+          />
+          <StatCard
+            title="Working Right Now"
+            value={formatNumber(activityStats?.working_users_realtime)}
+            icon={Icons.Timer}
+            description="Users with fresh working heartbeat"
             color="green"
           />
           <StatCard
@@ -466,44 +1019,61 @@ export default function AdminStatisticsPage() {
 
       {/* Charts and Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActivityChart />
-        <RecentActivity activities={recentActivities} />
+        <ActivityChart
+          hourlyStats={activityStats?.activity_by_hour || []}
+          peakHour={activityStats?.peak_hour || 0}
+          peakHourCount={activityStats?.peak_hour_count || 0}
+        />
+        <RecentActivity
+          isLoading={recentLogsLoading}
+          activities={recentActivities}
+        />
       </div>
+
+      <TrackerOverview
+        users={overviewActivities?.users || []}
+        isLoading={overviewLoading}
+        filters={
+          <BoxFilters
+            organizations={organizations}
+            workspaces={workspaces}
+            users={users}
+            value={overviewFilters}
+            onChange={setOverviewFilters}
+          />
+        }
+      />
 
       {/* Top Users */}
       <TopUsersTable
-        users={userActivities?.users || []}
-        isLoading={activitiesLoading}
+        users={(topUsersActivities?.users || []).slice(0, 10)}
+        isLoading={topUsersLoading}
+        filters={
+          <BoxFilters
+            organizations={organizations}
+            workspaces={workspaces}
+            users={users}
+            value={topUsersFilters}
+            onChange={setTopUsersFilters}
+          />
+        }
       />
 
-      {/* Export Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Export Reports
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Button variant="outline" size="sm" className="justify-center gap-2">
-            <Icons.Users className="h-5 w-5 text-gray-600" />
-            <span>Export Users</span>
-          </Button>
-          <Button variant="outline" size="sm" className="justify-center gap-2">
-            <Icons.ListTodo className="h-5 w-5 text-gray-600" />
-            <span>Export Tasks</span>
-          </Button>
-          <Button variant="outline" size="sm" className="justify-center gap-2">
-            <Icons.Clock className="h-5 w-5 text-gray-600" />
-            <span>Export Time Logs</span>
-          </Button>
-          <Button variant="outline" size="sm" className="justify-center gap-2">
-            <Icons.Building2 className="h-5 w-5 text-gray-600" />
-            <span>Export Orgs</span>
-          </Button>
-          <Button variant="outline" size="sm" className="justify-center gap-2">
-            <Icons.Camera className="h-5 w-5 text-gray-600" />
-            <span>Export Screenshots</span>
-          </Button>
-        </div>
-      </div>
+      <UserPerformanceTable
+        users={filteredPerformanceUsers}
+        search={userSearch}
+        onSearchChange={setUserSearch}
+        isLoading={performanceLoading}
+        filters={
+          <BoxFilters
+            organizations={organizations}
+            workspaces={workspaces}
+            users={users}
+            value={performanceFilters}
+            onChange={setPerformanceFilters}
+          />
+        }
+      />
     </div>
   );
 }

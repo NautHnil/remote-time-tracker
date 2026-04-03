@@ -57,10 +57,14 @@ type AdminService interface {
 	DeleteScreenshot(id uint) error
 	BulkDeleteScreenshots(ids []uint) error
 
+	// System Logs
+	ListSystemLogs(params *dto.AdminSystemLogListParams) (*dto.AdminSystemLogListResponse, error)
+	GetSystemLog(id uint) (*dto.AdminSystemLogResponse, error)
+
 	// Statistics
 	GetOverviewStats() (*dto.AdminOverviewStats, error)
 	GetTrendStats(req *dto.AdminTrendRequest) (*dto.AdminTrendStats, error)
-	GetUserPerformanceStats(limit int) ([]dto.AdminUserPerformance, error)
+	GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID *uint) ([]dto.AdminUserPerformance, error)
 	GetOrgDistributionStats() (*dto.AdminOrgStats, error)
 	GetActivityStats() (*dto.AdminActivityStats, error)
 }
@@ -641,7 +645,12 @@ func (s *adminService) UpdateTask(id uint, req *dto.AdminUpdateTaskRequest) (*dt
 }
 
 func (s *adminService) DeleteTask(id uint) error {
-	return s.taskRepo.Delete(id)
+	task, err := s.taskRepo.FindByID(id)
+	if err != nil {
+		return err
+	}
+
+	return deleteTaskAndScreenshots(task, s.taskRepo, s.screenshotRepo)
 }
 
 // ============================================================================
@@ -772,16 +781,56 @@ func (s *adminService) GetScreenshot(id uint) (*dto.AdminScreenshotResponse, err
 }
 
 func (s *adminService) DeleteScreenshot(id uint) error {
-	return s.screenshotRepo.Delete(id)
+	return deleteScreenshotRecordAndFile(id, s.screenshotRepo)
 }
 
 func (s *adminService) BulkDeleteScreenshots(ids []uint) error {
 	for _, id := range ids {
-		if err := s.screenshotRepo.Delete(id); err != nil {
+		if err := s.DeleteScreenshot(id); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// ============================================================================
+// SYSTEM LOG METHODS
+// ============================================================================
+
+func (s *adminService) ListSystemLogs(params *dto.AdminSystemLogListParams) (*dto.AdminSystemLogListResponse, error) {
+	systemLogs, total, err := s.adminRepo.FindSystemLogsWithFilters(params)
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []dto.AdminSystemLogResponse
+	for _, systemLog := range systemLogs {
+		responses = append(responses, s.systemLogToResponse(&systemLog))
+	}
+
+	totalPages := int((total + int64(params.PageSize) - 1) / int64(params.PageSize))
+
+	return &dto.AdminSystemLogListResponse{
+		SystemLogs: responses,
+		Pagination: dto.AdminPaginationResponse{
+			Page:       params.Page,
+			PageSize:   params.PageSize,
+			TotalItems: total,
+			TotalPages: totalPages,
+			HasNext:    params.Page < totalPages,
+			HasPrev:    params.Page > 1,
+		},
+	}, nil
+}
+
+func (s *adminService) GetSystemLog(id uint) (*dto.AdminSystemLogResponse, error) {
+	systemLog, err := s.adminRepo.FindSystemLogByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	response := s.systemLogToResponse(systemLog)
+	return &response, nil
 }
 
 // ============================================================================
@@ -796,11 +845,11 @@ func (s *adminService) GetTrendStats(req *dto.AdminTrendRequest) (*dto.AdminTren
 	return s.adminRepo.GetTrendStats(req.Period, req.StartDate, req.EndDate)
 }
 
-func (s *adminService) GetUserPerformanceStats(limit int) ([]dto.AdminUserPerformance, error) {
+func (s *adminService) GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID *uint) ([]dto.AdminUserPerformance, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	return s.adminRepo.GetUserPerformanceStats(limit)
+	return s.adminRepo.GetUserPerformanceStats(limit, startDate, endDate, userID, orgID, workspaceID)
 }
 
 func (s *adminService) GetOrgDistributionStats() (*dto.AdminOrgStats, error) {
@@ -1001,6 +1050,43 @@ func (s *adminService) screenshotToResponse(ss *models.Screenshot) dto.AdminScre
 
 	if ss.Workspace != nil && ss.Workspace.ID > 0 {
 		resp.WorkspaceName = ss.Workspace.Name
+	}
+
+	return resp
+}
+
+func (s *adminService) systemLogToResponse(systemLog *models.SystemLog) dto.AdminSystemLogResponse {
+	resp := dto.AdminSystemLogResponse{
+		ID:             systemLog.ID,
+		UserID:         systemLog.UserID,
+		DeviceID:       systemLog.DeviceID,
+		OrganizationID: systemLog.OrganizationID,
+		WorkspaceID:    systemLog.WorkspaceID,
+		Source:         systemLog.Source,
+		Level:          systemLog.Level,
+		Component:      systemLog.Component,
+		Message:        systemLog.Message,
+		Details:        systemLog.Details,
+		StackTrace:     systemLog.StackTrace,
+		AppVersion:     systemLog.AppVersion,
+		DeviceUUID:     systemLog.DeviceUUID,
+		RequestID:      systemLog.RequestID,
+		SessionLocalID: systemLog.SessionLocalID,
+		OccurredAt:     systemLog.OccurredAt,
+		CreatedAt:      systemLog.CreatedAt,
+	}
+
+	if systemLog.User != nil && systemLog.User.ID > 0 {
+		resp.UserEmail = systemLog.User.Email
+		resp.UserName = systemLog.User.FirstName + " " + systemLog.User.LastName
+	}
+
+	if systemLog.Organization != nil && systemLog.Organization.ID > 0 {
+		resp.OrgName = systemLog.Organization.Name
+	}
+
+	if systemLog.Workspace != nil && systemLog.Workspace.ID > 0 {
+		resp.WorkspaceName = systemLog.Workspace.Name
 	}
 
 	return resp

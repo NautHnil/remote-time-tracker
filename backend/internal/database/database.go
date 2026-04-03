@@ -62,6 +62,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&models.Screenshot{},
 		&models.DeviceInfo{},
 		&models.SyncLog{},
+		&models.SystemLog{},
+		&models.SystemConfig{},
 		&models.AuditLog{},
 		// Organization & Workspace models
 		&models.Organization{},

@@ -21,6 +21,7 @@ type ScreenshotRepository interface {
 	FindByTaskIDOrLocalID(taskID uint, taskLocalID string, userID uint) ([]models.Screenshot, error)
 	Update(screenshot *models.Screenshot) error
 	Delete(id uint) error
+	DeleteByTaskIDOrLocalID(taskID uint, taskLocalID string, userID uint) error
 	DeleteFile(filePath string) error
 	BatchCreate(screenshots []models.Screenshot) error
 	FindByDateRange(userID uint, startDate, endDate time.Time) ([]models.Screenshot, error)
@@ -148,6 +149,18 @@ func (r *screenshotRepository) Update(screenshot *models.Screenshot) error {
 
 func (r *screenshotRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Screenshot{}, id).Error
+}
+
+func (r *screenshotRepository) DeleteByTaskIDOrLocalID(taskID uint, taskLocalID string, userID uint) error {
+	query := r.db.Where("user_id = ?", userID)
+
+	if taskLocalID != "" {
+		query = query.Where("task_local_id = ? OR task_id = ?", taskLocalID, taskID)
+	} else {
+		query = query.Where("task_id = ?", taskID)
+	}
+
+	return query.Delete(&models.Screenshot{}).Error
 }
 
 // DeleteFile deletes a screenshot file from disk

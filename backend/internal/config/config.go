@@ -69,8 +69,10 @@ type CORSConfig struct {
 
 // LogConfig holds logging configuration
 type LogConfig struct {
-	Level  string
-	Format string
+	Level                    string
+	Format                   string
+	SystemLogRetentionDays   int
+	SystemLogCleanupInterval time.Duration
 }
 
 // PresenceConfig holds presence/heartbeat configuration
@@ -117,8 +119,10 @@ func Load() (*Config, error) {
 			AllowedOrigins: parseOrigins(getEnv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")),
 		},
 		Log: LogConfig{
-			Level:  getEnv("LOG_LEVEL", "debug"),
-			Format: getEnv("LOG_FORMAT", "json"),
+			Level:                    getEnv("LOG_LEVEL", "debug"),
+			Format:                   getEnv("LOG_FORMAT", "json"),
+			SystemLogRetentionDays:   parseInt(getEnv("SYSTEM_LOG_RETENTION_DAYS", "30")),
+			SystemLogCleanupInterval: parseDuration(getEnv("SYSTEM_LOG_CLEANUP_INTERVAL", "6h")),
 		},
 		GitHub: GitHubConfig{
 			Token: getEnv("GITHUB_TOKEN", ""),
@@ -187,6 +191,15 @@ func parseInt64(s string) int64 {
 	if err != nil {
 		log.Printf("Failed to parse int64 %s, using default 10485760", s)
 		return 10485760
+	}
+	return i
+}
+
+func parseInt(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		log.Printf("Failed to parse int %s, using default 0", s)
+		return 0
 	}
 	return i
 }

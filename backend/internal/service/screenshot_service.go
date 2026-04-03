@@ -131,21 +131,7 @@ func (s *screenshotService) DeleteScreenshot(id uint, userID uint) error {
 		return errors.New("unauthorized access to screenshot")
 	}
 
-	// Delete from database first
-	if err := s.screenshotRepo.Delete(id); err != nil {
-		return err
-	}
-
-	// Then delete the file from disk
-	// Note: We don't fail the whole operation if file deletion fails
-	// because the DB record is already gone
-	if err := s.screenshotRepo.DeleteFile(screenshot.FilePath); err != nil {
-		// Log error but don't return it - DB deletion already succeeded
-		// In production, you might want to use a proper logger here
-		_ = err
-	}
-
-	return nil
+	return deleteScreenshotRecordAndFile(id, s.screenshotRepo)
 }
 
 // GetScreenshotStats retrieves screenshot statistics

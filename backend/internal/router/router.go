@@ -34,6 +34,7 @@ type RouterConfig struct {
 	// Services for middleware
 	OrganizationService service.OrganizationService
 	WorkspaceService    service.WorkspaceService
+	SystemLogService    service.SystemLogService
 }
 
 // SetupRouter configures and returns the Gin router
@@ -60,7 +61,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 	router := gin.Default()
 
 	// Apply middleware
-	router.Use(middleware.Logger())
+	router.Use(middleware.Logger(cfg.SystemLogService))
 	router.Use(middleware.CORSMiddleware())
 
 	// Serve static files (screenshots)
@@ -358,6 +359,21 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 						screenshots.GET("/:id/view", cfg.AdminController.ViewScreenshot)
 						screenshots.DELETE("/:id", cfg.AdminController.DeleteScreenshot)
 						screenshots.POST("/bulk-delete", cfg.AdminController.BulkDeleteScreenshots)
+					}
+
+					systemLogs := admin.Group("/system-logs")
+					{
+						systemLogs.GET("", cfg.AdminController.ListSystemLogs)
+						systemLogs.GET("/policy", cfg.AdminController.GetSystemLogPolicy)
+						systemLogs.PUT("/policy", cfg.AdminController.UpdateSystemLogPolicy)
+						systemLogs.GET("/:id", cfg.AdminController.GetSystemLog)
+						systemLogs.POST("/cleanup", cfg.AdminController.CleanupSystemLogs)
+					}
+
+					systemConfigs := admin.Group("/system-configs")
+					{
+						systemConfigs.GET("", cfg.AdminController.ListSystemConfigs)
+						systemConfigs.PUT("/:key", cfg.AdminController.UpdateSystemConfig)
 					}
 
 					// Statistics & Reports

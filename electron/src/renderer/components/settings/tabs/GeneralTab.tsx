@@ -7,12 +7,44 @@ import { Icons } from "../../Icons";
 import { ThemeSection } from "../ThemeSection";
 import { Card, SectionHeader } from "../ui";
 
+const SCREENSHOT_INTERVAL_MIN = 60 * 1000;
+const SCREENSHOT_INTERVAL_MAX = 15 * 60 * 1000;
+const SCREENSHOT_INTERVAL_DEFAULT = 5 * 60 * 1000;
+
+const SYNC_INTERVAL_MIN = 5 * 1000;
+const SYNC_INTERVAL_MAX = 30 * 60 * 1000;
+const SYNC_INTERVAL_DEFAULT = 60 * 1000;
+const MS_PER_SECOND = 1000;
+const SCREENSHOT_INTERVAL_MIN_SECONDS = SCREENSHOT_INTERVAL_MIN / MS_PER_SECOND;
+const SCREENSHOT_INTERVAL_MAX_SECONDS = SCREENSHOT_INTERVAL_MAX / MS_PER_SECOND;
+const SCREENSHOT_INTERVAL_DEFAULT_SECONDS =
+  SCREENSHOT_INTERVAL_DEFAULT / MS_PER_SECOND;
+const SYNC_INTERVAL_MIN_SECONDS = SYNC_INTERVAL_MIN / MS_PER_SECOND;
+const SYNC_INTERVAL_MAX_SECONDS = SYNC_INTERVAL_MAX / MS_PER_SECOND;
+const SYNC_INTERVAL_DEFAULT_SECONDS = SYNC_INTERVAL_DEFAULT / MS_PER_SECOND;
+
+type IntervalKey = "screenshotInterval" | "syncInterval";
+
 export function GeneralTab() {
   const [config, setConfig] = useState<any>({});
+  const [inputValues, setInputValues] = useState<Record<IntervalKey, string>>({
+    screenshotInterval: String(SCREENSHOT_INTERVAL_DEFAULT_SECONDS),
+    syncInterval: String(SYNC_INTERVAL_DEFAULT_SECONDS),
+  });
+  const [errors, setErrors] = useState<Partial<Record<IntervalKey, string>>>({});
 
   useEffect(() => {
     loadConfig();
   }, []);
+
+  useEffect(() => {
+    setInputValues({
+      screenshotInterval: String(
+        config.screenshotInterval ?? SCREENSHOT_INTERVAL_DEFAULT_SECONDS,
+      ),
+      syncInterval: String(config.syncInterval ?? SYNC_INTERVAL_DEFAULT_SECONDS),
+    });
+  }, [config.screenshotInterval, config.syncInterval]);
 
   const loadConfig = async () => {
     try {
@@ -30,6 +62,56 @@ export function GeneralTab() {
     } catch (error) {
       console.error("Error updating config:", error);
     }
+  };
+
+  const getIntervalMeta = (key: IntervalKey) =>
+    key === "screenshotInterval"
+      ? {
+          min: SCREENSHOT_INTERVAL_MIN_SECONDS,
+          max: SCREENSHOT_INTERVAL_MAX_SECONDS,
+          fallback: SCREENSHOT_INTERVAL_DEFAULT_SECONDS,
+          label: "Screenshot interval",
+        }
+      : {
+          min: SYNC_INTERVAL_MIN_SECONDS,
+          max: SYNC_INTERVAL_MAX_SECONDS,
+          fallback: SYNC_INTERVAL_DEFAULT_SECONDS,
+          label: "Sync interval",
+        };
+
+  const handleInputChange = (key: IntervalKey, value: string) => {
+    setInputValues((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  const commitInterval = async (key: IntervalKey) => {
+    const { min, max, fallback, label } = getIntervalMeta(key);
+    const parsed = parseInt(inputValues[key], 10);
+
+    if (!Number.isFinite(parsed)) {
+      setErrors((prev) => ({
+        ...prev,
+        [key]: `${label} must be a number between ${min}s and ${max}s.`,
+      }));
+      setInputValues((prev) => ({
+        ...prev,
+        [key]: String(config[key] ?? fallback),
+      }));
+      return;
+    }
+
+    const clampedValue = Math.min(Math.max(parsed, min), max);
+    if (clampedValue !== parsed) {
+      setErrors((prev) => ({
+        ...prev,
+        [key]: `${label} was adjusted to stay between ${min}s and ${max}s.`,
+      }));
+    } else {
+      setErrors((prev) => ({ ...prev, [key]: undefined }));
+    }
+
+    setInputValues((prev) => ({ ...prev, [key]: String(clampedValue) }));
+    await updateConfig(key, clampedValue);
   };
 
   return (
@@ -60,23 +142,40 @@ export function GeneralTab() {
             <div className="relative">
               <input
                 type="number"
-                value={config.screenshotInterval || 300000}
+                min={SCREENSHOT_INTERVAL_MIN_SECONDS}
+                max={SCREENSHOT_INTERVAL_MAX_SECONDS}
+                value={inputValues.screenshotInterval}
                 onChange={(e) =>
-                  updateConfig("screenshotInterval", parseInt(e.target.value))
+                  handleInputChange("screenshotInterval", e.target.value)
                 }
+                onBlur={() => commitInterval("screenshotInterval")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    void commitInterval("screenshotInterval");
+                  }
+                }}
                 className="input-sm pr-12"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-dark-500 pointer-events-none">
-                ms
+                sec
               </span>
             </div>
             <p className="text-xs text-gray-500 dark:text-dark-400">
               Current:{" "}
               <span className="font-medium text-gray-700 dark:text-dark-300">
-                {formatDurationMinimal(config.screenshotInterval || 300000)}
+                {formatDurationMinimal(
+                  config.screenshotIntervalMs ?? SCREENSHOT_INTERVAL_DEFAULT,
+                )}
               </span>
-              {" · "}Default: {formatDurationFull(300000)}
+              {" · "}Allowed: {formatDurationFull(SCREENSHOT_INTERVAL_MIN)} to{" "}
+              {formatDurationFull(SCREENSHOT_INTERVAL_MAX)}
+              {" · "}Default: {formatDurationFull(SCREENSHOT_INTERVAL_DEFAULT)}
             </p>
+            {errors.screenshotInterval && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                {errors.screenshotInterval}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -89,23 +188,40 @@ export function GeneralTab() {
             <div className="relative">
               <input
                 type="number"
-                value={config.syncInterval || 60000}
+                min={SYNC_INTERVAL_MIN_SECONDS}
+                max={SYNC_INTERVAL_MAX_SECONDS}
+                value={inputValues.syncInterval}
                 onChange={(e) =>
-                  updateConfig("syncInterval", parseInt(e.target.value))
+                  handleInputChange("syncInterval", e.target.value)
                 }
+                onBlur={() => commitInterval("syncInterval")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    void commitInterval("syncInterval");
+                  }
+                }}
                 className="input-sm pr-12"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 dark:text-dark-500 pointer-events-none">
-                ms
+                sec
               </span>
             </div>
             <p className="text-xs text-gray-500 dark:text-dark-400">
               Current:{" "}
               <span className="font-medium text-gray-700 dark:text-dark-300">
-                {formatDurationMinimal(config.syncInterval || 60000)}
+                {formatDurationMinimal(
+                  config.syncIntervalMs ?? SYNC_INTERVAL_DEFAULT,
+                )}
               </span>
-              {" · "}Default: {formatDurationFull(60000)}
+              {" · "}Allowed: {formatDurationFull(SYNC_INTERVAL_MIN)} to{" "}
+              {formatDurationFull(SYNC_INTERVAL_MAX)}
+              {" · "}Default: {formatDurationFull(SYNC_INTERVAL_DEFAULT)}
             </p>
+            {errors.syncInterval && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                {errors.syncInterval}
+              </p>
+            )}
           </div>
         </div>
       </Card>

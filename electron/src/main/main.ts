@@ -6,14 +6,17 @@ import {
   ipcMain,
   Menu,
   nativeImage,
+  session,
   shell,
   systemPreferences,
   Tray,
 } from "electron";
+import fs from "fs";
 import path from "path";
 import { AppConfig } from "./config";
 import { BackendUpdateService } from "./services/BackendUpdateService";
 import { DatabaseService } from "./services/DatabaseService";
+import { loggerService } from "./services/LoggerService";
 import { ScreenshotService } from "./services/ScreenshotService";
 import { SyncService } from "./services/SyncService";
 import { TaskService } from "./services/TaskService";
@@ -35,6 +38,53 @@ let taskService: TaskService;
 let timeTrackerService: TimeTrackerService;
 
 let backendUpdateService: BackendUpdateService | null = null;
+
+loggerService.patchMainConsole();
+
+function serializeUnknownError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+
+  return {
+    value: String(error),
+  };
+}
+
+function setupGlobalErrorHandlers() {
+  process.on("uncaughtException", (error) => {
+    loggerService.logDirect({
+      source: "electron-main",
+      level: "error",
+      component: "process-global",
+      message: `Uncaught exception: ${error.message}`,
+      details: serializeUnknownError(error),
+      stackTrace: error.stack,
+    });
+    void emergencyStopTracking();
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    const serialized = serializeUnknownError(reason);
+    loggerService.logDirect({
+      source: "electron-main",
+      level: "error",
+      component: "process-global",
+      message:
+        reason instanceof Error
+          ? `Unhandled rejection: ${reason.message}`
+          : "Unhandled rejection in main process",
+      details: serialized,
+      stackTrace: reason instanceof Error ? reason.stack : undefined,
+    });
+  });
+}
+
+setupGlobalErrorHandlers();
 
 // Screen capture permission result interface
 interface ScreenCapturePermissionResult {
@@ -620,6 +670,7 @@ async function initializeServices() {
   // Initialize database
   dbService = new DatabaseService();
   await dbService.initialize();
+  loggerService.setDatabaseService(dbService);
   console.log("✅ Database initialized");
 
   // Initialize services
@@ -663,6 +714,19 @@ async function initializeServices() {
 }
 
 function setupIpcHandlers() {
+  ipcMain.on("system-log:renderer", async (_event, payload) => {
+    await loggerService.logRenderer({
+      source: "electron-renderer",
+      level: payload?.level ?? "info",
+      component: payload?.component,
+      message: payload?.message ?? "",
+      details: payload?.details,
+      stackTrace: payload?.stackTrace,
+      requestId: payload?.requestId,
+      sessionLocalId: payload?.sessionLocalId,
+    });
+  });
+
   // Time tracking
   ipcMain.handle(
     "time-tracker:start",
@@ -958,7 +1022,6 @@ function setupIpcHandlers() {
   ipcMain.handle("storage:open-screenshot-folder", async () => {
     try {
       const screenshotPath = AppConfig.getScreenshotsPath();
-      const fs = require("fs");
 
       // Ensure directory exists before opening
       if (!fs.existsSync(screenshotPath)) {
@@ -969,6 +1032,90 @@ function setupIpcHandlers() {
       return { success: true };
     } catch (error: any) {
       console.error("Failed to open screenshot folder:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("storage:clear-app-cache", async () => {
+    try {
+      const userDataPath = app.getPath("userData");
+      const cacheDirectories = [
+        path.join(userDataPath, "Cache"),
+        path.join(userDataPath, "Code Cache"),
+        path.join(userDataPath, "GPUCache"),
+      ];
+
+      await session.defaultSession.clearCache();
+      await session.defaultSession.clearStorageData({
+        storages: ["cachestorage", "serviceworkers"],
+      });
+
+      let clearedBytes = 0;
+
+      for (const cachePath of cacheDirectories) {
+        if (!fs.existsSync(cachePath)) {
+          continue;
+        }
+
+        const size = fs.statSync(cachePath).isDirectory()
+          ? fs
+              .readdirSync(cachePath, { withFileTypes: true })
+              .reduce((total, entry) => {
+                const entryPath = path.join(cachePath, entry.name);
+                const getDirectorySize = (targetPath: string): number => {
+                  const stats = fs.statSync(targetPath);
+                  if (!stats.isDirectory()) {
+                    return stats.size;
+                  }
+
+                  return fs
+                    .readdirSync(targetPath)
+                    .reduce(
+                      (sum, child) =>
+                        sum + getDirectorySize(path.join(targetPath, child)),
+                      0,
+                    );
+                };
+
+                return total + getDirectorySize(entryPath);
+              }, 0)
+          : fs.statSync(cachePath).size;
+
+        clearedBytes += size;
+        fs.rmSync(cachePath, { recursive: true, force: true });
+      }
+
+      return { success: true, clearedBytes };
+    } catch (error: any) {
+      console.error("Failed to clear app cache:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
+  ipcMain.handle("storage:clear-sqlite-cache", async () => {
+    try {
+      const databasePath = AppConfig.getDatabasePath();
+      const cacheFiles = [`${databasePath}-wal`, `${databasePath}-shm`];
+
+      const getFileSize = (filePath: string) =>
+        fs.existsSync(filePath) ? fs.statSync(filePath).size : 0;
+
+      const beforeBytes =
+        getFileSize(databasePath) +
+        cacheFiles.reduce((total, filePath) => total + getFileSize(filePath), 0);
+
+      await dbService.clearSqliteCache();
+
+      const afterBytes =
+        getFileSize(databasePath) +
+        cacheFiles.reduce((total, filePath) => total + getFileSize(filePath), 0);
+
+      return {
+        success: true,
+        clearedBytes: Math.max(beforeBytes - afterBytes, 0),
+      };
+    } catch (error: any) {
+      console.error("Failed to clear SQLite cache:", error);
       return { success: false, error: error.message };
     }
   });
@@ -990,7 +1137,7 @@ function setupIpcHandlers() {
 
   // Config
   ipcMain.handle("config:get", async () => {
-    return AppConfig.getAll();
+    return AppConfig.getRendererConfig();
   });
 
   ipcMain.handle("config:set", async (_, key, value) => {

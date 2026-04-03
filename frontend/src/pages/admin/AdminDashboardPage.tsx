@@ -144,17 +144,20 @@ const QuickAction: React.FC<QuickActionProps> = ({
 const AdminDashboardPage: React.FC = () => {
   const {
     overviewStats,
+    activityStats,
     userPerformance,
     statsLoading,
     statsError,
     fetchOverviewStats,
+    fetchActivityStats,
     fetchUserPerformance,
   } = useAdminStore();
 
   useEffect(() => {
     fetchOverviewStats();
+    fetchActivityStats();
     fetchUserPerformance(5);
-  }, [fetchOverviewStats, fetchUserPerformance]);
+  }, [fetchOverviewStats, fetchActivityStats, fetchUserPerformance]);
 
   return (
     <div className="space-y-6">
@@ -235,7 +238,7 @@ const AdminDashboardPage: React.FC = () => {
             link="/admin/users"
           />
           <StatCard
-            title="Active Users"
+            title="Active Accounts"
             value={overviewStats.active_users}
             icon={
               <svg
@@ -249,6 +252,48 @@ const AdminDashboardPage: React.FC = () => {
                   strokeLinejoin="round"
                   strokeWidth={2}
                   d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            }
+            color="green"
+            link="/admin/users"
+          />
+          <StatCard
+            title="Users With Activity Today"
+            value={activityStats?.users_with_activity_today ?? 0}
+            icon={
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            }
+            color="blue"
+            link="/admin/timelogs"
+          />
+          <StatCard
+            title="Working Real-Time"
+            value={activityStats?.working_users_realtime ?? 0}
+            icon={
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m5-2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
             }
@@ -390,6 +435,27 @@ const AdminDashboardPage: React.FC = () => {
             }
             color="green"
             link="/admin/statistics"
+          />
+          <StatCard
+            title="Debug Logs"
+            value="Inspect"
+            icon={
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+            }
+            color="indigo"
+            link="/admin/system-logs"
           />
         </div>
       )}
@@ -549,6 +615,26 @@ const AdminDashboardPage: React.FC = () => {
               link="/admin/timelogs"
             />
             <QuickAction
+              title="Inspect System Logs"
+              description="Trace backend and Electron errors quickly"
+              icon={
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              }
+              link="/admin/system-logs"
+            />
+            <QuickAction
               title="View Statistics"
               description="Detailed analytics and reports"
               icon={
@@ -598,7 +684,21 @@ const AdminDashboardPage: React.FC = () => {
                 </p>
               </div>
               <div>
-                <p className="text-purple-200">Active Rate</p>
+                <p className="text-purple-200">Activity Today</p>
+                <p className="font-semibold">
+                  {(activityStats?.users_with_activity_today ?? 0).toLocaleString()}{" "}
+                  users
+                </p>
+              </div>
+              <div>
+                <p className="text-purple-200">Working Right Now</p>
+                <p className="font-semibold">
+                  {(activityStats?.working_users_realtime ?? 0).toLocaleString()}{" "}
+                  users
+                </p>
+              </div>
+              <div>
+                <p className="text-purple-200">Enabled Account Rate</p>
                 <p className="font-semibold">
                   {overviewStats.total_users > 0
                     ? Math.round(
