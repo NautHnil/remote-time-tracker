@@ -52,6 +52,9 @@ import (
 // @tag.name sync
 // @tag.description Data synchronization from Electron desktop app
 
+// @tag.name presence
+// @tag.description User presence and live activity endpoints
+
 // @tag.name organizations
 // @tag.description Organization management - Create, manage organizations and members
 

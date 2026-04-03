@@ -71,7 +71,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 	router.GET("/health", middleware.HealthCheck)
 
 	// Swagger documentation
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
@@ -115,7 +115,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			publicDownloads := v1.Group("/public/downloads")
 			{
 				publicDownloads.GET("/latest", cfg.UpdateController.GetPublicDownloadLinks)
-				publicDownloads.GET("/file/:version/:filename", cfg.UpdateController.DownloadAsset) // Reuse existing handler
+				publicDownloads.GET("/file/:version/:filename", cfg.UpdateController.DownloadPublicAsset)
 			}
 		}
 
@@ -212,7 +212,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 				{
 					orgs.GET("", cfg.OrganizationController.List)
 					orgs.POST("", cfg.OrganizationController.Create)
-					orgs.GET("/join/:invite_code", cfg.OrganizationController.GetOrgByInviteCode)
+					orgs.GET("/join/:invite_code", cfg.OrganizationController.GetProtectedOrgByInviteCode)
 					orgs.POST("/join/:invite_code", cfg.OrganizationController.JoinByInviteCode)
 
 					// Organization-specific routes (require org membership)
