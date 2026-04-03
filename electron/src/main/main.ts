@@ -1157,7 +1157,9 @@ function setupIpcHandlers() {
     if (!credentials?.accessToken) {
       return { success: false, error: "Please login to check for updates" };
     }
-    return await backendUpdateService.checkForUpdates();
+    return await backendUpdateService.checkForUpdates({
+      allowDevelopment: true,
+    });
   });
 
   ipcMain.handle("update:download", async () => {
@@ -1171,7 +1173,9 @@ function setupIpcHandlers() {
     if (!credentials?.accessToken) {
       return { success: false, error: "Please login to download updates" };
     }
-    return await backendUpdateService.downloadUpdate();
+    return await backendUpdateService.downloadUpdate(undefined, {
+      allowDevelopment: true,
+    });
   });
 
   ipcMain.handle("update:install", async () => {
@@ -1198,7 +1202,9 @@ function setupIpcHandlers() {
     if (!credentials?.accessToken) {
       return { success: false, error: "Please login to check for updates" };
     }
-    return await backendUpdateService.checkForUpdates();
+    return await backendUpdateService.checkForUpdates({
+      allowDevelopment: true,
+    });
   });
 
   ipcMain.handle("update:download-backend", async () => {
@@ -1212,7 +1218,9 @@ function setupIpcHandlers() {
     if (!credentials?.accessToken) {
       return { success: false, error: "Please login to download updates" };
     }
-    return await backendUpdateService.downloadUpdate();
+    return await backendUpdateService.downloadUpdate(undefined, {
+      allowDevelopment: true,
+    });
   });
 
   ipcMain.handle("update:install-backend", async () => {

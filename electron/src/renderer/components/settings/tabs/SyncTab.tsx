@@ -33,6 +33,7 @@ export function SyncTab() {
         message:
           `Time Logs: ${result.timeLogsSynced}\n` +
           `Screenshots: ${result.screenshotsSynced}\n` +
+          `System Logs: ${result.systemLogsSynced}\n` +
           `${
             result.errors.length > 0
               ? "Errors: " + result.errors.join(", ")
