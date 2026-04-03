@@ -1,13 +1,50 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icons } from "../Icons";
+import { UpdateStep } from "./UpdateSection";
 import { GeneralTab, StorageTab, SyncTab, UpdatesTab } from "./tabs";
 
-type TabId = "general" | "sync" | "storage" | "updates";
+export type SettingsTabId = "general" | "sync" | "storage" | "updates";
 
-export function Settings() {
-  const [activeTab, setActiveTab] = useState<TabId>("general");
+interface SettingsProps {
+  activeTab?: SettingsTabId;
+  onTabChange?: (tab: SettingsTabId) => void;
+  updateState: {
+    version: string;
+    step: UpdateStep;
+    availableVersion: string | null;
+    progress: number;
+    errorMessage: string;
+  };
+  onCheckUpdates: () => void | Promise<void>;
+  onDownloadUpdate: () => void | Promise<void>;
+  onInstallUpdate: () => void | Promise<void>;
+}
 
-  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+export function Settings({
+  activeTab: controlledTab,
+  onTabChange,
+  updateState,
+  onCheckUpdates,
+  onDownloadUpdate,
+  onInstallUpdate,
+}: SettingsProps) {
+  const [internalTab, setInternalTab] = useState<SettingsTabId>("general");
+  const activeTab = controlledTab ?? internalTab;
+
+  useEffect(() => {
+    if (controlledTab) {
+      setInternalTab(controlledTab);
+    }
+  }, [controlledTab]);
+
+  const handleTabChange = (tab: SettingsTabId) => {
+    if (controlledTab === undefined) {
+      setInternalTab(tab);
+    }
+    onTabChange?.(tab);
+  };
+
+  const tabs: { id: SettingsTabId; label: string; icon: React.ReactNode }[] = [
     {
       id: "general",
       label: "General",
@@ -38,7 +75,7 @@ export function Settings() {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 activeTab === tab.id
                   ? "bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm"
@@ -57,7 +94,18 @@ export function Settings() {
         {activeTab === "general" && <GeneralTab />}
         {activeTab === "sync" && <SyncTab />}
         {activeTab === "storage" && <StorageTab />}
-        {activeTab === "updates" && <UpdatesTab />}
+        {activeTab === "updates" && (
+          <UpdatesTab
+            version={updateState.version}
+            step={updateState.step}
+            availableVersion={updateState.availableVersion}
+            progress={updateState.progress}
+            errorMessage={updateState.errorMessage}
+            onCheck={onCheckUpdates}
+            onDownload={onDownloadUpdate}
+            onInstall={onInstallUpdate}
+          />
+        )}
       </div>
     </div>
   );

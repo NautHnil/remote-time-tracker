@@ -333,9 +333,9 @@ export function StorageTab() {
 
   const handleClearSqliteCache = async () => {
     confirmDialog.show({
-      title: "Optimize SQLite Storage",
+      title: "Optimize Database Storage",
       message:
-        "This clears SQLite temporary cache and compacts the local database.\n\nYour tracked data will be kept.\n\nContinue?",
+        "This clears temporary database cache and compacts the local database.\n\nYour tracked data will be kept.\n\nContinue?",
       confirmText: "Optimize",
       onConfirm: async () => {
         confirmDialog.close();
@@ -346,14 +346,14 @@ export function StorageTab() {
           if (result.success) {
             alertDialog.show({
               title: "Success",
-              message: `SQLite cache cleared successfully.\n\nFreed: ${formatBytes(result.clearedBytes || 0)}`,
+              message: `Database cache cleared successfully.\n\nFreed: ${formatBytes(result.clearedBytes || 0)}`,
               type: "success",
             });
           } else {
             alertDialog.show({
               title: "Failed",
               message:
-                "Failed to clear SQLite cache: " +
+                "Failed to clear database cache: " +
                 (result.error || "Unknown error"),
               type: "error",
             });
@@ -361,7 +361,7 @@ export function StorageTab() {
         } catch (error: any) {
           alertDialog.show({
             title: "Failed",
-            message: "Failed to clear SQLite cache: " + error.message,
+            message: "Failed to clear database cache: " + error.message,
             type: "error",
           });
         } finally {
@@ -484,10 +484,10 @@ export function StorageTab() {
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
-                  Clear SQLite Cache
+                  Clear Database Cache
                 </h4>
                 <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
-                  Truncate SQLite WAL/SHM cache and compact the local database
+                  Truncate database WAL/SHM cache and compact the local database
                   while keeping tracking records intact.
                 </p>
                 <button

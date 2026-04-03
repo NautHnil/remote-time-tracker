@@ -13,6 +13,11 @@ import {
   useQuitAppConfirmDialog,
 } from "./components/dialogs";
 import { Icons } from "./components/Icons";
+import {
+  SettingsTabId,
+  UpdateNotice,
+  UpdateStep,
+} from "./components/settings";
 import LoginForm from "./components/LoginForm";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useDeeplink } from "./hooks";
@@ -54,6 +59,13 @@ function AppContent() {
   } = useAuth();
 
   const [currentView, setCurrentView] = useState<View>("tracker");
+  const [settingsTab, setSettingsTab] = useState<SettingsTabId>("general");
+  const [updateVersion, setUpdateVersion] = useState("?");
+  const [updateStep, setUpdateStep] = useState<UpdateStep>("idle");
+  const [availableVersion, setAvailableVersion] = useState<string | null>(null);
+  const [updateProgress, setUpdateProgress] = useState(0);
+  const [updateErrorMessage, setUpdateErrorMessage] = useState("");
+  const [isUpdateNoticeDismissed, setIsUpdateNoticeDismissed] = useState(false);
 
   // Logout confirmation dialog
   const logoutDialog = useLogoutConfirmDialog();
@@ -74,6 +86,64 @@ function AppContent() {
       clearDeeplink();
     }
   }, [pendingDeeplink, clearDeeplink]);
+
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+
+    const setupUpdates = async () => {
+      try {
+        const v = await window.electronAPI.app.getVersion();
+        setUpdateVersion(v);
+      } catch (err) {
+        console.error("Failed to get app version:", err);
+      }
+
+      unsub = window.electronAPI.updates.onEvent((payload: any) => {
+        switch (payload.type) {
+          case "checking-for-update":
+            setUpdateStep("checking");
+            setUpdateErrorMessage("");
+            break;
+          case "update-available":
+            setUpdateStep("available");
+            setAvailableVersion(
+              payload.info?.latest_version || payload.info?.version || null,
+            );
+            setUpdateErrorMessage("");
+            setIsUpdateNoticeDismissed(false);
+            break;
+          case "update-not-available":
+            setUpdateStep("up-to-date");
+            setAvailableVersion(null);
+            setUpdateProgress(0);
+            setUpdateErrorMessage("");
+            break;
+          case "download-progress":
+            setUpdateStep("downloading");
+            setUpdateProgress(Math.round(payload.progress.percent || 0));
+            break;
+          case "update-downloaded":
+            setUpdateStep("downloaded");
+            setUpdateProgress(100);
+            setUpdateErrorMessage("");
+            setIsUpdateNoticeDismissed(false);
+            break;
+          case "error":
+            setUpdateStep("error");
+            setUpdateErrorMessage(payload.error || "Unknown error");
+            break;
+          default:
+            break;
+        }
+      });
+    };
+
+    setupUpdates();
+
+    return () => {
+      unsub?.();
+    };
+  }, []);
 
   // Track if we paused the tracker for logout/quit dialogs
   const [pausedForLogout, setPausedForLogout] = useState(false);
@@ -103,6 +173,77 @@ function AppContent() {
     setJoinOrgDialogOpen(false);
     setJoinOrgInviteCode("");
   }, []);
+
+  const openUpdateSettings = useCallback(() => {
+    setCurrentView("settings");
+    setSettingsTab("updates");
+  }, []);
+
+  const handleCheckUpdates = useCallback(async () => {
+    setUpdateStep("checking");
+    setAvailableVersion(null);
+    setUpdateProgress(0);
+    setUpdateErrorMessage("");
+
+    try {
+      const res = await window.electronAPI.updates.check();
+      if (!res.success) {
+        setUpdateStep("error");
+        setUpdateErrorMessage(res.error || "Failed to check for updates");
+      }
+    } catch (err: any) {
+      setUpdateStep("error");
+      setUpdateErrorMessage(err?.message || String(err));
+    }
+  }, []);
+
+  const handleDownloadUpdate = useCallback(async () => {
+    setUpdateStep("download-pending");
+    setUpdateProgress(0);
+    setUpdateErrorMessage("");
+
+    try {
+      const res = await window.electronAPI.updates.download();
+      if (!res.success) {
+        setUpdateStep("error");
+        setUpdateErrorMessage(res.error || "Failed to download update");
+      }
+    } catch (err: any) {
+      setUpdateStep("error");
+      setUpdateErrorMessage(err?.message || String(err));
+    }
+  }, []);
+
+  const handleInstallUpdate = useCallback(async () => {
+    setUpdateStep("installing");
+
+    try {
+      const res = await window.electronAPI.updates.install();
+      if (!res.success) {
+        if (res.error?.includes("Manual installation required")) {
+          setUpdateStep("manual-install");
+          setUpdateErrorMessage(
+            "Please install the update manually from your Downloads folder.",
+          );
+        } else {
+          setUpdateStep("error");
+          setUpdateErrorMessage(res.error || "Failed to install update");
+        }
+      }
+    } catch (err: any) {
+      setUpdateStep("error");
+      setUpdateErrorMessage(err?.message || String(err));
+    }
+  }, []);
+
+  const handleUpdateNow = useCallback(async () => {
+    setIsUpdateNoticeDismissed(false);
+    openUpdateSettings();
+
+    if (updateStep === "available") {
+      await handleDownloadUpdate();
+    }
+  }, [handleDownloadUpdate, openUpdateSettings, updateStep]);
 
   // ============================================================================
   // LOGOUT HANDLERS
@@ -319,6 +460,14 @@ function AppContent() {
     };
   }, [handleQuitAppRequest]);
 
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    handleCheckUpdates();
+  }, [user, handleCheckUpdates]);
+
   // ============================================================================
   // RENDER
   // ============================================================================
@@ -342,6 +491,15 @@ function AppContent() {
       />
     );
   }
+
+  const shouldShowUpdateNotice =
+    !isUpdateNoticeDismissed &&
+    (updateStep === "available" ||
+      updateStep === "download-pending" ||
+      updateStep === "downloading" ||
+      updateStep === "downloaded" ||
+      updateStep === "installing" ||
+      updateStep === "error");
 
   return (
     <>
@@ -379,7 +537,12 @@ function AppContent() {
       {/* Main Layout */}
       <MainLayout
         currentView={currentView}
-        onViewChange={setCurrentView}
+        onViewChange={(view) => {
+          setCurrentView(view);
+          if (view !== "settings") {
+            setSettingsTab("general");
+          }
+        }}
         onLogout={handleLogoutRequest}
         currentOrg={currentOrg}
         currentWorkspace={currentWorkspace}
@@ -387,8 +550,31 @@ function AppContent() {
         <AppRouter
           currentView={currentView}
           onNavigateToTracker={() => setCurrentView("tracker")}
+          settingsTab={settingsTab}
+          onSettingsTabChange={setSettingsTab}
+          updateState={{
+            version: updateVersion,
+            step: updateStep,
+            availableVersion,
+            progress: updateProgress,
+            errorMessage: updateErrorMessage,
+          }}
+          onCheckUpdates={handleCheckUpdates}
+          onDownloadUpdate={handleDownloadUpdate}
+          onInstallUpdate={handleInstallUpdate}
         />
       </MainLayout>
+
+      {shouldShowUpdateNotice && (
+        <UpdateNotice
+          step={updateStep}
+          availableVersion={availableVersion}
+          progress={updateProgress}
+          errorMessage={updateErrorMessage}
+          onClose={() => setIsUpdateNoticeDismissed(true)}
+          onUpdateNow={handleUpdateNow}
+        />
+      )}
     </>
   );
 }

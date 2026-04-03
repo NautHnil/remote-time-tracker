@@ -924,8 +924,8 @@ func (r *adminRepository) GetUserPerformanceStats(limit int, startDate, endDate 
 			COALESCE(time_log_stats.session_count, 0) as session_count,
 			COALESCE(time_log_stats.approved_sessions, 0) as approved_sessions,
 			COALESCE(time_log_stats.active_days, 0) as active_days,
-			COALESCE(time_log_stats.avg_daily_duration, 0) as avg_daily_duration,
-			COALESCE(time_log_stats.avg_session_duration, 0) as avg_session_duration,
+			COALESCE(time_log_stats.avg_daily_duration, 0)::bigint as avg_daily_duration,
+			COALESCE(time_log_stats.avg_session_duration, 0)::bigint as avg_session_duration,
 			COALESCE(screenshot_stats.screenshot_count, 0) as screenshot_count,
 			time_log_stats.last_activity_at as last_activity_at,
 			ROW_NUMBER() OVER (
@@ -941,8 +941,14 @@ func (r *adminRepository) GetUserPerformanceStats(limit int, startDate, endDate 
 				COALESCE(SUM(CASE WHEN is_approved = true THEN 1 ELSE 0 END), 0) as approved_sessions,
 				COUNT(DISTINCT DATE(start_time)) as active_days,
 				COUNT(DISTINCT COALESCE(NULLIF(task_local_id, ''), CONCAT('task:', COALESCE(task_id::text, '0')))) as task_count,
-				COALESCE(SUM(duration) / NULLIF(COUNT(DISTINCT DATE(start_time)), 0), 0) as avg_daily_duration,
-				COALESCE(SUM(duration) / NULLIF(COUNT(*), 0), 0) as avg_session_duration,
+				COALESCE(
+					ROUND(SUM(duration)::numeric / NULLIF(COUNT(DISTINCT DATE(start_time)), 0)),
+					0
+				)::bigint as avg_daily_duration,
+				COALESCE(
+					ROUND(SUM(duration)::numeric / NULLIF(COUNT(*), 0)),
+					0
+				)::bigint as avg_session_duration,
 				MAX(COALESCE(end_time, start_time)) as last_activity_at
 			FROM time_logs
 			`+timeLogFilters+`

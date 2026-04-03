@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
+import { JsonView, allExpanded, darkStyles } from "react-json-view-lite";
+import "react-json-view-lite/dist/index.css";
 import { Link } from "react-router-dom";
 import { Icons } from "../../components/Icons";
 import Pagination from "../../components/Pagination";
@@ -42,6 +44,8 @@ function SystemLogDetailModal({
     await navigator.clipboard.writeText(value);
   };
 
+  const parsedDetails = parseLogJson(systemLog?.details);
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-screen items-center justify-center px-4 py-6">
@@ -50,17 +54,33 @@ function SystemLogDetailModal({
           onClick={onClose}
         />
 
-        <div className="relative z-10 max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="relative z-10 w-full max-w-6xl overflow-hidden rounded-3xl bg-white shadow-2xl">
           <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">System Log</h3>
-              <p className="text-sm text-gray-500">
-                {systemLog ? `${systemLog.source} / ${systemLog.level}` : "Loading..."}
-              </p>
+            <div className="border-b border-gray-100 px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h3 className="text-2xl font-bold text-gray-900">System Log</h3>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                    <span>{systemLog ? systemLog.source : "Loading..."}</span>
+                    {systemLog ? (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${levelBadgeClass(systemLog.level)}`}
+                      >
+                        {systemLog.level}
+                      </span>
+                    ) : null}
+                    {systemLog?.component ? (
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+                        {systemLog.component}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                <IconButton onClick={onClose} variant="ghost" className="shrink-0">
+                  <Icons.Close className="h-5 w-5" />
+                </IconButton>
+              </div>
             </div>
-            <IconButton onClick={onClose} variant="ghost">
-              <Icons.Close className="h-5 w-5" />
-            </IconButton>
           </div>
 
           {isLoading || !systemLog ? (
@@ -68,83 +88,107 @@ function SystemLogDetailModal({
               Loading log details...
             </div>
           ) : (
-            <div className="grid gap-6 lg:grid-cols-2">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Message
-                </label>
-                <p className="mt-1 whitespace-pre-wrap rounded-lg bg-gray-50 p-3 text-sm text-gray-900">
-                  {systemLog.message}
-                </p>
-              </div>
+            <div className="max-h-[calc(90vh-96px)] space-y-6 overflow-y-auto px-6 py-6">
+              <section className="rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5">
+                <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-500">Message</p>
+                    <p className="mt-2 whitespace-pre-wrap text-base font-medium text-gray-900">
+                      {systemLog.message}
+                    </p>
+                  </div>
+                  <div className="shrink-0 rounded-xl bg-white px-3 py-2 text-right shadow-sm ring-1 ring-gray-200">
+                    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                      Occurred At
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                      {formatDate(systemLog.occurred_at)}
+                    </p>
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <InfoItem label="Source" value={systemLog.source} />
-                <InfoItem label="Level" value={systemLog.level} />
-                <InfoItem label="Component" value={systemLog.component || "-"} />
-                <InfoItem
-                  label="Occurred At"
-                  value={formatDate(systemLog.occurred_at)}
-                />
-                <InfoItem
-                  label="Created At"
-                  value={formatDate(systemLog.created_at)}
-                />
-                <InfoItem
-                  label="App Version"
-                  value={systemLog.app_version || "-"}
-                />
-              </div>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <InfoItem label="Source" value={systemLog.source} />
+                  <InfoItem label="Level" value={systemLog.level} />
+                  <InfoItem label="Component" value={systemLog.component || "-"} />
+                  <InfoItem
+                    label="Created At"
+                    value={formatDate(systemLog.created_at)}
+                  />
+                  <InfoItem
+                    label="App Version"
+                    value={systemLog.app_version || "-"}
+                  />
+                  <InfoItem
+                    label="User"
+                    value={
+                      systemLog.user_email
+                        ? `${systemLog.user_name || "Unknown"} (${systemLog.user_email})`
+                        : "-"
+                    }
+                  />
+                  <InfoItem label="Organization" value={systemLog.org_name || "-"} />
+                  <InfoItem
+                    label="Workspace"
+                    value={systemLog.workspace_name || "-"}
+                  />
+                  <InfoItem
+                    label="Device UUID"
+                    value={systemLog.device_uuid || "-"}
+                  />
+                  <InfoItem
+                    label="Request ID"
+                    value={systemLog.request_id || "-"}
+                  />
+                  <InfoItem
+                    label="Session Local ID"
+                    value={systemLog.session_local_id || "-"}
+                  />
+                </div>
+              </section>
 
-              <InfoItem
-                label="User"
-                value={
-                  systemLog.user_email
-                    ? `${systemLog.user_name || "Unknown"} (${systemLog.user_email})`
-                    : "-"
-                }
-              />
-              <InfoItem label="Organization" value={systemLog.org_name || "-"} />
-              <InfoItem
-                label="Workspace"
-                value={systemLog.workspace_name || "-"}
-              />
-              <InfoItem
-                label="Device UUID"
-                value={systemLog.device_uuid || "-"}
-              />
-              <InfoItem label="Request ID" value={systemLog.request_id || "-"} />
-              <InfoItem
-                label="Session Local ID"
-                value={systemLog.session_local_id || "-"}
-              />
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-500">
-                    Details
-                  </label>
+              <section className="rounded-2xl border border-slate-200 bg-slate-950 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-100">Details</p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Full-width JSON view for easier inspection.
+                    </p>
+                  </div>
                   <Button
                     size="sm"
                     variant="ghost"
+                    className="text-slate-200 hover:bg-slate-800 hover:text-white"
                     onClick={() => void copyToClipboard(prettyJson(systemLog.details))}
                   >
                     Copy
                   </Button>
                 </div>
-                <pre className="mt-1 overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-100">
-                  {prettyJson(systemLog.details)}
-                </pre>
-              </div>
+                <div className="overflow-x-auto px-5 py-5">
+                  {parsedDetails ? (
+                    <div className="min-w-max rounded-xl bg-slate-950 text-sm">
+                      <JsonView
+                        data={parsedDetails}
+                        shouldExpandNode={allExpanded}
+                        style={darkStyles}
+                      />
+                    </div>
+                  ) : (
+                    <pre className="min-w-max whitespace-pre-wrap break-words rounded-xl bg-slate-900 p-4 text-sm text-slate-100">
+                      {prettyJson(systemLog.details)}
+                    </pre>
+                  )}
+                </div>
+              </section>
 
-              <div>
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-500">
-                    Stack Trace
-                  </label>
+              <section className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">Stack Trace</p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Raw trace output shown last for deep debugging.
+                    </p>
+                  </div>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -153,15 +197,16 @@ function SystemLogDetailModal({
                     Copy
                   </Button>
                 </div>
-                <pre className="mt-1 overflow-x-auto rounded-lg bg-gray-900 p-3 text-xs text-gray-100">
-                  {systemLog.stack_trace || "No stack trace"}
-                </pre>
-              </div>
-            </div>
+                <div className="px-5 py-5">
+                  <pre className="overflow-x-auto rounded-xl bg-gray-950 p-4 text-xs leading-6 text-gray-100">
+                    {systemLog.stack_trace || "No stack trace"}
+                  </pre>
+                </div>
+              </section>
             </div>
           )}
 
-          <div className="mt-6 flex justify-end">
+          <div className="flex justify-end border-t border-gray-100 px-6 py-4">
             <Button onClick={onClose} variant="secondary">
               Close
             </Button>
@@ -174,11 +219,22 @@ function SystemLogDetailModal({
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <label className="text-sm font-medium text-gray-500">{label}</label>
-      <p className="mt-1 break-all text-sm text-gray-900">{value}</p>
+    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+      <label className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        {label}
+      </label>
+      <p className="mt-2 break-all text-sm font-medium text-gray-900">{value}</p>
     </div>
   );
+}
+
+function parseLogJson(input?: string) {
+  if (!input) return null;
+  try {
+    return JSON.parse(input) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 function prettyJson(input?: string) {
