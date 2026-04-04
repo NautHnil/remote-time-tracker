@@ -3,8 +3,8 @@ package middleware
 import (
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/service"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/service"
 )
 
 // Logger middleware logs request details

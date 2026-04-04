@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/dto"
 )
 
 // SuccessResponse sends a success JSON response

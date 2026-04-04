@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/service"
+	"remote-time-tracker.dev/internal/service"
 )
 
 type systemLogWriter struct {

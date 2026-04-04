@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/config"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/config"
 )
 
 // CORSMiddleware configures CORS

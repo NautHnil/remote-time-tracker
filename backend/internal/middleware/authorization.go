@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/beuphecan/remote-time-tracker/internal/service"
-	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/service"
+	"remote-time-tracker.dev/internal/utils"
 )
 
 // ============================================================================

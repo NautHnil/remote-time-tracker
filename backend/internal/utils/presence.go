@@ -3,7 +3,7 @@ package utils
 import (
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/models"
+	"remote-time-tracker.dev/internal/models"
 )
 
 // ComputePresenceStatus returns working/idle/stale based on last heartbeat and stored status.

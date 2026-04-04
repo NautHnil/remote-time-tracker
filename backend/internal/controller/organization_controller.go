@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
-	"github.com/beuphecan/remote-time-tracker/internal/service"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/service"
 )
 
 // OrganizationController handles organization-related HTTP requests

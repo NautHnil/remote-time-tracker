@@ -6,11 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/config"
-	"github.com/beuphecan/remote-time-tracker/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"remote-time-tracker.dev/internal/config"
 )
 
 var DB *gorm.DB
@@ -60,23 +59,23 @@ func AutoMigrate(db *gorm.DB) error {
 	log.Println("🔄 Running database migrations...")
 
 	err := db.AutoMigrate(
-		// Core models
-		&models.User{},
-		&models.Task{},
-		&models.TimeLog{},
-		&models.Screenshot{},
-		&models.DeviceInfo{},
-		&models.SyncLog{},
-		&models.SystemLog{},
-		&models.SystemConfig{},
-		&models.AuditLog{},
-		// Organization & Workspace models
-		&models.Organization{},
-		&models.OrganizationMember{},
-		&models.WorkspaceRole{},
-		&models.Workspace{},
-		&models.WorkspaceMember{},
-		&models.Invitation{},
+	//// Core models
+	//&models.User{},
+	//&models.Task{},
+	//&models.TimeLog{},
+	//&models.Screenshot{},
+	//&models.DeviceInfo{},
+	//&models.SyncLog{},
+	//&models.SystemLog{},
+	//&models.SystemConfig{},
+	//&models.AuditLog{},
+	//// Organization & Workspace models
+	//&models.Organization{},
+	//&models.OrganizationMember{},
+	//&models.WorkspaceRole{},
+	//&models.Workspace{},
+	//&models.WorkspaceMember{},
+	//&models.Invitation{},
 	)
 
 	if err != nil {

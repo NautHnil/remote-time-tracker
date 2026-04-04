@@ -3,8 +3,8 @@ package repository
 import (
 	"errors"
 
-	"github.com/beuphecan/remote-time-tracker/internal/models"
 	"gorm.io/gorm"
+	"remote-time-tracker.dev/internal/models"
 )
 
 // DeviceRepository handles device info data operations

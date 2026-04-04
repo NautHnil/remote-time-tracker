@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/service"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
+	"remote-time-tracker.dev/internal/service"
 )
 
 type gormSystemLogger struct {
