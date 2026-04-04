@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/beuphecan/remote-time-tracker/internal/models"
-	"github.com/beuphecan/remote-time-tracker/internal/repository"
+	"remote-time-tracker.dev/internal/models"
+	"remote-time-tracker.dev/internal/repository"
 )
 
 func deleteTaskAndScreenshots(

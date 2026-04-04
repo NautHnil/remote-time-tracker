@@ -1,4 +1,4 @@
-module github.com/beuphecan/remote-time-tracker
+module remote-time-tracker.dev
 
 go 1.23.0
 

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/models"
 	"gorm.io/gorm"
+	"remote-time-tracker.dev/internal/models"
 )
 
 // TaskRepository handles task data operations
@@ -137,7 +137,7 @@ func (r *taskRepository) FindByUserIDWithStats(userID uint, page, perPage int) (
 	// Match by task_local_id = t.local_id OR task_id = t.id
 	var rows []TaskWithStatsRow
 	query := `
-		SELECT 
+		SELECT
 			t.id,
 			t.title,
 			t.description,
@@ -150,9 +150,9 @@ func (r *taskRepository) FindByUserIDWithStats(userID uint, page, perPage int) (
 			t.created_at,
 			t.updated_at,
 			COALESCE(
-				(SELECT SUM(tl.duration) 
-				 FROM time_logs tl 
-				 WHERE tl.deleted_at IS NULL 
+				(SELECT SUM(tl.duration)
+				 FROM time_logs tl
+				 WHERE tl.deleted_at IS NULL
 				   AND (
 				     (tl.task_local_id IS NOT NULL AND tl.task_local_id != '' AND tl.task_local_id = t.local_id)
 				     OR (tl.task_id = t.id)
@@ -160,9 +160,9 @@ func (r *taskRepository) FindByUserIDWithStats(userID uint, page, perPage int) (
 				), 0
 			) as duration,
 			COALESCE(
-				(SELECT COUNT(s.id) 
-				 FROM screenshots s 
-				 WHERE s.deleted_at IS NULL 
+				(SELECT COUNT(s.id)
+				 FROM screenshots s
+				 WHERE s.deleted_at IS NULL
 				   AND (
 				     (s.task_local_id IS NOT NULL AND s.task_local_id != '' AND s.task_local_id = t.local_id)
 				     OR (s.task_id = t.id)
@@ -214,7 +214,7 @@ func (r *taskRepository) FindByUserIDWithStats(userID uint, page, perPage int) (
 func (r *taskRepository) FindActiveByUserIDWithStats(userID uint) ([]map[string]interface{}, error) {
 	var rows []TaskWithStatsRow
 	query := `
-		SELECT 
+		SELECT
 			t.id,
 			t.title,
 			t.description,
@@ -227,9 +227,9 @@ func (r *taskRepository) FindActiveByUserIDWithStats(userID uint) ([]map[string]
 			t.created_at,
 			t.updated_at,
 			COALESCE(
-				(SELECT SUM(tl.duration) 
-				 FROM time_logs tl 
-				 WHERE tl.deleted_at IS NULL 
+				(SELECT SUM(tl.duration)
+				 FROM time_logs tl
+				 WHERE tl.deleted_at IS NULL
 				   AND (
 				     (tl.task_local_id IS NOT NULL AND tl.task_local_id != '' AND tl.task_local_id = t.local_id)
 				     OR (tl.task_id = t.id)
@@ -237,9 +237,9 @@ func (r *taskRepository) FindActiveByUserIDWithStats(userID uint) ([]map[string]
 				), 0
 			) as duration,
 			COALESCE(
-				(SELECT COUNT(s.id) 
-				 FROM screenshots s 
-				 WHERE s.deleted_at IS NULL 
+				(SELECT COUNT(s.id)
+				 FROM screenshots s
+				 WHERE s.deleted_at IS NULL
 				   AND (
 				     (s.task_local_id IS NOT NULL AND s.task_local_id != '' AND s.task_local_id = t.local_id)
 				     OR (s.task_id = t.id)

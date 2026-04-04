@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/utils"
 )
 
 // AuthMiddleware validates JWT tokens

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
-	"github.com/beuphecan/remote-time-tracker/internal/models"
-	"github.com/beuphecan/remote-time-tracker/internal/repository"
 	"github.com/google/uuid"
+	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/models"
+	"remote-time-tracker.dev/internal/repository"
 )
 
 // TaskService handles task business logic

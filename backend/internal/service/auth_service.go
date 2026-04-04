@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
-	"github.com/beuphecan/remote-time-tracker/internal/models"
-	"github.com/beuphecan/remote-time-tracker/internal/repository"
-	"github.com/beuphecan/remote-time-tracker/internal/utils"
+	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/models"
+	"remote-time-tracker.dev/internal/repository"
+	"remote-time-tracker.dev/internal/utils"
 )
 
 // AuthService handles authentication logic

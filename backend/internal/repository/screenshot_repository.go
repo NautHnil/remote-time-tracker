@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/models"
 	"gorm.io/gorm"
+	"remote-time-tracker.dev/internal/models"
 )
 
 // ScreenshotRepository handles screenshot data operations

@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
-	"github.com/beuphecan/remote-time-tracker/internal/middleware"
-	"github.com/beuphecan/remote-time-tracker/internal/service"
-	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/middleware"
+	"remote-time-tracker.dev/internal/service"
+	"remote-time-tracker.dev/internal/utils"
 )
 
 // TimeLogController handles time log endpoints

@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/models"
-	"github.com/beuphecan/remote-time-tracker/internal/repository"
-	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/models"
+	"remote-time-tracker.dev/internal/repository"
+	"remote-time-tracker.dev/internal/utils"
 )
 
 // ============================================================================

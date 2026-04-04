@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/config"
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
 	"gopkg.in/yaml.v3"
+	"remote-time-tracker.dev/internal/config"
+	"remote-time-tracker.dev/internal/dto"
 )
 
 // UpdateService handles auto-update operations via GitHub API

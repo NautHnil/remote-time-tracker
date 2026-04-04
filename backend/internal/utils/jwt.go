@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/config"
 	"github.com/golang-jwt/jwt/v5"
+	"remote-time-tracker.dev/internal/config"
 )
 
 // JWTClaims represents JWT token claims

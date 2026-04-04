@@ -3,9 +3,9 @@ package repository
 import (
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
-	"github.com/beuphecan/remote-time-tracker/internal/models"
 	"gorm.io/gorm"
+	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/models"
 )
 
 // AdminRepository handles admin data operations
@@ -824,7 +824,7 @@ func (r *adminRepository) GetTrendStats(period string, startDate, endDate time.T
 
 	// Get daily user growth
 	rows, err := r.db.Raw(`
-		SELECT 
+		SELECT
 			DATE(created_at) as date,
 			COUNT(*) as new_users,
 			(SELECT COUNT(*) FROM users WHERE DATE(created_at) <= dates.date) as total_users
@@ -844,7 +844,7 @@ func (r *adminRepository) GetTrendStats(period string, startDate, endDate time.T
 
 	// Get daily activity trend
 	activityRows, err := r.db.Raw(`
-		SELECT 
+		SELECT
 			DATE(start_time) as date,
 			COALESCE(SUM(duration), 0) as duration,
 			COUNT(*) as timelogs,
@@ -914,7 +914,7 @@ func (r *adminRepository) GetUserPerformanceStats(limit int, startDate, endDate 
 	args = append(args, limit)
 
 	r.db.Raw(`
-		SELECT 
+		SELECT
 			users.id as user_id,
 			CONCAT(users.first_name, ' ', users.last_name) as user_name,
 			users.email,
@@ -978,8 +978,8 @@ func (r *adminRepository) GetOrgDistributionStats() (*dto.AdminOrgStats, error) 
 
 	// Size distribution
 	r.db.Raw(`
-		SELECT 
-			CASE 
+		SELECT
+			CASE
 				WHEN member_count <= 10 THEN 'small'
 				WHEN member_count <= 50 THEN 'medium'
 				ELSE 'large'
@@ -997,7 +997,7 @@ func (r *adminRepository) GetOrgDistributionStats() (*dto.AdminOrgStats, error) 
 
 	// Top workspaces
 	r.db.Raw(`
-		SELECT 
+		SELECT
 			workspaces.id as workspace_id,
 			workspaces.name,
 			organizations.name as organization_name,

@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"github.com/beuphecan/remote-time-tracker/internal/models"
 	"gorm.io/gorm"
+	"remote-time-tracker.dev/internal/models"
 )
 
 // SyncLogRepository handles sync log data operations

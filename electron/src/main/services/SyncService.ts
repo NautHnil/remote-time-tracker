@@ -800,8 +800,8 @@ export class SyncService {
       level: (systemLog.level || "info").toLowerCase(),
       component: systemLog.component || "unknown",
       message: (systemLog.message || "").trim(),
-      details: this.normalizeLogDetails(systemLog.details),
-      stack_trace: systemLog.stackTrace,
+      details: this.serializeValueData(systemLog.details),
+      stack_trace: this.serializeValueData(systemLog.stackTrace),
       app_version: systemLog.appVersion || app.getVersion(),
       device_uuid: systemLog.deviceUUID || this.getDeviceUUID(),
       occurred_at: occurredAt,
@@ -823,15 +823,19 @@ export class SyncService {
     return parsed.toISOString();
   }
 
-  private normalizeLogDetails(details?: string): string {
-    if (!details || details.trim() === "") {
-      return "null";
+  private serializeValueData(value: unknown): string {
+    if (value == null) {
+      return "";
+    }
+
+    if (typeof value === "string") {
+      return value;
     }
 
     try {
-      return JSON.stringify(JSON.parse(details));
+      return JSON.stringify(value);
     } catch {
-      return JSON.stringify({ raw: details });
+      return String(value);
     }
   }
 

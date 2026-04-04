@@ -7,16 +7,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/beuphecan/remote-time-tracker/internal/config"
-	"github.com/beuphecan/remote-time-tracker/internal/controller"
-	"github.com/beuphecan/remote-time-tracker/internal/database"
-	"github.com/beuphecan/remote-time-tracker/internal/logging"
-	"github.com/beuphecan/remote-time-tracker/internal/repository"
-	"github.com/beuphecan/remote-time-tracker/internal/router"
-	"github.com/beuphecan/remote-time-tracker/internal/service"
+	"remote-time-tracker.dev/internal/config"
+	"remote-time-tracker.dev/internal/controller"
+	"remote-time-tracker.dev/internal/database"
+	"remote-time-tracker.dev/internal/logging"
+	"remote-time-tracker.dev/internal/repository"
+	"remote-time-tracker.dev/internal/router"
+	"remote-time-tracker.dev/internal/service"
 
-	_ "github.com/beuphecan/remote-time-tracker/docs" // Swagger generated docs
 	gormlogger "gorm.io/gorm/logger"
+	_ "remote-time-tracker.dev/docs" // Swagger generated docs
 )
 
 // @title Remote Time Tracker API

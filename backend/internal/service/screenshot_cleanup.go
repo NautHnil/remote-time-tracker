@@ -1,6 +1,6 @@
 package service
 
-import "github.com/beuphecan/remote-time-tracker/internal/repository"
+import "remote-time-tracker.dev/internal/repository"
 
 func deleteScreenshotRecordAndFile(
 	id uint,
