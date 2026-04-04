@@ -185,20 +185,20 @@ type SyncDeviceInfoItem struct {
 
 // SyncSystemLogItem represents a system log item to sync from Electron.
 type SyncSystemLogItem struct {
-	LocalID        string      `json:"local_id" binding:"required"`
-	OrganizationID *uint       `json:"organization_id"`
-	WorkspaceID    *uint       `json:"workspace_id"`
-	Source         string      `json:"source"`
-	Level          string      `json:"level"`
-	Component      string      `json:"component"`
-	Message        string      `json:"message" binding:"required"`
-	Details        interface{} `json:"details"`
-	StackTrace     string      `json:"stack_trace"`
-	AppVersion     string      `json:"app_version"`
-	DeviceUUID     string      `json:"device_uuid"`
-	OccurredAt     time.Time   `json:"occurred_at" binding:"required"`
-	RequestID      string      `json:"request_id"`
-	SessionLocalID string      `json:"session_local_id"`
+	LocalID        string    `json:"local_id" binding:"required"`
+	OrganizationID *uint     `json:"organization_id"`
+	WorkspaceID    *uint     `json:"workspace_id"`
+	Source         string    `json:"source"`
+	Level          string    `json:"level"`
+	Component      string    `json:"component"`
+	Message        string    `json:"message" binding:"required"`
+	Details        string    `json:"details"`
+	StackTrace     string    `json:"stack_trace"`
+	AppVersion     string    `json:"app_version"`
+	DeviceUUID     string    `json:"device_uuid"`
+	OccurredAt     time.Time `json:"occurred_at" binding:"required"`
+	RequestID      string    `json:"request_id"`
+	SessionLocalID string    `json:"session_local_id"`
 }
 
 // BatchSyncResponse represents a batch sync response

@@ -34,7 +34,7 @@ func NewSyncController(syncService service.SyncService) *SyncController {
 // @Failure 400 {object} dto.ErrorResponse "Invalid request"
 // @Failure 401 {object} dto.ErrorResponse "Unauthorized"
 // @Failure 500 {object} dto.ErrorResponse "Sync failed"
-// @Router /sync/batch [post]
+// @Router /sync-data/batch-sync [post]
 func (ctrl *SyncController) BatchSync(c *gin.Context) {
 	userID, ok := middleware.GetUserID(c)
 	if !ok {

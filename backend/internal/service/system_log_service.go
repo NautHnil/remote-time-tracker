@@ -125,7 +125,7 @@ func (s *systemLogService) SyncClientLogs(userID uint, device *models.DeviceInfo
 			Level:          strings.ToLower(defaultString(item.Level, "info")),
 			Component:      item.Component,
 			Message:        truncateString(strings.TrimSpace(item.Message), 8000),
-			Details:        encodeJSON(item.Details),
+			Details:        normalizeJSONString(item.Details),
 			StackTrace:     truncateString(item.StackTrace, 16000),
 			AppVersion:     item.AppVersion,
 			DeviceUUID:     item.DeviceUUID,
@@ -283,6 +283,24 @@ func encodeJSON(value interface{}) string {
 	data, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Sprintf(`{"marshal_error":%q}`, err.Error())
+	}
+
+	return string(data)
+}
+
+func normalizeJSONString(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "null"
+	}
+
+	if json.Valid([]byte(trimmed)) {
+		return trimmed
+	}
+
+	data, err := json.Marshal(map[string]string{"raw": value})
+	if err != nil {
+		return `{"raw":"<invalid-details>"}`
 	}
 
 	return string(data)
