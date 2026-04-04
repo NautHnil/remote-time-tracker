@@ -5217,7 +5217,7 @@
                 }
             }
         },
-        "/sync/batch": {
+        "/sync-data/batch-sync": {
             "post": {
                 "security": [
                     {
@@ -9803,7 +9803,9 @@
                 "component": {
                     "type": "string"
                 },
-                "details": {},
+                "details": {
+                    "type": "string"
+                },
                 "device_uuid": {
                     "type": "string"
                 },

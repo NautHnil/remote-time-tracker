@@ -1833,7 +1833,8 @@ definitions:
         type: string
       component:
         type: string
-      details: {}
+      details:
+        type: string
       device_uuid:
         type: string
       level:
@@ -5649,7 +5650,7 @@ paths:
       summary: Get today's screenshot count
       tags:
       - screenshots
-  /sync/batch:
+  /sync-data/batch-sync:
     post:
       consumes:
       - application/json
