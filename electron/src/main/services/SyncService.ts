@@ -27,9 +27,16 @@ interface SyncBatchApiResult {
   errors?: string[];
 }
 
+interface PreparedScreenshotPayload {
+  screenshot: Screenshot;
+  dto: Record<string, any>;
+  encodedBytes: number;
+}
+
 export class SyncService {
   private static readonly TIME_LOG_BATCH_SIZE = 100;
   private static readonly SCREENSHOT_BATCH_SIZE = 10;
+  private static readonly SCREENSHOT_MAX_BATCH_BYTES = 4 * 1024 * 1024;
   private static readonly SYSTEM_LOG_BATCH_SIZE = 200;
   private static readonly SYNC_BATCH_ENDPOINT = "/sync/batch";
 
@@ -303,48 +310,17 @@ export class SyncService {
       screenshots,
       SyncService.SCREENSHOT_BATCH_SIZE
     )) {
-      const batchPayload = [];
-      const preparedScreenshots: Screenshot[] = [];
-
-      for (const screenshot of batch) {
-        try {
-          if (!fs.existsSync(screenshot.filePath)) {
-            await this.discardMissingScreenshot(screenshot);
-            errors.push(`Removed missing local screenshot ${screenshot.fileName}`);
-            continue;
-          }
-
-          const base64Data = fs
-            .readFileSync(screenshot.filePath)
-            .toString("base64");
-          batchPayload.push(await this.screenshotToDTO(screenshot, base64Data));
-          preparedScreenshots.push(screenshot);
-        } catch (error) {
-          console.error(
-            `Error preparing screenshot ${screenshot.fileName} for sync:`,
-            error
-          );
-          errors.push(`Failed to prepare screenshot ${screenshot.fileName}`);
-        }
-      }
-
-      if (batchPayload.length === 0) {
+      const preparedBatch = await this.prepareScreenshotBatch(batch, errors);
+      if (preparedBatch.length === 0) {
         continue;
       }
 
       try {
-        const response = await this.postSyncBatch({
-          ...contextPayload,
-          time_logs: [],
-          screenshots: batchPayload,
-          system_logs: [],
-        });
-        this.ensureBatchAccepted(response.data, "screenshots", "screenshots");
-
-        for (const screenshot of preparedScreenshots) {
-          await this.finalizeSyncedScreenshot(screenshot);
-          synced++;
-        }
+        synced += await this.syncPreparedScreenshotBatch(
+          preparedBatch,
+          contextPayload,
+          errors
+        );
       } catch (error) {
         console.error("Screenshot sync batch failed:", error);
         errors.push(this.getReadableSyncError(error, "screenshots"));
@@ -353,6 +329,150 @@ export class SyncService {
     }
 
     return synced;
+  }
+
+  private async prepareScreenshotBatch(
+    screenshots: Screenshot[],
+    errors: string[]
+  ): Promise<PreparedScreenshotPayload[]> {
+    const preparedBatch: PreparedScreenshotPayload[] = [];
+
+    for (const screenshot of screenshots) {
+      try {
+        if (!fs.existsSync(screenshot.filePath)) {
+          await this.discardMissingScreenshot(screenshot);
+          errors.push(`Removed missing local screenshot ${screenshot.fileName}`);
+          continue;
+        }
+
+        const base64Data = fs.readFileSync(screenshot.filePath).toString("base64");
+        preparedBatch.push({
+          screenshot,
+          dto: await this.screenshotToDTO(screenshot, base64Data),
+          encodedBytes: Buffer.byteLength(base64Data, "utf8"),
+        });
+      } catch (error) {
+        console.error(
+          `Error preparing screenshot ${screenshot.fileName} for sync:`,
+          error
+        );
+        errors.push(`Failed to prepare screenshot ${screenshot.fileName}`);
+      }
+    }
+
+    return preparedBatch;
+  }
+
+  private async syncPreparedScreenshotBatch(
+    batch: PreparedScreenshotPayload[],
+    contextPayload: Record<string, any>,
+    errors: string[]
+  ): Promise<number> {
+    let synced = 0;
+    let currentBatch: PreparedScreenshotPayload[] = [];
+    let currentBytes = 0;
+
+    for (const item of batch) {
+      const nextBatchWouldOverflow =
+        currentBatch.length > 0 &&
+        currentBytes + item.encodedBytes >
+          SyncService.SCREENSHOT_MAX_BATCH_BYTES;
+
+      if (nextBatchWouldOverflow) {
+        synced += await this.uploadPreparedScreenshotChunk(
+          currentBatch,
+          contextPayload,
+          errors
+        );
+        currentBatch = [];
+        currentBytes = 0;
+      }
+
+      currentBatch.push(item);
+      currentBytes += item.encodedBytes;
+    }
+
+    if (currentBatch.length > 0) {
+      synced += await this.uploadPreparedScreenshotChunk(
+        currentBatch,
+        contextPayload,
+        errors
+      );
+    }
+
+    return synced;
+  }
+
+  private async uploadPreparedScreenshotChunk(
+    batch: PreparedScreenshotPayload[],
+    contextPayload: Record<string, any>,
+    errors: string[]
+  ): Promise<number> {
+    try {
+      await this.sendPreparedScreenshotBatch(batch, contextPayload);
+      await this.finalizePreparedScreenshots(batch);
+      return batch.length;
+    } catch (error) {
+      if (this.shouldRetryScreenshotBatch(error) && batch.length > 1) {
+        const splitIndex = Math.ceil(batch.length / 2);
+        console.warn(
+          `Screenshot upload batch failed (${this.getReadableSyncError(
+            error,
+            "screenshots"
+          )}). Retrying in smaller chunks: ${splitIndex} + ${
+            batch.length - splitIndex
+          }`
+        );
+
+        const firstHalf = batch.slice(0, splitIndex);
+        const secondHalf = batch.slice(splitIndex);
+        let synced = 0;
+        synced += await this.uploadPreparedScreenshotChunk(
+          firstHalf,
+          contextPayload,
+          errors
+        );
+        synced += await this.uploadPreparedScreenshotChunk(
+          secondHalf,
+          contextPayload,
+          errors
+        );
+        return synced;
+      }
+
+      throw error;
+    }
+  }
+
+  private async sendPreparedScreenshotBatch(
+    batch: PreparedScreenshotPayload[],
+    contextPayload: Record<string, any>
+  ): Promise<void> {
+    const response = await this.postSyncBatch({
+      ...contextPayload,
+      time_logs: [],
+      screenshots: batch.map((item) => item.dto),
+      system_logs: [],
+    });
+    this.ensureBatchAccepted(response.data, "screenshots", "screenshots");
+  }
+
+  private async finalizePreparedScreenshots(
+    batch: PreparedScreenshotPayload[]
+  ): Promise<void> {
+    for (const item of batch) {
+      await this.finalizeSyncedScreenshot(item.screenshot);
+    }
+  }
+
+  private shouldRetryScreenshotBatch(error: any): boolean {
+    const errorCode = error?.code;
+    return (
+      errorCode === "EPIPE" ||
+      errorCode === "ECONNRESET" ||
+      errorCode === "ECONNABORTED" ||
+      error?.message === "socket hang up"
+    );
   }
 
   private async syncSystemLogBatches(
@@ -457,9 +577,45 @@ export class SyncService {
     return chunks;
   }
 
+  private buildSyncBatchCurlCommand(
+    payload: Record<string, any>,
+    accessToken?: string
+  ): string {
+    const body = JSON.stringify(payload, null, 2).replace(/'/g, `'\\''`);
+
+    return [
+      `curl -i -X POST '${this.resolveSyncBatchUrl()}'`,
+      `-H 'Content-Type: application/json'`,
+      // `-H 'Authorization: Bearer ${this.maskBearerToken(accessToken)}'`,
+      `-H 'Authorization: Bearer ${accessToken}'`,
+      // `--data-raw '${body}'`,
+      `--data-raw {}`,
+    ].join(" \\\n  ");
+  }
+
+  private resolveSyncBatchUrl(): string {
+    return `${AppConfig.apiUrl.replace(/\/+$/, "")}${SyncService.SYNC_BATCH_ENDPOINT}`;
+  }
+
+  private maskBearerToken(token?: string): string {
+    if (!token) {
+      return "<missing-token>";
+    }
+
+    if (token.length <= 12) {
+      return "<redacted-token>";
+    }
+
+    return `${token.slice(0, 6)}...${token.slice(-4)}`;
+  }
+
   private async postSyncBatch(payload: Record<string, any>) {
     const credentials = AppConfig.getCredentials();
     const hasAccessToken = Boolean(credentials?.accessToken);
+    const curlCommand = this.buildSyncBatchCurlCommand(
+      payload,
+      credentials?.accessToken
+    );
 
     try {
       return await this.apiClient.post(SyncService.SYNC_BATCH_ENDPOINT, payload);
@@ -470,6 +626,7 @@ export class SyncService {
         console.warn(
           `Batch sync endpoint ${SyncService.SYNC_BATCH_ENDPOINT} returned 404 on ${AppConfig.apiUrl} (server=${responseServer || "unknown"}, content-type=${responseType || "unknown"}, auth=${hasAccessToken}).`
         );
+        console.warn(`Debug curl for /sync/batch:\n${curlCommand}`);
         throw new Error(
           `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
         );

@@ -168,9 +168,9 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			}
 
 			// Sync
-			sync := protected.Group("/sync")
+			sync := protected.Group("/sync-data")
 			{
-				sync.POST("/batch", cfg.SyncController.BatchSync)
+				sync.POST("/batch-sync", cfg.SyncController.BatchSync)
 			}
 
 			// Screenshots
