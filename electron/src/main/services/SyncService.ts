@@ -38,7 +38,7 @@ export class SyncService {
   private static readonly SCREENSHOT_BATCH_SIZE = 10;
   private static readonly SCREENSHOT_MAX_BATCH_BYTES = 4 * 1024 * 1024;
   private static readonly SYSTEM_LOG_BATCH_SIZE = 200;
-  private static readonly SYNC_BATCH_ENDPOINT = "/sync/batch";
+  private static readonly SYNC_BATCH_ENDPOINT = "/sync-data/batch-sync";
 
   private dbService: DatabaseService;
   private apiClient: AxiosInstance;
@@ -588,8 +588,8 @@ export class SyncService {
       `-H 'Content-Type: application/json'`,
       // `-H 'Authorization: Bearer ${this.maskBearerToken(accessToken)}'`,
       `-H 'Authorization: Bearer ${accessToken}'`,
-      // `--data-raw '${body}'`,
-      `--data-raw {}`,
+      `--data-raw '${body}'`,
+      // `--data-raw {}`,
     ].join(" \\\n  ");
   }
 
@@ -626,7 +626,7 @@ export class SyncService {
         console.warn(
           `Batch sync endpoint ${SyncService.SYNC_BATCH_ENDPOINT} returned 404 on ${AppConfig.apiUrl} (server=${responseServer || "unknown"}, content-type=${responseType || "unknown"}, auth=${hasAccessToken}).`
         );
-        console.warn(`Debug curl for /sync/batch:\n${curlCommand}`);
+        console.warn(`Debug curl for ${SyncService.SYNC_BATCH_ENDPOINT}:\n${curlCommand}`);
         throw new Error(
           `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
         );
@@ -786,30 +786,52 @@ export class SyncService {
   }
 
   private systemLogToDTO(systemLog: SystemLog) {
+    const workspaceContext = this.getWorkspaceContext();
+    const occurredAt = this.normalizeSyncTimestamp(
+      systemLog.occurredAt || systemLog.createdAt
+    );
+
     return {
       local_id: systemLog.localId,
-      organization_id: systemLog.organizationId,
-      workspace_id: systemLog.workspaceId,
-      source: systemLog.source,
-      level: systemLog.level,
-      component: systemLog.component,
-      message: systemLog.message,
-      details: this.parseLogDetails(systemLog.details),
+      organization_id:
+        systemLog.organizationId ?? workspaceContext.organizationId,
+      workspace_id: systemLog.workspaceId ?? workspaceContext.workspaceId,
+      source: systemLog.source || "electron-main",
+      level: (systemLog.level || "info").toLowerCase(),
+      component: systemLog.component || "unknown",
+      message: (systemLog.message || "").trim(),
+      details: this.normalizeLogDetails(systemLog.details),
       stack_trace: systemLog.stackTrace,
-      app_version: systemLog.appVersion,
-      device_uuid: systemLog.deviceUUID,
-      occurred_at: systemLog.occurredAt,
+      app_version: systemLog.appVersion || app.getVersion(),
+      device_uuid: systemLog.deviceUUID || this.getDeviceUUID(),
+      occurred_at: occurredAt,
       request_id: systemLog.requestId,
       session_local_id: systemLog.sessionLocalId,
     };
   }
 
-  private parseLogDetails(details?: string) {
-    if (!details) return null;
+  private normalizeSyncTimestamp(timestamp?: string): string {
+    if (!timestamp) {
+      return new Date().toISOString();
+    }
+
+    const parsed = new Date(timestamp);
+    if (Number.isNaN(parsed.getTime())) {
+      return new Date().toISOString();
+    }
+
+    return parsed.toISOString();
+  }
+
+  private normalizeLogDetails(details?: string): string {
+    if (!details || details.trim() === "") {
+      return "null";
+    }
+
     try {
-      return JSON.parse(details);
+      return JSON.stringify(JSON.parse(details));
     } catch {
-      return { raw: details };
+      return JSON.stringify({ raw: details });
     }
   }
 

@@ -5223,7 +5223,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/sync/batch": {
+        "/sync-data/batch-sync": {
             "post": {
                 "security": [
                     {
@@ -9809,7 +9809,9 @@ const docTemplate = `{
                 "component": {
                     "type": "string"
                 },
-                "details": {},
+                "details": {
+                    "type": "string"
+                },
                 "device_uuid": {
                     "type": "string"
                 },
