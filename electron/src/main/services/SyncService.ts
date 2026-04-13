@@ -612,10 +612,10 @@ export class SyncService {
   private async postSyncBatch(payload: Record<string, any>) {
     const credentials = AppConfig.getCredentials();
     const hasAccessToken = Boolean(credentials?.accessToken);
-    const curlCommand = this.buildSyncBatchCurlCommand(
-      payload,
-      credentials?.accessToken
-    );
+    // const curlCommand = this.buildSyncBatchCurlCommand(
+    //   payload,
+    //   credentials?.accessToken
+    // );
 
     try {
       return await this.apiClient.post(SyncService.SYNC_BATCH_ENDPOINT, payload);
@@ -626,7 +626,7 @@ export class SyncService {
         console.warn(
           `Batch sync endpoint ${SyncService.SYNC_BATCH_ENDPOINT} returned 404 on ${AppConfig.apiUrl} (server=${responseServer || "unknown"}, content-type=${responseType || "unknown"}, auth=${hasAccessToken}).`
         );
-        console.warn(`Debug curl for ${SyncService.SYNC_BATCH_ENDPOINT}:\n${curlCommand}`);
+        // console.warn(`Debug curl for ${SyncService.SYNC_BATCH_ENDPOINT}:\n${curlCommand}`);
         throw new Error(
           `Sync endpoint not found: ${AppConfig.apiUrl}${SyncService.SYNC_BATCH_ENDPOINT}`
         );
