@@ -105,6 +105,25 @@ interface ElectronAPI {
     cleanupSynced: (keepDays?: number) => Promise<any>;
     getSize: () => Promise<any>;
     deleteOld: (daysOld?: number) => Promise<any>;
+    clearAppCache: () => Promise<{
+      success: boolean;
+      clearedBytes?: number;
+      error?: string;
+    }>;
+    cleanupTemp: () => Promise<{
+      success: boolean;
+      deletedCount?: number;
+      clearedBytes?: number;
+      tempPath?: string;
+      scannedPaths?: string[];
+      message?: string;
+      error?: string;
+    }>;
+    clearSqliteCache: () => Promise<{
+      success: boolean;
+      clearedBytes?: number;
+      error?: string;
+    }>;
     getScreenshotPath: () => Promise<{
       success: boolean;
       path?: string;

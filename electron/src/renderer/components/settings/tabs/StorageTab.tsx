@@ -20,6 +20,7 @@ export function StorageTab() {
   const [storageSize, setStorageSize] = useState<number>(0);
   const [cleaningUp, setCleaningUp] = useState(false);
   const [clearingAppCache, setClearingAppCache] = useState(false);
+  const [cleaningTemp, setCleaningTemp] = useState(false);
   const [clearingSqliteCache, setClearingSqliteCache] = useState(false);
   const [screenshotPath, setScreenshotPath] =
     useState<ScreenshotPathInfo | null>(null);
@@ -331,6 +332,50 @@ export function StorageTab() {
     });
   };
 
+  const handleCleanupTemp = async () => {
+    confirmDialog.show({
+      title: "Cleanup Temp Capture Files",
+      message:
+        "This removes temporary screenshot capture files left in the system temp folder.\n\nTracked data, screenshots, and settings will remain intact.\n\nContinue?",
+      confirmText: "Cleanup Temp",
+      onConfirm: async () => {
+        confirmDialog.close();
+        try {
+          setCleaningTemp(true);
+          const result = await window.electronAPI.storage.cleanupTemp();
+
+          if (result.success) {
+            alertDialog.show({
+              title: "Success",
+              message:
+                `${result.message || "Temporary capture files cleaned up."}\n\n` +
+                `Deleted: ${result.deletedCount || 0} files\n` +
+                `Freed: ${formatBytes(result.clearedBytes || 0)}`,
+              type: "success",
+            });
+            await loadStorageSize();
+          } else {
+            alertDialog.show({
+              title: "Failed",
+              message:
+                "Failed to cleanup temp files: " +
+                (result.error || "Unknown error"),
+              type: "error",
+            });
+          }
+        } catch (error: any) {
+          alertDialog.show({
+            title: "Failed",
+            message: "Failed to cleanup temp files: " + error.message,
+            type: "error",
+          });
+        } finally {
+          setCleaningTemp(false);
+        }
+      },
+    });
+  };
+
   const handleClearSqliteCache = async () => {
     confirmDialog.show({
       title: "Optimize Database Storage",
@@ -472,6 +517,34 @@ export function StorageTab() {
                 >
                   <Icons.RefreshCw className="w-4 h-4" />
                   {clearingAppCache ? "Clearing..." : "Clear Cache"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl border border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-500/10">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
+                <Icons.Trash className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Cleanup Temp Capture Files
+                </h4>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Remove leftover temporary screenshot capture artifacts for the
+                  current platform. Windows cleans legacy capture temp files,
+                  macOS cleans orphan screenshot-desktop temp images, and Linux
+                  performs a safe no-op when no platform-specific temp cleanup
+                  is required.
+                </p>
+                <button
+                  onClick={handleCleanupTemp}
+                  disabled={cleaningTemp}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+                >
+                  <Icons.Trash className="w-4 h-4" />
+                  {cleaningTemp ? "Cleaning..." : "Cleanup Temp"}
                 </button>
               </div>
             </div>
