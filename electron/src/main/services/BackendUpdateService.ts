@@ -17,6 +17,7 @@ import * as http from "http";
 import * as https from "https";
 import * as path from "path";
 import { AppConfig } from "../config";
+import { deleteFileWithRetries } from "../utils/FileDeletion";
 
 // Configure logging
 log.transports.file.level = "info";
@@ -404,7 +405,10 @@ export class BackendUpdateService {
 
         if (res.statusCode !== 200) {
           file.close();
-          fs.unlinkSync(destPath);
+          void deleteFileWithRetries(destPath, {
+            fileLabel: path.basename(destPath),
+            logPrefix: "Cleanup",
+          });
           reject(new Error(`Download failed: HTTP ${res.statusCode}`));
           return;
         }
@@ -448,7 +452,10 @@ export class BackendUpdateService {
 
       req.on("error", (e) => {
         file.close();
-        fs.unlinkSync(destPath);
+        void deleteFileWithRetries(destPath, {
+          fileLabel: path.basename(destPath),
+          logPrefix: "Cleanup",
+        });
         reject(e);
       });
 
@@ -483,7 +490,10 @@ export class BackendUpdateService {
 
         if (res.statusCode !== 200) {
           file.close();
-          if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
+          void deleteFileWithRetries(destPath, {
+            fileLabel: path.basename(destPath),
+            logPrefix: "Cleanup",
+          });
           reject(new Error(`Download failed: HTTP ${res.statusCode}`));
           return;
         }
@@ -526,7 +536,10 @@ export class BackendUpdateService {
 
       req.on("error", (e) => {
         file.close();
-        if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
+        void deleteFileWithRetries(destPath, {
+          fileLabel: path.basename(destPath),
+          logPrefix: "Cleanup",
+        });
         reject(e);
       });
     });

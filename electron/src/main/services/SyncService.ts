@@ -4,6 +4,8 @@ import { app } from "electron";
 // @ts-ignore
 import fs from "fs";
 import { AppConfig } from "../config";
+import { ScreenshotService } from "./ScreenshotService";
+import { deleteFileWithRetries } from "../utils/FileDeletion";
 import {
   DatabaseService,
   Screenshot,
@@ -41,13 +43,15 @@ export class SyncService {
   private static readonly SYNC_BATCH_ENDPOINT = "/sync-data/batch-sync";
 
   private dbService: DatabaseService;
+  private screenshotService: ScreenshotService;
   private apiClient: AxiosInstance;
   private syncTimer: NodeJS.Timeout | null = null;
   private isSyncing = false;
   private lastSyncTime: Date | null = null;
 
-  constructor(dbService: DatabaseService) {
+  constructor(dbService: DatabaseService, screenshotService: ScreenshotService) {
     this.dbService = dbService;
+    this.screenshotService = screenshotService;
 
     this.apiClient = axios.create({
       baseURL: AppConfig.apiUrl,
@@ -242,6 +246,9 @@ export class SyncService {
       }
 
       await this.cleanupSyncedSystemLogs();
+      if (screenshotsSynced > 0) {
+        await this.screenshotService.cleanupSyncedScreenshots();
+      }
       console.log(
         `✅ Sync finished: ${timeLogsSynced} time logs, ${screenshotsSynced} screenshots, ${systemLogsSynced} system logs synced`
       );
@@ -530,14 +537,31 @@ export class SyncService {
 
   private async finalizeSyncedScreenshot(screenshot: Screenshot): Promise<void> {
     try {
-      if (fs.existsSync(screenshot.filePath)) {
-        fs.unlinkSync(screenshot.filePath);
+      const deleted = await this.deleteScreenshotFileWithRetries(
+        screenshot.filePath,
+        screenshot.fileName
+      );
+
+      if (deleted) {
+        await this.dbService.deleteScreenshotByFilePath(screenshot.filePath);
+        return;
       }
-      await this.dbService.deleteScreenshotByFilePath(screenshot.filePath);
+
+      await this.dbService.markScreenshotAsSynced(screenshot.localId);
     } catch (error) {
       console.error(`Failed to delete screenshot ${screenshot.fileName}:`, error);
       await this.dbService.markScreenshotAsSynced(screenshot.localId);
     }
+  }
+
+  private async deleteScreenshotFileWithRetries(
+    filePath: string,
+    fileName: string
+  ): Promise<boolean> {
+    return deleteFileWithRetries(filePath, {
+      fileLabel: `screenshot ${fileName}`,
+      logPrefix: "Delete",
+    });
   }
 
   private ensureBatchAccepted(
@@ -864,49 +888,6 @@ export class SyncService {
       os_version: os.release(),
       app_version: app.getVersion(),
     };
-  }
-
-  /**
-   * Cleanup old synced screenshots to free disk space
-   * Called automatically after successful sync
-   */
-  private async cleanupOldSyncedFiles(keepDays: number = 7): Promise<void> {
-    try {
-      const cutoffDate = subDays(Date.now(), keepDays);
-
-      const syncedScreenshots =
-        await this.dbService.getSyncedScreenshotsBeforeDate(
-          formatISO(cutoffDate)
-        );
-
-      let deletedCount = 0;
-      let freedBytes = 0;
-
-      for (const screenshot of syncedScreenshots) {
-        try {
-          if (fs.existsSync(screenshot.filePath)) {
-            const stats = fs.statSync(screenshot.filePath);
-            freedBytes += stats.size;
-            fs.unlinkSync(screenshot.filePath);
-          }
-          // Delete from database after file deletion
-          await this.dbService.deleteScreenshotByFilePath(screenshot.filePath);
-          deletedCount++;
-        } catch (error) {
-          console.error(`Failed to cleanup ${screenshot.fileName}:`, error);
-        }
-      }
-
-      if (deletedCount > 0) {
-        console.log(
-          `🧹 Auto-cleanup: Removed ${deletedCount} synced screenshots, freed ${this.formatBytes(
-            freedBytes
-          )}`
-        );
-      }
-    } catch (error) {
-      console.error("Error during auto-cleanup:", error);
-    }
   }
 
   private formatBytes(bytes: number): string {

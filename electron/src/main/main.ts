@@ -709,7 +709,7 @@ async function initializeServices() {
 
   // Initialize services
   screenshotService = new ScreenshotService(dbService);
-  syncService = new SyncService(dbService);
+  syncService = new SyncService(dbService, screenshotService);
   taskService = new TaskService();
   timeTrackerService = new TimeTrackerService(
     dbService,

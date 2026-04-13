@@ -7,6 +7,7 @@
 import fs from "fs";
 import path from "path";
 import sharp from "sharp";
+import { deleteFileWithRetries } from "../utils/FileDeletion";
 
 export interface OptimizationOptions {
   /** Output format: 'jpeg' | 'webp' | 'png' */
@@ -171,9 +172,18 @@ export class ImageOptimizer {
         };
       }
 
-      // Delete original if output path is different
+      // Cleanup the raw input as best-effort only. If Windows still holds a lock
+      // briefly after capture, keep the optimized output and let later cleanup remove it.
       if (finalOutputPath !== inputPath && fs.existsSync(inputPath)) {
-        fs.unlinkSync(inputPath);
+        const deleted = await deleteFileWithRetries(inputPath, {
+          fileLabel: `raw screenshot ${path.basename(inputPath)}`,
+          logPrefix: "Cleanup",
+        });
+        if (!deleted) {
+          console.warn(
+            `Optimized image saved but raw input is still locked: ${inputPath}`,
+          );
+        }
       }
 
       return {
