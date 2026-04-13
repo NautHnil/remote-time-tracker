@@ -22,6 +22,7 @@ export function StorageTab() {
   const [clearingAppCache, setClearingAppCache] = useState(false);
   const [cleaningTemp, setCleaningTemp] = useState(false);
   const [clearingSqliteCache, setClearingSqliteCache] = useState(false);
+  const [clearingLogs, setClearingLogs] = useState(false);
   const [screenshotPath, setScreenshotPath] =
     useState<ScreenshotPathInfo | null>(null);
   const [changingPath, setChangingPath] = useState(false);
@@ -416,6 +417,59 @@ export function StorageTab() {
     });
   };
 
+  const handleClearSyncedLogs = async () => {
+    confirmDialog.show({
+      title: "Clean Synced Logs",
+      message:
+        "This removes synced system logs stored locally and compacts the database.\n\nIf you enable hard clean, all logs will be deleted, including logs that have not been synced yet.\n\nContinue?",
+      confirmText: "Clean Logs",
+      checkboxLabel: "Use hard clean logs",
+      checkboxDescription:
+        "Delete all local logs, including logs that have not been synced to the server yet.",
+      onConfirm: async (hardClean) => {
+        confirmDialog.close();
+        try {
+          setClearingLogs(true);
+          const result = await window.electronAPI.storage.clearSyncedLogs(
+            !!hardClean
+          );
+
+          if (result.success) {
+            alertDialog.show({
+              title: "Success",
+              message:
+                `${
+                  result.hardClean
+                    ? "Hard clean logs completed successfully."
+                    : "Synced logs cleaned successfully."
+                }\n\n` +
+                `Deleted: ${result.deletedCount || 0} logs\n` +
+                `Freed: ${formatBytes(result.clearedBytes || 0)}`,
+              type: "success",
+            });
+            await loadStorageSize();
+          } else {
+            alertDialog.show({
+              title: "Failed",
+              message:
+                "Failed to clean synced logs: " +
+                (result.error || "Unknown error"),
+              type: "error",
+            });
+          }
+        } catch (error: any) {
+          alertDialog.show({
+            title: "Failed",
+            message: "Failed to clean synced logs: " + error.message,
+            type: "error",
+          });
+        } finally {
+          setClearingLogs(false);
+        }
+      },
+    });
+  };
+
   return (
     <>
       <Card className="p-6">
@@ -570,6 +624,31 @@ export function StorageTab() {
                 >
                   <Icons.Database className="w-4 h-4" />
                   {clearingSqliteCache ? "Optimizing..." : "Optimize DB"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <Icons.Trash className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Clean Synced Logs
+                </h4>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Remove synced system logs by default, or enable hard clean to
+                  delete all local logs including unsynced entries.
+                </p>
+                <button
+                  onClick={handleClearSyncedLogs}
+                  disabled={clearingLogs}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+                >
+                  <Icons.Trash className="w-4 h-4" />
+                  {clearingLogs ? "Cleaning..." : "Clean Logs"}
                 </button>
               </div>
             </div>

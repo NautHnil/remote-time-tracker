@@ -8,9 +8,13 @@ export function useConfirmDialog() {
     isOpen: boolean;
     title: string;
     message: string;
-    onConfirm: () => void;
+    onConfirm: (checked?: boolean) => void;
     confirmText?: string;
+    cancelText?: string;
     variant?: "default" | "danger" | "warning";
+    checkboxLabel?: string;
+    checkboxDescription?: string;
+    checkboxRequired?: boolean;
   }>({
     isOpen: false,
     title: "",

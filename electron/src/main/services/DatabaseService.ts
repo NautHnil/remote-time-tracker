@@ -757,6 +757,24 @@ export class DatabaseService {
     return result.changes;
   }
 
+  async clearSyncedSystemLogs(): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const result = this.db
+      .prepare("DELETE FROM system_logs WHERE is_synced = 1")
+      .run();
+
+    return result.changes;
+  }
+
+  async clearAllSystemLogs(): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const result = this.db.prepare("DELETE FROM system_logs").run();
+
+    return result.changes;
+  }
+
   // Task-related methods (queries against synced backend data)
   // Note: These methods query time_logs table to get task statistics
   async getTaskStats(taskId: number): Promise<{
