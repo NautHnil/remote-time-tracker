@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
 import { AppConfig } from "../config";
+import { deleteFileWithRetries } from "../utils/FileDeletion";
 
 export interface TimeLog {
   id?: number;
@@ -611,9 +612,10 @@ export class DatabaseService {
     if (screenshot?.file_path) {
       // Delete file from filesystem
       try {
-        if (fs.existsSync(screenshot.file_path)) {
-          fs.unlinkSync(screenshot.file_path);
-        }
+        await deleteFileWithRetries(screenshot.file_path, {
+          fileLabel: `screenshot ${path.basename(screenshot.file_path)}`,
+          logPrefix: "Delete",
+        });
       } catch (error) {
         console.error("Failed to delete screenshot file:", error);
       }
@@ -654,9 +656,10 @@ export class DatabaseService {
 
     if (filePath) {
       try {
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
+        await deleteFileWithRetries(filePath, {
+          fileLabel: `screenshot ${path.basename(filePath)}`,
+          logPrefix: "Delete",
+        });
       } catch (error) {
         console.error("Failed to delete screenshot file by path:", error);
       }

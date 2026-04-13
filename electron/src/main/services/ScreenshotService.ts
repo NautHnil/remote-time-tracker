@@ -6,6 +6,10 @@ import path from "path";
 import screenshot from "screenshot-desktop";
 import { v4 as uuidv4 } from "uuid";
 import { AppConfig } from "../config";
+import {
+  deleteFileWithRetries,
+  moveFileWithRetries,
+} from "../utils/FileDeletion";
 import { DatabaseService } from "./DatabaseService";
 import { dependencyChecker, DependencyCheckResult } from "./DependencyChecker";
 import { ImageOptimizer } from "./ImageOptimizer";
@@ -396,7 +400,7 @@ export class ScreenshotService {
             `⚠️ Optimization failed, saving original: ${optimizationResult.error}`,
           );
           if (process.platform === "win32") {
-            finalFilePath = this.moveManagedCaptureFile(rawFilePath, filePath);
+            finalFilePath = await this.moveManagedCaptureFile(rawFilePath, filePath);
           } else {
             fs.writeFileSync(filePath, rawBuffer!);
             finalFilePath = filePath;
@@ -412,7 +416,7 @@ export class ScreenshotService {
         }
       } else {
         if (process.platform === "win32") {
-          finalFilePath = this.moveManagedCaptureFile(rawFilePath, filePath);
+          finalFilePath = await this.moveManagedCaptureFile(rawFilePath, filePath);
         } else {
           fs.writeFileSync(filePath, rawBuffer!);
           finalFilePath = filePath;
@@ -539,7 +543,7 @@ export class ScreenshotService {
               `⚠️ Manual screenshot optimization failed, saving original`,
             );
             if (process.platform === "win32") {
-              finalFilePath = this.moveManagedCaptureFile(rawFilePath, filePath);
+              finalFilePath = await this.moveManagedCaptureFile(rawFilePath, filePath);
             } else {
               fs.writeFileSync(filePath, rawBuffer!);
               finalFilePath = filePath;
@@ -550,7 +554,7 @@ export class ScreenshotService {
           }
         } else {
           if (process.platform === "win32") {
-            finalFilePath = this.moveManagedCaptureFile(rawFilePath, filePath);
+            finalFilePath = await this.moveManagedCaptureFile(rawFilePath, filePath);
           } else {
             fs.writeFileSync(filePath, rawBuffer!);
             finalFilePath = filePath;
@@ -649,17 +653,21 @@ export class ScreenshotService {
 
           if (screenshot && screenshot.isSynced) {
             // Delete synced screenshot
-            fs.unlinkSync(filePath);
-            await this.dbService.deleteScreenshotByFilePath(filePath);
-            deletedCount++;
-            freedBytes += fileSize;
-            console.log(`Deleted synced screenshot: ${file}`);
+            const deleted = await this.deleteFileWithRetries(filePath, file);
+            if (deleted) {
+              await this.dbService.deleteScreenshotByFilePath(filePath);
+              deletedCount++;
+              freedBytes += fileSize;
+              console.log(`Deleted synced screenshot: ${file}`);
+            }
           } else if (!screenshot) {
             // Delete orphaned files (not in database)
-            fs.unlinkSync(filePath);
-            deletedCount++;
-            freedBytes += fileSize;
-            console.log(`Deleted orphaned file: ${file}`);
+            const deleted = await this.deleteFileWithRetries(filePath, file);
+            if (deleted) {
+              deletedCount++;
+              freedBytes += fileSize;
+              console.log(`Deleted orphaned file: ${file}`);
+            }
           } else {
             console.log(`Skipped unsynced screenshot: ${file}`);
           }
@@ -701,10 +709,17 @@ export class ScreenshotService {
         if (fs.existsSync(screenshot.filePath)) {
           const stats = fs.statSync(screenshot.filePath);
           freedBytes += stats.size;
-          fs.unlinkSync(screenshot.filePath);
         }
-        await this.dbService.deleteScreenshotByFilePath(screenshot.filePath);
-        deletedCount++;
+
+        const deleted = await this.deleteFileWithRetries(
+          screenshot.filePath,
+          screenshot.fileName,
+        );
+
+        if (deleted) {
+          await this.dbService.deleteScreenshotByFilePath(screenshot.filePath);
+          deletedCount++;
+        }
       } catch (error) {
         console.error(`Failed to delete ${screenshot.fileName}:`, error);
       }
@@ -761,9 +776,14 @@ export class ScreenshotService {
     let clearedBytes = 0;
 
     for (const artifact of tempArtifacts) {
-      fs.rmSync(artifact.filePath, { force: true });
-      deletedCount++;
-      clearedBytes += artifact.size;
+      const deleted = await deleteFileWithRetries(artifact.filePath, {
+        fileLabel: path.basename(artifact.filePath),
+        logPrefix: "Cleanup",
+      });
+      if (deleted) {
+        deletedCount++;
+        clearedBytes += artifact.size;
+      }
     }
 
     if (process.platform === "win32") {
@@ -893,10 +913,28 @@ export class ScreenshotService {
     return format === "jpg" ? "image/jpeg" : "image/png";
   }
 
-  private moveManagedCaptureFile(sourcePath: string, preferredPath: string): string {
-    const targetPath = preferredPath.replace(/\.(png|jpg|jpeg|webp)$/i, path.extname(sourcePath));
-    fs.renameSync(sourcePath, targetPath);
-    return targetPath;
+  private async moveManagedCaptureFile(
+    sourcePath: string,
+    preferredPath: string,
+  ): Promise<string> {
+    const targetPath = preferredPath.replace(
+      /\.(png|jpg|jpeg|webp)$/i,
+      path.extname(sourcePath),
+    );
+    return moveFileWithRetries(sourcePath, targetPath, {
+      fileLabel: path.basename(sourcePath),
+      logPrefix: "Move",
+    });
+  }
+
+  private async deleteFileWithRetries(
+    filePath: string,
+    fileLabel: string,
+  ): Promise<boolean> {
+    return deleteFileWithRetries(filePath, {
+      fileLabel,
+      logPrefix: "Delete",
+    });
   }
 
   private async captureWindowsScreenToFile(
