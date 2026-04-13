@@ -124,6 +124,13 @@ interface ElectronAPI {
       clearedBytes?: number;
       error?: string;
     }>;
+    clearSyncedLogs: (hardClean?: boolean) => Promise<{
+      success: boolean;
+      hardClean?: boolean;
+      deletedCount?: number;
+      clearedBytes?: number;
+      error?: string;
+    }>;
     getScreenshotPath: () => Promise<{
       success: boolean;
       path?: string;

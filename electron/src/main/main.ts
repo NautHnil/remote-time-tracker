@@ -1136,6 +1136,39 @@ function setupIpcHandlers() {
     }
   });
 
+  ipcMain.handle("storage:clear-synced-logs", async (_, hardClean = false) => {
+    try {
+      const databasePath = AppConfig.getDatabasePath();
+      const cacheFiles = [`${databasePath}-wal`, `${databasePath}-shm`];
+
+      const getFileSize = (filePath: string) =>
+        fs.existsSync(filePath) ? fs.statSync(filePath).size : 0;
+
+      const beforeBytes =
+        getFileSize(databasePath) +
+        cacheFiles.reduce((total, filePath) => total + getFileSize(filePath), 0);
+
+      const deletedCount = hardClean
+        ? await dbService.clearAllSystemLogs()
+        : await dbService.clearSyncedSystemLogs();
+      await dbService.clearSqliteCache();
+
+      const afterBytes =
+        getFileSize(databasePath) +
+        cacheFiles.reduce((total, filePath) => total + getFileSize(filePath), 0);
+
+      return {
+        success: true,
+        hardClean,
+        deletedCount,
+        clearedBytes: Math.max(beforeBytes - afterBytes, 0),
+      };
+    } catch (error: any) {
+      console.error("Failed to clear synced system logs:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
   // Auth
   ipcMain.handle("auth:set-credentials", async (_, credentials) => {
     AppConfig.setCredentials(credentials);

@@ -246,6 +246,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     clearAppCache: () => ipcRenderer.invoke("storage:clear-app-cache"),
     cleanupTemp: () => ipcRenderer.invoke("storage:cleanup-temp"),
     clearSqliteCache: () => ipcRenderer.invoke("storage:clear-sqlite-cache"),
+    clearSyncedLogs: (hardClean?: boolean) =>
+      ipcRenderer.invoke("storage:clear-synced-logs", hardClean),
     getScreenshotPath: () => ipcRenderer.invoke("storage:get-screenshot-path"),
     setScreenshotPath: (customPath: string | null) =>
       ipcRenderer.invoke("storage:set-screenshot-path", customPath),
@@ -379,6 +381,13 @@ export interface ElectronAPI {
     }>;
     clearSqliteCache: () => Promise<{
       success: boolean;
+      clearedBytes?: number;
+      error?: string;
+    }>;
+    clearSyncedLogs: (hardClean?: boolean) => Promise<{
+      success: boolean;
+      hardClean?: boolean;
+      deletedCount?: number;
       clearedBytes?: number;
       error?: string;
     }>;
