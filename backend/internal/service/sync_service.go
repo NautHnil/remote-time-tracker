@@ -230,7 +230,8 @@ func (s *syncService) syncDeviceInfo(userID uint, deviceInfo *dto.SyncDeviceInfo
 
 func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items []dto.SyncTimeLogItem, defaultOrgID *uint, defaultWsID *uint) dto.SyncResult {
 	// Debug logging
-	log.Printf("🔄 syncTimeLogs called with defaultOrgID=%v, defaultWsID=%v", defaultOrgID, defaultWsID)
+	log.Printf("🔄 syncTimeLogs called with defaultOrgID=%s, defaultWsID=%s",
+		utils.UintPtrToString(defaultOrgID), utils.UintPtrToString(defaultWsID))
 
 	result := dto.SyncResult{
 		Total:   len(items),
@@ -252,8 +253,12 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 		}
 
 		// Debug logging for resolved IDs
-		log.Printf("📋 TimeLog item: LocalID=%s, item.OrgID=%v, item.WsID=%v, resolved orgID=%v, wsID=%v",
-			item.LocalID, item.OrganizationID, item.WorkspaceID, orgID, wsID)
+		log.Printf("📋 TimeLog item: LocalID=%s, item.OrgID=%s, item.WsID=%s, resolved orgID=%s, wsID=%s",
+			item.LocalID,
+			utils.UintPtrToString(item.OrganizationID),
+			utils.UintPtrToString(item.WorkspaceID),
+			utils.UintPtrToString(orgID),
+			utils.UintPtrToString(wsID))
 
 		// Handle task creation/lookup
 		var taskID *uint
@@ -298,7 +303,8 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 				}
 				if err := s.taskRepo.Create(task); err == nil {
 					taskID = &task.ID
-					log.Printf("✅ Created task with LocalID: %s (Title: %s, ID: %d, WsID: %v)", item.TaskLocalID, item.TaskTitle, task.ID, wsID)
+					log.Printf("✅ Created task with LocalID: %s (Title: %s, ID: %d, WsID: %s)",
+						item.TaskLocalID, item.TaskTitle, task.ID, utils.UintPtrToString(wsID))
 				} else {
 					log.Printf("⚠️  Failed to create task: %s - %v", item.TaskTitle, err)
 				}
@@ -325,7 +331,8 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 			}
 			if err := s.taskRepo.Create(task); err == nil {
 				taskID = &task.ID
-				log.Printf("✅ Auto-created task: %s (ID: %d, WsID: %v)", item.TaskTitle, task.ID, wsID)
+				log.Printf("✅ Auto-created task: %s (ID: %d, WsID: %s)",
+					item.TaskTitle, task.ID, utils.UintPtrToString(wsID))
 			} else {
 				log.Printf("⚠️  Failed to create task: %s - %v", item.TaskTitle, err)
 			}
@@ -375,7 +382,8 @@ func (s *syncService) syncTimeLogs(userID uint, device *models.DeviceInfo, items
 				}
 				if err := s.taskRepo.Create(newTask); err == nil {
 					taskID = &newTask.ID
-					log.Printf("✅ Auto-created task: %s (ID: %d, WsID: %v)", newTask.Title, newTask.ID, wsID)
+					log.Printf("✅ Auto-created task: %s (ID: %d, WsID: %s)",
+						newTask.Title, newTask.ID, utils.UintPtrToString(wsID))
 				} else {
 					log.Printf("⚠️  Failed to create task: %v", err)
 				}

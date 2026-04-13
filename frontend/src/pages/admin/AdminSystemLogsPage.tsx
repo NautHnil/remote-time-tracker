@@ -15,6 +15,8 @@ import {
   adminService,
 } from "../../services/adminService";
 
+const POINTER_ADDRESS_PATTERN = /\b0x[0-9a-f]+\b/gi;
+
 interface SystemLogDetailModalProps {
   systemLogId: number;
   onClose: () => void;
@@ -94,7 +96,7 @@ function SystemLogDetailModal({
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-500">Message</p>
                     <p className="mt-2 whitespace-pre-wrap text-base font-medium text-gray-900">
-                      {systemLog.message}
+                      {sanitizeLogText(systemLog.message)}
                     </p>
                   </div>
                   <div className="shrink-0 rounded-xl bg-white px-3 py-2 text-right shadow-sm ring-1 ring-gray-200">
@@ -127,10 +129,19 @@ function SystemLogDetailModal({
                         : "-"
                     }
                   />
-                  <InfoItem label="Organization" value={systemLog.org_name || "-"} />
+                  <InfoItem
+                    label="Organization"
+                    value={formatEntityDisplay(
+                      systemLog.org_name,
+                      systemLog.organization_id,
+                    )}
+                  />
                   <InfoItem
                     label="Workspace"
-                    value={systemLog.workspace_name || "-"}
+                    value={formatEntityDisplay(
+                      systemLog.workspace_name,
+                      systemLog.workspace_id,
+                    )}
                   />
                   <InfoItem
                     label="Device UUID"
@@ -192,14 +203,18 @@ function SystemLogDetailModal({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => void copyToClipboard(systemLog.stack_trace || "")}
+                    onClick={() =>
+                      void copyToClipboard(
+                        sanitizeLogText(systemLog.stack_trace || ""),
+                      )
+                    }
                   >
                     Copy
                   </Button>
                 </div>
                 <div className="px-5 py-5">
                   <pre className="overflow-x-auto rounded-xl bg-gray-950 p-4 text-xs leading-6 text-gray-100">
-                    {systemLog.stack_trace || "No stack trace"}
+                    {sanitizeLogText(systemLog.stack_trace) || "No stack trace"}
                   </pre>
                 </div>
               </section>
@@ -231,7 +246,7 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 function parseLogJson(input?: string) {
   if (!input) return null;
   try {
-    return JSON.parse(input) as unknown;
+    return sanitizeLogValue(JSON.parse(input)) as unknown;
   } catch {
     return null;
   }
@@ -240,10 +255,43 @@ function parseLogJson(input?: string) {
 function prettyJson(input?: string) {
   if (!input) return "No details";
   try {
-    return JSON.stringify(JSON.parse(input), null, 2);
+    return JSON.stringify(sanitizeLogValue(JSON.parse(input)), null, 2);
   } catch {
-    return input;
+    return sanitizeLogText(input);
   }
+}
+
+function sanitizeLogText(input?: string | null) {
+  if (!input) return input ?? "";
+  return input.replace(POINTER_ADDRESS_PATTERN, "<pointer>");
+}
+
+function sanitizeLogValue(value: unknown): unknown {
+  if (typeof value === "string") {
+    return sanitizeLogText(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeLogValue(item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [
+        key,
+        sanitizeLogValue(nestedValue),
+      ]),
+    );
+  }
+
+  return value;
+}
+
+function formatEntityDisplay(name?: string | null, id?: number | null) {
+  if (name && id != null) return `${name} (#${id})`;
+  if (name) return name;
+  if (id != null) return `#${id}`;
+  return "-";
 }
 
 function levelBadgeClass(level: string) {
@@ -827,7 +875,7 @@ export default function AdminSystemLogsPage() {
                       </td>
                       <td className="max-w-xl px-4 py-4 text-sm text-gray-700">
                         <div className="line-clamp-2 font-medium text-gray-900">
-                          {log.message}
+                          {sanitizeLogText(log.message)}
                         </div>
                         <div className="mt-1 line-clamp-1 text-xs text-gray-500">
                           {log.request_id || log.device_uuid || "-"}
@@ -848,9 +896,14 @@ export default function AdminSystemLogsPage() {
                         )}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-700">
-                        <div>{log.workspace_name || "-"}</div>
+                        <div>
+                          {formatEntityDisplay(
+                            log.workspace_name,
+                            log.workspace_id,
+                          )}
+                        </div>
                         <div className="text-xs text-gray-500">
-                          {log.org_name || "-"}
+                          {formatEntityDisplay(log.org_name, log.organization_id)}
                         </div>
                       </td>
                       <td className="px-4 py-4 text-right">

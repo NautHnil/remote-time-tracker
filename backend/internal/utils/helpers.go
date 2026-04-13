@@ -103,6 +103,15 @@ func UintToString(n uint) string {
 	return fmt.Sprintf("%d", n)
 }
 
+// UintPtrToString converts a *uint to a readable string for logs/debugging.
+func UintPtrToString(n *uint) string {
+	if n == nil {
+		return "nil"
+	}
+
+	return fmt.Sprintf("%d", *n)
+}
+
 // StringToUint converts string to uint
 func StringToUint(s string) (uint, error) {
 	n, err := strconv.ParseUint(s, 10, 64)
