@@ -41,6 +41,40 @@ let backendUpdateService: BackendUpdateService | null = null;
 
 loggerService.patchMainConsole();
 
+function getPathSize(targetPath: string): number {
+  if (!fs.existsSync(targetPath)) {
+    return 0;
+  }
+
+  try {
+    const stats = fs.statSync(targetPath);
+    if (!stats.isDirectory()) {
+      return stats.size;
+    }
+
+    return fs.readdirSync(targetPath).reduce((total, child) => {
+      return total + getPathSize(path.join(targetPath, child));
+    }, 0);
+  } catch (error) {
+    console.warn(`Failed to read storage size for ${targetPath}:`, error);
+    return 0;
+  }
+}
+
+function getApplicationCacheSize(): number {
+  const userDataPath = app.getPath("userData");
+  const cacheDirectories = [
+    path.join(userDataPath, "Cache"),
+    path.join(userDataPath, "Code Cache"),
+    path.join(userDataPath, "GPUCache"),
+  ];
+
+  return cacheDirectories.reduce(
+    (total, cachePath) => total + getPathSize(cachePath),
+    0,
+  );
+}
+
 function serializeUnknownError(error: unknown) {
   if (error instanceof Error) {
     return {
@@ -938,8 +972,23 @@ function setupIpcHandlers() {
 
   ipcMain.handle("storage:get-size", async () => {
     try {
-      const totalSize = await screenshotService.getTotalScreenshotSize();
-      return { success: true, totalSize };
+      const applicationCache = getApplicationCacheSize();
+      const tempCaptureFiles = await screenshotService.getTempArtifactsSize();
+      const databaseCache = dbService.getSqliteCacheSize();
+      const syncedLogs = await dbService.getSyncedSystemLogsSize();
+      const totalSize =
+        applicationCache + tempCaptureFiles + databaseCache + syncedLogs;
+
+      return {
+        success: true,
+        totalSize,
+        breakdown: {
+          applicationCache,
+          tempCaptureFiles,
+          databaseCache,
+          syncedLogs,
+        },
+      };
     } catch (error: any) {
       console.error("Failed to get storage size:", error);
       return { success: false, error: error.message };
@@ -1047,26 +1096,6 @@ function setupIpcHandlers() {
       const removableCacheDirectories = cacheDirectories.filter(
         (cachePath) => path.basename(cachePath) !== "Cache",
       );
-
-      const getPathSize = (targetPath: string): number => {
-        if (!fs.existsSync(targetPath)) {
-          return 0;
-        }
-
-        try {
-          const stats = fs.statSync(targetPath);
-          if (!stats.isDirectory()) {
-            return stats.size;
-          }
-
-          return fs.readdirSync(targetPath).reduce((total, child) => {
-            return total + getPathSize(path.join(targetPath, child));
-          }, 0);
-        } catch (error) {
-          console.warn(`Failed to read cache size for ${targetPath}:`, error);
-          return 0;
-        }
-      };
 
       const clearDirectoryContentsBestEffort = (targetPath: string) => {
         if (!fs.existsSync(targetPath)) {

@@ -740,75 +740,36 @@ export class ScreenshotService {
     return totalSize;
   }
 
+  async getTempArtifactsSize(): Promise<number> {
+    const tempArtifacts = this.findTempArtifacts();
+
+    return tempArtifacts.reduce((total, artifact) => total + artifact.size, 0);
+  }
+
   async cleanupTempArtifacts(): Promise<{
     deletedCount: number;
     clearedBytes: number;
     scannedPaths: string[];
     message?: string;
   }> {
-    const minAgeMs = 10 * 60 * 1000;
-    const tempRoot = os.tmpdir();
-    const screenCaptureTempDir = path.join(tempRoot, "screenCapture");
-    const scannedPaths = [tempRoot];
+    const tempArtifacts = this.findTempArtifacts();
+    const scannedPaths = Array.from(
+      new Set(tempArtifacts.map((artifact) => artifact.scannedPath)),
+    );
 
-    const removeMatchingFiles = (
-      targetDir: string,
-      shouldDelete: (fileName: string) => boolean,
-    ) => {
-      let deletedCount = 0;
-      let clearedBytes = 0;
+    let deletedCount = 0;
+    let clearedBytes = 0;
 
-      if (!fs.existsSync(targetDir)) {
-        return { deletedCount, clearedBytes };
-      }
-
-      for (const entry of fs.readdirSync(targetDir, { withFileTypes: true })) {
-        if (!entry.isFile()) {
-          continue;
-        }
-
-        if (!shouldDelete(entry.name)) {
-          continue;
-        }
-
-        const entryPath = path.join(targetDir, entry.name);
-        const stats = fs.statSync(entryPath);
-        if (Date.now() - stats.mtimeMs < minAgeMs) {
-          continue;
-        }
-
-        fs.rmSync(entryPath, { force: true });
-        deletedCount++;
-        clearedBytes += stats.size;
-      }
-
-      return { deletedCount, clearedBytes };
-    };
+    for (const artifact of tempArtifacts) {
+      fs.rmSync(artifact.filePath, { force: true });
+      deletedCount++;
+      clearedBytes += artifact.size;
+    }
 
     if (process.platform === "win32") {
-      const legacyTempArtifactPattern =
-        /^\d{6,}-\d+-[a-z0-9]+\.(jpg|jpeg|png|bmp|tmp)$/i;
-      const screenCaptureArtifactPattern = /\.(jpg|jpeg|png|bmp|tmp)$/i;
-      const screenCaptureReservedPattern =
-        /^(screenCapture_1\.3\.2\.bat|app\.manifest)$/i;
-
-      const tempRootCleanup = removeMatchingFiles(tempRoot, (fileName) =>
-        legacyTempArtifactPattern.test(fileName),
-      );
-
-      scannedPaths.push(screenCaptureTempDir);
-      const screenCaptureCleanup = removeMatchingFiles(
-        screenCaptureTempDir,
-        (fileName) =>
-          screenCaptureArtifactPattern.test(fileName) &&
-          !screenCaptureReservedPattern.test(fileName),
-      );
-
       return {
-        deletedCount:
-          tempRootCleanup.deletedCount + screenCaptureCleanup.deletedCount,
-        clearedBytes:
-          tempRootCleanup.clearedBytes + screenCaptureCleanup.clearedBytes,
+        deletedCount,
+        clearedBytes,
         scannedPaths,
         message:
           "Cleaned legacy Windows screenshot temp files and screenCapture artifacts",
@@ -816,15 +777,9 @@ export class ScreenshotService {
     }
 
     if (process.platform === "darwin") {
-      const orphanMacCapturePattern =
-        /^\d{6,}-\d+-[a-z0-9]+\.(jpg|jpeg|png|tiff|bmp|gif|pdf)$/i;
-      const macCleanup = removeMatchingFiles(tempRoot, (fileName) =>
-        orphanMacCapturePattern.test(fileName),
-      );
-
       return {
-        deletedCount: macCleanup.deletedCount,
-        clearedBytes: macCleanup.clearedBytes,
+        deletedCount,
+        clearedBytes,
         scannedPaths,
         message:
           "Cleaned orphaned screenshot temp files left behind after interrupted captures",
@@ -845,6 +800,77 @@ export class ScreenshotService {
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+  }
+
+  private findTempArtifacts(): Array<{
+    filePath: string;
+    size: number;
+    scannedPath: string;
+  }> {
+    const minAgeMs = 10 * 60 * 1000;
+    const tempRoot = os.tmpdir();
+    const screenCaptureTempDir = path.join(tempRoot, "screenCapture");
+    const artifacts: Array<{
+      filePath: string;
+      size: number;
+      scannedPath: string;
+    }> = [];
+
+    const collectMatchingFiles = (
+      targetDir: string,
+      shouldCollect: (fileName: string) => boolean,
+    ) => {
+      if (!fs.existsSync(targetDir)) {
+        return;
+      }
+
+      for (const entry of fs.readdirSync(targetDir, { withFileTypes: true })) {
+        if (!entry.isFile() || !shouldCollect(entry.name)) {
+          continue;
+        }
+
+        const entryPath = path.join(targetDir, entry.name);
+        const stats = fs.statSync(entryPath);
+        if (Date.now() - stats.mtimeMs < minAgeMs) {
+          continue;
+        }
+
+        artifacts.push({
+          filePath: entryPath,
+          size: stats.size,
+          scannedPath: targetDir,
+        });
+      }
+    };
+
+    if (process.platform === "win32") {
+      const legacyTempArtifactPattern =
+        /^\d{6,}-\d+-[a-z0-9]+\.(jpg|jpeg|png|bmp|tmp)$/i;
+      const screenCaptureArtifactPattern = /\.(jpg|jpeg|png|bmp|tmp)$/i;
+      const screenCaptureReservedPattern =
+        /^(screenCapture_1\.3\.2\.bat|app\.manifest)$/i;
+
+      collectMatchingFiles(tempRoot, (fileName) =>
+        legacyTempArtifactPattern.test(fileName),
+      );
+      collectMatchingFiles(
+        screenCaptureTempDir,
+        (fileName) =>
+          screenCaptureArtifactPattern.test(fileName) &&
+          !screenCaptureReservedPattern.test(fileName),
+      );
+    }
+
+    if (process.platform === "darwin") {
+      const orphanMacCapturePattern =
+        /^\d{6,}-\d+-[a-z0-9]+\.(jpg|jpeg|png|tiff|bmp|gif|pdf)$/i;
+
+      collectMatchingFiles(tempRoot, (fileName) =>
+        orphanMacCapturePattern.test(fileName),
+      );
+    }
+
+    return artifacts;
   }
 
   isActive(): boolean {

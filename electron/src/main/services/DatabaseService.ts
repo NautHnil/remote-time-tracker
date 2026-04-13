@@ -775,6 +775,56 @@ export class DatabaseService {
     return result.changes;
   }
 
+  async getSyncedSystemLogsSize(): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const row = this.db
+      .prepare(
+        `
+          SELECT COALESCE(
+            SUM(
+              LENGTH(COALESCE(local_id, '')) +
+              LENGTH(COALESCE(CAST(organization_id AS TEXT), '')) +
+              LENGTH(COALESCE(CAST(workspace_id AS TEXT), '')) +
+              LENGTH(COALESCE(CAST(user_id AS TEXT), '')) +
+              LENGTH(COALESCE(source, '')) +
+              LENGTH(COALESCE(level, '')) +
+              LENGTH(COALESCE(component, '')) +
+              LENGTH(COALESCE(message, '')) +
+              LENGTH(COALESCE(details, '')) +
+              LENGTH(COALESCE(stack_trace, '')) +
+              LENGTH(COALESCE(app_version, '')) +
+              LENGTH(COALESCE(device_uuid, '')) +
+              LENGTH(COALESCE(request_id, '')) +
+              LENGTH(COALESCE(session_local_id, '')) +
+              LENGTH(COALESCE(CAST(is_synced AS TEXT), '')) +
+              LENGTH(COALESCE(occurred_at, '')) +
+              LENGTH(COALESCE(created_at, ''))
+            ),
+            0
+          ) AS total
+          FROM system_logs
+          WHERE is_synced = 1
+        `,
+      )
+      .get() as { total: number | null };
+
+    return row.total ?? 0;
+  }
+
+  getSqliteCacheSize(): number {
+    const databasePath = AppConfig.getDatabasePath();
+    const cacheFiles = [`${databasePath}-wal`, `${databasePath}-shm`];
+
+    return cacheFiles.reduce((total, filePath) => {
+      if (!fs.existsSync(filePath)) {
+        return total;
+      }
+
+      return total + fs.statSync(filePath).size;
+    }, 0);
+  }
+
   // Task-related methods (queries against synced backend data)
   // Note: These methods query time_logs table to get task statistics
   async getTaskStats(taskId: number): Promise<{

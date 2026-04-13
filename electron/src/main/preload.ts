@@ -363,7 +363,17 @@ export interface ElectronAPI {
   };
   storage: {
     cleanupSynced: (keepDays?: number) => Promise<any>;
-    getSize: () => Promise<any>;
+    getSize: () => Promise<{
+      success: boolean;
+      totalSize?: number;
+      breakdown?: {
+        applicationCache: number;
+        tempCaptureFiles: number;
+        databaseCache: number;
+        syncedLogs: number;
+      };
+      error?: string;
+    }>;
     deleteOld: (daysOld?: number) => Promise<any>;
     clearAppCache: () => Promise<{
       success: boolean;
