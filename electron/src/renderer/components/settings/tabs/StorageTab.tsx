@@ -8,7 +8,14 @@ import {
   useConfirmDialog,
   usePromptDialog,
 } from "../../dialogs/index";
-import { Card, SectionHeader, StatCard } from "../ui";
+import { Card, SectionHeader } from "../ui";
+
+interface StorageBreakdown {
+  applicationCache: number;
+  tempCaptureFiles: number;
+  databaseCache: number;
+  syncedLogs: number;
+}
 
 interface ScreenshotPathInfo {
   path: string;
@@ -16,8 +23,19 @@ interface ScreenshotPathInfo {
   defaultPath: string;
 }
 
+const EMPTY_STORAGE_BREAKDOWN: StorageBreakdown = {
+  applicationCache: 0,
+  tempCaptureFiles: 0,
+  databaseCache: 0,
+  syncedLogs: 0,
+};
+
 export function StorageTab() {
   const [storageSize, setStorageSize] = useState<number>(0);
+  const [storageBreakdown, setStorageBreakdown] = useState<StorageBreakdown>(
+    EMPTY_STORAGE_BREAKDOWN,
+  );
+  const [loadingStorageSize, setLoadingStorageSize] = useState(false);
   const [cleaningUp, setCleaningUp] = useState(false);
   const [clearingAppCache, setClearingAppCache] = useState(false);
   const [cleaningTemp, setCleaningTemp] = useState(false);
@@ -39,13 +57,17 @@ export function StorageTab() {
   }, []);
 
   const loadStorageSize = async () => {
+    setLoadingStorageSize(true);
     try {
       const result = await window.electronAPI.storage.getSize();
       if (result.success) {
-        setStorageSize(result.totalSize);
+        setStorageSize(result.totalSize || 0);
+        setStorageBreakdown(result.breakdown || EMPTY_STORAGE_BREAKDOWN);
       }
     } catch (error) {
       console.error("Error loading storage size:", error);
+    } finally {
+      setLoadingStorageSize(false);
     }
   };
 
@@ -65,11 +87,24 @@ export function StorageTab() {
   };
 
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
+    if (bytes === 0) return "0 bytes";
     const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+    const sizes = ["bytes", "KB", "MB", "GB", "TB", "PB"];
+    const unitIndex = Math.min(
+      Math.floor(Math.log(bytes) / Math.log(k)),
+      sizes.length - 1,
+    );
+    const value = bytes / Math.pow(k, unitIndex);
+    const formattedValue =
+      unitIndex === 0
+        ? Math.round(value).toString()
+        : value >= 100
+          ? value.toFixed(0)
+          : value >= 10
+            ? value.toFixed(1)
+            : value.toFixed(2);
+
+    return `${formattedValue.replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1")} ${sizes[unitIndex]}`;
   };
 
   const handleCleanupSynced = async () => {
@@ -395,6 +430,7 @@ export function StorageTab() {
               message: `Database cache cleared successfully.\n\nFreed: ${formatBytes(result.clearedBytes || 0)}`,
               type: "success",
             });
+            await loadStorageSize();
           } else {
             alertDialog.show({
               title: "Failed",
@@ -480,12 +516,68 @@ export function StorageTab() {
         />
 
         <div className="mb-6">
-          <StatCard
-            label="Local Storage Used"
-            value={formatBytes(storageSize)}
-            icon={<Icons.HardDrive className="w-6 h-6" />}
-            color="blue"
-          />
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-500/30 dark:bg-blue-500/10">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
+                  Local Storage Used
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  <p className="text-3xl font-bold leading-none text-gray-900 dark:text-white">
+                    {formatBytes(storageSize)}
+                  </p>
+                  {loadingStorageSize && (
+                    <Icons.RefreshCw className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-300" />
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => void loadStorageSize()}
+                disabled={loadingStorageSize}
+                title="Recalculate storage usage"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+              >
+                <Icons.RefreshCw
+                  className={`h-4 w-4 ${loadingStorageSize ? "animate-spin" : ""}`}
+                />
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-gray-900/40">
+                <span className="text-gray-600 dark:text-gray-300">
+                  Application cache
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatBytes(storageBreakdown.applicationCache)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-gray-900/40">
+                <span className="text-gray-600 dark:text-gray-300">
+                  Temp Capture files
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatBytes(storageBreakdown.tempCaptureFiles)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-gray-900/40">
+                <span className="text-gray-600 dark:text-gray-300">
+                  Database cache
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatBytes(storageBreakdown.databaseCache)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-gray-900/40">
+                <span className="text-gray-600 dark:text-gray-300">
+                  Synced logs
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatBytes(storageBreakdown.syncedLogs)}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Screenshot Folder Location */}
