@@ -47,9 +47,9 @@ function ModernTimeTracker() {
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null); // Track full task info including is_manual
   const [serverScreenshotCount, setServerScreenshotCount] = useState<number>(0); // Server count (fixed when start)
-  const [sessionStartLocalCount, setSessionStartLocalCount] =
+  const [, setSessionStartLocalCount] =
     useState<number>(0); // Local count baseline when session starts
-  const [currentLocalCount, setCurrentLocalCount] = useState<number>(0); // Current local count (updates every interval)
+  const [, setCurrentLocalCount] = useState<number>(0); // Current local count (updates every interval)
   const [todayTotalDuration, setTodayTotalDuration] = useState<number>(0);
   const promptDialog = usePromptDialog();
   const heartbeatIntervalRef = useRef<number | null>(null);
@@ -472,11 +472,6 @@ function ModernTimeTracker() {
     // );
     // return serverScreenshotCount + sessionCaptureCount;
     return serverScreenshotCount;
-  };
-
-  const getEstimatedScreenshots = () => {
-    const interval = config.screenshotIntervalMs || 300000;
-    return status.isTracking ? Math.floor(status.elapsedTime / interval) : 0;
   };
 
   const getProductivityPercentage = () => {

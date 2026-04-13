@@ -10,7 +10,6 @@ export type UpdateStep =
   | "downloaded"
   | "installing"
   | "up-to-date"
-  | "manual-install"
   | "error";
 
 interface UpdateSectionProps {
@@ -92,13 +91,6 @@ export function UpdateSection({
           badgeText: "Up to Date",
           icon: <Icons.Check className="w-4 h-4" />,
           description: "You have the latest version",
-        };
-      case "manual-install":
-        return {
-          badge: "warning" as const,
-          badgeText: "Manual Required",
-          icon: <Icons.AlertTriangle className="w-4 h-4" />,
-          description: "Auto-install not available on macOS",
         };
       case "error":
         return {
@@ -195,33 +187,6 @@ export function UpdateSection({
             <Icons.RefreshCw className="w-5 h-5 animate-spin" />
             Installing...
           </button>
-        );
-      case "manual-install":
-        return (
-          <div className="space-y-3">
-            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30">
-              <div className="flex items-start gap-3">
-                <Icons.AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                    Manual Installation Required
-                  </p>
-                  <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                    Auto-install is not available on macOS (app not
-                    code-signed). The update has been downloaded to your
-                    Downloads folder.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={onCheck}
-              className={`${baseClasses} bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40`}
-            >
-              <Icons.RefreshCw className="w-5 h-5" />
-              Check Again
-            </button>
-          </div>
         );
       default:
         return null;
