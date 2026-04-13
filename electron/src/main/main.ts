@@ -1092,6 +1092,22 @@ function setupIpcHandlers() {
     }
   });
 
+  ipcMain.handle("storage:cleanup-temp", async () => {
+    try {
+      const result = await screenshotService.cleanupTempArtifacts();
+      return {
+        success: true,
+        deletedCount: result.deletedCount,
+        clearedBytes: result.clearedBytes,
+        scannedPaths: result.scannedPaths,
+        message: result.message,
+      };
+    } catch (error: any) {
+      console.error("Failed to cleanup temp artifacts:", error);
+      return { success: false, error: error.message };
+    }
+  });
+
   ipcMain.handle("storage:clear-sqlite-cache", async () => {
     try {
       const databasePath = AppConfig.getDatabasePath();

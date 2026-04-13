@@ -1,5 +1,7 @@
 import { formatISO, subDays } from "date-fns";
+import { execFile } from "child_process";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import screenshot from "screenshot-desktop";
 import { v4 as uuidv4 } from "uuid";
@@ -329,22 +331,35 @@ export class ScreenshotService {
 
       const config = AppConfig.imageOptimization;
       const isOptimizationEnabled = config.enabled;
+      const captureFormat = this.getCaptureFormat(isOptimizationEnabled);
+      const rawFileExt = this.getFileExtensionForCaptureFormat(captureFormat);
+      const rawMimeType = this.getMimeTypeForCaptureFormat(captureFormat);
 
       // Determine file extension based on optimization settings
       const fileExt = isOptimizationEnabled
         ? this.imageOptimizer.getOutputExtension()
-        : ".png";
+        : rawFileExt;
       const fileName = `screenshot-${timestamp}-screen${screenIndex}${fileExt}`;
       const filePath = path.join(AppConfig.getScreenshotsPath(), fileName);
+      const rawFileName = `raw-screenshot-${timestamp}-screen${screenIndex}${rawFileExt}`;
+      const rawFilePath = path.join(AppConfig.getScreenshotsPath(), rawFileName);
 
       console.log(`📸 Capturing screen ${screenIndex} (ID: ${screenId})...`);
 
-      // Capture screenshot using screen ID (required for Windows/Linux)
-      // On macOS, screenId is a number (0, 1, 2...)
-      // On Windows, screenId is a string like "\\.\DISPLAY1"
-      // On Linux, screenId is a string like "HDMI-1", "eDP-1"
-      const imgBuffer = await screenshot({ screen: screenId });
-      const originalSize = imgBuffer.length;
+      let originalSize = 0;
+      let rawBuffer: Buffer | null = null;
+
+      if (process.platform === "win32") {
+        await this.captureWindowsScreenToFile(screenId, rawFilePath, captureFormat);
+        originalSize = fs.statSync(rawFilePath).size;
+      } else {
+        // Capture screenshot using screen ID (required for Windows/Linux)
+        // On macOS, screenId is a number (0, 1, 2...)
+        // On Windows, screenId is a string like "\\.\DISPLAY1"
+        // On Linux, screenId is a string like "HDMI-1", "eDP-1"
+        rawBuffer = await screenshot({ screen: screenId, format: captureFormat });
+        originalSize = rawBuffer.length;
+      }
 
       console.log(
         `📸 Screen ${screenIndex} captured, buffer size: ${this.formatBytes(originalSize)}`,
@@ -355,14 +370,13 @@ export class ScreenshotService {
       let fileSize = originalSize;
       let mimeType = isOptimizationEnabled
         ? this.imageOptimizer.getMimeType()
-        : "image/png";
+        : rawMimeType;
 
       if (isOptimizationEnabled) {
-        // Optimize image before saving (converts PNG buffer to optimized format)
-        const optimizationResult = await this.imageOptimizer.optimizeBuffer(
-          imgBuffer,
-          filePath,
-        );
+        const optimizationResult =
+          process.platform === "win32"
+            ? await this.imageOptimizer.optimizeImage(rawFilePath, filePath)
+            : await this.imageOptimizer.optimizeBuffer(rawBuffer!, filePath);
 
         if (optimizationResult.success) {
           finalFilePath = optimizationResult.optimizedPath;
@@ -377,25 +391,36 @@ export class ScreenshotService {
               `${optimizationResult.compressionRatio}% saved)`,
           );
         } else {
-          // Fallback: save original buffer if optimization fails
+          // Fallback: keep the raw capture in the screenshots directory
           console.warn(
             `⚠️ Optimization failed, saving original: ${optimizationResult.error}`,
           );
-          fs.writeFileSync(filePath, imgBuffer);
-          fileSize = fs.statSync(filePath).size;
-          mimeType = "image/png";
+          if (process.platform === "win32") {
+            finalFilePath = this.moveManagedCaptureFile(rawFilePath, filePath);
+          } else {
+            fs.writeFileSync(filePath, rawBuffer!);
+            finalFilePath = filePath;
+          }
+          finalFileName = path.basename(finalFilePath);
+          fileSize = fs.statSync(finalFilePath).size;
+          mimeType = rawMimeType;
           console.log(
-            `✅ Screenshot captured (unoptimized): ${fileName} (${this.formatBytes(
+            `✅ Screenshot captured (unoptimized): ${finalFileName} (${this.formatBytes(
               fileSize,
             )})`,
           );
         }
       } else {
-        // Optimization disabled - save original PNG
-        fs.writeFileSync(filePath, imgBuffer);
-        fileSize = fs.statSync(filePath).size;
+        if (process.platform === "win32") {
+          finalFilePath = this.moveManagedCaptureFile(rawFilePath, filePath);
+        } else {
+          fs.writeFileSync(filePath, rawBuffer!);
+          finalFilePath = filePath;
+        }
+        finalFileName = path.basename(finalFilePath);
+        fileSize = fs.statSync(finalFilePath).size;
         console.log(
-          `✅ Screenshot captured: ${fileName} (${this.formatBytes(fileSize)})`,
+          `✅ Screenshot captured: ${finalFileName} (${this.formatBytes(fileSize)})`,
         );
       }
 
@@ -447,19 +472,38 @@ export class ScreenshotService {
         const localId = uuidv4();
         const nowMs = Date.now();
         const timestamp = formatISO(nowMs).replace(/[:.]/g, "-");
+        const captureFormat = this.getCaptureFormat(isOptimizationEnabled);
+        const rawFileExt = this.getFileExtensionForCaptureFormat(captureFormat);
+        const rawMimeType = this.getMimeTypeForCaptureFormat(captureFormat);
 
         // Determine file extension based on optimization settings
         const fileExt = isOptimizationEnabled
           ? this.imageOptimizer.getOutputExtension()
-          : ".png";
+          : rawFileExt;
         const fileName = `manual-${timestamp}-screen${i}${fileExt}`;
         const filePath = path.join(AppConfig.getScreenshotsPath(), fileName);
+        const rawFileName = `raw-manual-${timestamp}-screen${i}${rawFileExt}`;
+        const rawFilePath = path.join(AppConfig.getScreenshotsPath(), rawFileName);
 
         console.log(`📸 Manual capture screen ${i} (ID: ${display.id})...`);
 
-        // Capture screenshot using screen ID (required for Windows/Linux)
-        const imgBuffer = await screenshot({ screen: display.id });
-        const originalSize = imgBuffer.length;
+        let originalSize = 0;
+        let rawBuffer: Buffer | null = null;
+
+        if (process.platform === "win32") {
+          await this.captureWindowsScreenToFile(
+            display.id,
+            rawFilePath,
+            captureFormat,
+          );
+          originalSize = fs.statSync(rawFilePath).size;
+        } else {
+          rawBuffer = await screenshot({
+            screen: display.id,
+            format: captureFormat,
+          });
+          originalSize = rawBuffer.length;
+        }
 
         console.log(
           `📸 Manual capture screen ${i} captured, buffer size: ${this.formatBytes(originalSize)}`,
@@ -470,14 +514,13 @@ export class ScreenshotService {
         let fileSize = originalSize;
         let mimeType = isOptimizationEnabled
           ? this.imageOptimizer.getMimeType()
-          : "image/png";
+          : rawMimeType;
 
         if (isOptimizationEnabled) {
-          // Optimize image before saving
-          const optimizationResult = await this.imageOptimizer.optimizeBuffer(
-            imgBuffer,
-            filePath,
-          );
+          const optimizationResult =
+            process.platform === "win32"
+              ? await this.imageOptimizer.optimizeImage(rawFilePath, filePath)
+              : await this.imageOptimizer.optimizeBuffer(rawBuffer!, filePath);
 
           if (optimizationResult.success) {
             finalFilePath = optimizationResult.optimizedPath;
@@ -492,20 +535,30 @@ export class ScreenshotService {
                 `${optimizationResult.compressionRatio}% saved)`,
             );
           } else {
-            // Fallback: save original if optimization fails
             console.warn(
               `⚠️ Manual screenshot optimization failed, saving original`,
             );
-            fs.writeFileSync(filePath, imgBuffer);
-            fileSize = fs.statSync(filePath).size;
-            mimeType = "image/png";
+            if (process.platform === "win32") {
+              finalFilePath = this.moveManagedCaptureFile(rawFilePath, filePath);
+            } else {
+              fs.writeFileSync(filePath, rawBuffer!);
+              finalFilePath = filePath;
+            }
+            finalFileName = path.basename(finalFilePath);
+            fileSize = fs.statSync(finalFilePath).size;
+            mimeType = rawMimeType;
           }
         } else {
-          // Optimization disabled - save original PNG
-          fs.writeFileSync(filePath, imgBuffer);
-          fileSize = fs.statSync(filePath).size;
+          if (process.platform === "win32") {
+            finalFilePath = this.moveManagedCaptureFile(rawFilePath, filePath);
+          } else {
+            fs.writeFileSync(filePath, rawBuffer!);
+            finalFilePath = filePath;
+          }
+          finalFileName = path.basename(finalFilePath);
+          fileSize = fs.statSync(finalFilePath).size;
           console.log(
-            `✅ Manual screenshot captured: ${fileName} (${this.formatBytes(
+            `✅ Manual screenshot captured: ${finalFileName} (${this.formatBytes(
               fileSize,
             )})`,
           );
@@ -687,6 +740,105 @@ export class ScreenshotService {
     return totalSize;
   }
 
+  async cleanupTempArtifacts(): Promise<{
+    deletedCount: number;
+    clearedBytes: number;
+    scannedPaths: string[];
+    message?: string;
+  }> {
+    const minAgeMs = 10 * 60 * 1000;
+    const tempRoot = os.tmpdir();
+    const screenCaptureTempDir = path.join(tempRoot, "screenCapture");
+    const scannedPaths = [tempRoot];
+
+    const removeMatchingFiles = (
+      targetDir: string,
+      shouldDelete: (fileName: string) => boolean,
+    ) => {
+      let deletedCount = 0;
+      let clearedBytes = 0;
+
+      if (!fs.existsSync(targetDir)) {
+        return { deletedCount, clearedBytes };
+      }
+
+      for (const entry of fs.readdirSync(targetDir, { withFileTypes: true })) {
+        if (!entry.isFile()) {
+          continue;
+        }
+
+        if (!shouldDelete(entry.name)) {
+          continue;
+        }
+
+        const entryPath = path.join(targetDir, entry.name);
+        const stats = fs.statSync(entryPath);
+        if (Date.now() - stats.mtimeMs < minAgeMs) {
+          continue;
+        }
+
+        fs.rmSync(entryPath, { force: true });
+        deletedCount++;
+        clearedBytes += stats.size;
+      }
+
+      return { deletedCount, clearedBytes };
+    };
+
+    if (process.platform === "win32") {
+      const legacyTempArtifactPattern =
+        /^\d{6,}-\d+-[a-z0-9]+\.(jpg|jpeg|png|bmp|tmp)$/i;
+      const screenCaptureArtifactPattern = /\.(jpg|jpeg|png|bmp|tmp)$/i;
+      const screenCaptureReservedPattern =
+        /^(screenCapture_1\.3\.2\.bat|app\.manifest)$/i;
+
+      const tempRootCleanup = removeMatchingFiles(tempRoot, (fileName) =>
+        legacyTempArtifactPattern.test(fileName),
+      );
+
+      scannedPaths.push(screenCaptureTempDir);
+      const screenCaptureCleanup = removeMatchingFiles(
+        screenCaptureTempDir,
+        (fileName) =>
+          screenCaptureArtifactPattern.test(fileName) &&
+          !screenCaptureReservedPattern.test(fileName),
+      );
+
+      return {
+        deletedCount:
+          tempRootCleanup.deletedCount + screenCaptureCleanup.deletedCount,
+        clearedBytes:
+          tempRootCleanup.clearedBytes + screenCaptureCleanup.clearedBytes,
+        scannedPaths,
+        message:
+          "Cleaned legacy Windows screenshot temp files and screenCapture artifacts",
+      };
+    }
+
+    if (process.platform === "darwin") {
+      const orphanMacCapturePattern =
+        /^\d{6,}-\d+-[a-z0-9]+\.(jpg|jpeg|png|tiff|bmp|gif|pdf)$/i;
+      const macCleanup = removeMatchingFiles(tempRoot, (fileName) =>
+        orphanMacCapturePattern.test(fileName),
+      );
+
+      return {
+        deletedCount: macCleanup.deletedCount,
+        clearedBytes: macCleanup.clearedBytes,
+        scannedPaths,
+        message:
+          "Cleaned orphaned screenshot temp files left behind after interrupted captures",
+      };
+    }
+
+    return {
+      deletedCount: 0,
+      clearedBytes: 0,
+      scannedPaths,
+      message: "No platform-specific screenshot temp artifacts require cleanup",
+    };
+  }
+
   private formatBytes(bytes: number): string {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -697,5 +849,104 @@ export class ScreenshotService {
 
   isActive(): boolean {
     return this.isCapturing;
+  }
+
+  private getCaptureFormat(isOptimizationEnabled: boolean): "jpg" | "png" {
+    if (!isOptimizationEnabled) {
+      return "png";
+    }
+
+    return AppConfig.imageOptimization.format === "jpeg" ? "jpg" : "png";
+  }
+
+  private getFileExtensionForCaptureFormat(format: "jpg" | "png"): ".jpg" | ".png" {
+    return format === "jpg" ? ".jpg" : ".png";
+  }
+
+  private getMimeTypeForCaptureFormat(format: "jpg" | "png"): string {
+    return format === "jpg" ? "image/jpeg" : "image/png";
+  }
+
+  private moveManagedCaptureFile(sourcePath: string, preferredPath: string): string {
+    const targetPath = preferredPath.replace(/\.(png|jpg|jpeg|webp)$/i, path.extname(sourcePath));
+    fs.renameSync(sourcePath, targetPath);
+    return targetPath;
+  }
+
+  private async captureWindowsScreenToFile(
+    screenId: string | number,
+    outputPath: string,
+    format: "jpg" | "png",
+  ): Promise<void> {
+    const scriptPath = this.ensureWindowsCaptureScript();
+    const outputDir = path.dirname(outputPath);
+
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const args = ["/c", scriptPath, outputPath];
+      if (screenId !== undefined && screenId !== null && String(screenId).length > 0) {
+        args.push("/d", String(screenId));
+      }
+
+      execFile(
+        "cmd.exe",
+        args,
+        {
+          cwd: path.dirname(scriptPath),
+          windowsHide: true,
+        },
+        (error) => {
+          if (error) {
+            return reject(error);
+          }
+
+          if (!fs.existsSync(outputPath)) {
+            return reject(
+              new Error(`Windows screenshot capture did not create ${outputPath}`),
+            );
+          }
+
+          const actualExt = path.extname(outputPath).toLowerCase();
+          const expectedExt = this.getFileExtensionForCaptureFormat(format);
+          if (actualExt !== expectedExt) {
+            return reject(
+              new Error(
+                `Windows screenshot capture created unexpected format: ${actualExt} (expected ${expectedExt})`,
+              ),
+            );
+          }
+
+          resolve();
+        },
+      );
+    });
+  }
+
+  private ensureWindowsCaptureScript(): string {
+    const tempCaptureDir = path.join(os.tmpdir(), "screenCapture");
+    const tempBat = path.join(tempCaptureDir, "screenCapture_1.3.2.bat");
+    const tempManifest = path.join(tempCaptureDir, "app.manifest");
+
+    if (!fs.existsSync(tempCaptureDir)) {
+      fs.mkdirSync(tempCaptureDir, { recursive: true });
+    }
+
+    if (!fs.existsSync(tempBat) || !fs.existsSync(tempManifest)) {
+      const win32Entry = require.resolve("screenshot-desktop/lib/win32/index.js");
+      const win32Dir = path.dirname(win32Entry).replace(
+        "app.asar",
+        "app.asar.unpacked",
+      );
+      const sourceBat = path.join(win32Dir, "screenCapture_1.3.2.bat");
+      const sourceManifest = path.join(win32Dir, "app.manifest");
+
+      fs.copyFileSync(sourceBat, tempBat);
+      fs.copyFileSync(sourceManifest, tempManifest);
+    }
+
+    return tempBat;
   }
 }
