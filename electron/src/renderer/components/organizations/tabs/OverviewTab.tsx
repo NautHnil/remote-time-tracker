@@ -1,8 +1,6 @@
 /**
  * Organization Overview Tab Component
  */
-import { useEffect, useState } from "react";
-
 import { format } from "date-fns";
 import {
   type Organization,
@@ -24,21 +22,6 @@ export default function OverviewTab({
   workspaces,
   onCopyInviteCode,
 }: OverviewTabProps) {
-  const [config, setConfig] = useState<any>({});
-
-  useEffect(() => {
-    loadConfig();
-  }, []);
-
-  const loadConfig = async () => {
-    try {
-      const result = await window.electronAPI.config.get();
-      console.log("Loaded config:", result);
-      setConfig(result);
-    } catch (error) {
-      console.error("Error loading config:", error);
-    }
-  };
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Stats */}

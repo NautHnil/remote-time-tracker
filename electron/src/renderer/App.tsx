@@ -220,15 +220,8 @@ function AppContent() {
     try {
       const res = await window.electronAPI.updates.install();
       if (!res.success) {
-        if (res.error?.includes("Manual installation required")) {
-          setUpdateStep("manual-install");
-          setUpdateErrorMessage(
-            "Please install the update manually from your Downloads folder.",
-          );
-        } else {
-          setUpdateStep("error");
-          setUpdateErrorMessage(res.error || "Failed to install update");
-        }
+        setUpdateStep("error");
+        setUpdateErrorMessage(res.error || "Failed to install update");
       }
     } catch (err: any) {
       setUpdateStep("error");

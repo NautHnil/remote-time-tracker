@@ -171,10 +171,17 @@ interface ElectronAPI {
     }>;
     forceStopAndQuit: () => Promise<boolean>;
   };
+  deeplink: {
+    onJoinOrganization: (callback: (inviteCode: string) => void) => () => void;
+  };
   updates: {
     check: () => Promise<any>;
     download: () => Promise<any>;
     install: () => Promise<any>;
+    checkBackend: () => Promise<any>;
+    downloadBackend: () => Promise<any>;
+    installBackend: () => Promise<any>;
+    openDownloads: () => Promise<any>;
     onEvent: (cb: (event: any) => void) => () => void;
   };
   getScreenshots: (options?: {

@@ -1044,48 +1044,86 @@ function setupIpcHandlers() {
         path.join(userDataPath, "Code Cache"),
         path.join(userDataPath, "GPUCache"),
       ];
+      const removableCacheDirectories = cacheDirectories.filter(
+        (cachePath) => path.basename(cachePath) !== "Cache",
+      );
+
+      const getPathSize = (targetPath: string): number => {
+        if (!fs.existsSync(targetPath)) {
+          return 0;
+        }
+
+        try {
+          const stats = fs.statSync(targetPath);
+          if (!stats.isDirectory()) {
+            return stats.size;
+          }
+
+          return fs.readdirSync(targetPath).reduce((total, child) => {
+            return total + getPathSize(path.join(targetPath, child));
+          }, 0);
+        } catch (error) {
+          console.warn(`Failed to read cache size for ${targetPath}:`, error);
+          return 0;
+        }
+      };
+
+      const clearDirectoryContentsBestEffort = (targetPath: string) => {
+        if (!fs.existsSync(targetPath)) {
+          return;
+        }
+
+        for (const entry of fs.readdirSync(targetPath)) {
+          const entryPath = path.join(targetPath, entry);
+
+          try {
+            fs.rmSync(entryPath, {
+              recursive: true,
+              force: true,
+              maxRetries: 3,
+              retryDelay: 100,
+            });
+          } catch (error: any) {
+            if (
+              error?.code === "EPERM" ||
+              error?.code === "EBUSY" ||
+              error?.code === "ENOTEMPTY"
+            ) {
+              console.warn(
+                `Skipping locked cache entry during cleanup: ${entryPath}`,
+                error,
+              );
+              continue;
+            }
+
+            throw error;
+          }
+        }
+      };
+
+      const beforeBytes = cacheDirectories.reduce(
+        (total, cachePath) => total + getPathSize(cachePath),
+        0,
+      );
 
       await session.defaultSession.clearCache();
       await session.defaultSession.clearStorageData({
         storages: ["cachestorage", "serviceworkers"],
       });
 
-      let clearedBytes = 0;
-
-      for (const cachePath of cacheDirectories) {
-        if (!fs.existsSync(cachePath)) {
-          continue;
-        }
-
-        const size = fs.statSync(cachePath).isDirectory()
-          ? fs
-              .readdirSync(cachePath, { withFileTypes: true })
-              .reduce((total, entry) => {
-                const entryPath = path.join(cachePath, entry.name);
-                const getDirectorySize = (targetPath: string): number => {
-                  const stats = fs.statSync(targetPath);
-                  if (!stats.isDirectory()) {
-                    return stats.size;
-                  }
-
-                  return fs
-                    .readdirSync(targetPath)
-                    .reduce(
-                      (sum, child) =>
-                        sum + getDirectorySize(path.join(targetPath, child)),
-                      0,
-                    );
-                };
-
-                return total + getDirectorySize(entryPath);
-              }, 0)
-          : fs.statSync(cachePath).size;
-
-        clearedBytes += size;
-        fs.rmSync(cachePath, { recursive: true, force: true });
+      for (const cachePath of removableCacheDirectories) {
+        clearDirectoryContentsBestEffort(cachePath);
       }
 
-      return { success: true, clearedBytes };
+      const afterBytes = cacheDirectories.reduce(
+        (total, cachePath) => total + getPathSize(cachePath),
+        0,
+      );
+
+      return {
+        success: true,
+        clearedBytes: Math.max(beforeBytes - afterBytes, 0),
+      };
     } catch (error: any) {
       console.error("Failed to clear app cache:", error);
       return { success: false, error: error.message };
