@@ -191,9 +191,12 @@ type SyncSystemLogItem struct {
 	Source         string    `json:"source"`
 	Level          string    `json:"level"`
 	Component      string    `json:"component"`
-	Message        string    `json:"message" binding:"required"`
+	Message        string    `json:"message"`
+	MessageB64     string    `json:"message_b64"`
 	Details        string    `json:"details"`
+	DetailsB64     string    `json:"details_b64"`
 	StackTrace     string    `json:"stack_trace"`
+	StackTraceB64  string    `json:"stack_trace_b64"`
 	AppVersion     string    `json:"app_version"`
 	DeviceUUID     string    `json:"device_uuid"`
 	OccurredAt     time.Time `json:"occurred_at" binding:"required"`

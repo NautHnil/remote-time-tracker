@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -117,6 +118,16 @@ func (s *systemLogService) SyncClientLogs(userID uint, device *models.DeviceInfo
 			wsID = defaultWsID
 		}
 
+		message := decodeSyncLogField(item.MessageB64, item.Message)
+		if strings.TrimSpace(message) == "" {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("system log %s: missing message", item.LocalID))
+			continue
+		}
+
+		details := decodeSyncLogField(item.DetailsB64, item.Details)
+		stackTrace := decodeSyncLogField(item.StackTraceB64, item.StackTrace)
+
 		entry := models.SystemLog{
 			UserID:         &userID,
 			OrganizationID: orgID,
@@ -124,9 +135,9 @@ func (s *systemLogService) SyncClientLogs(userID uint, device *models.DeviceInfo
 			Source:         defaultString(item.Source, "electron-main"),
 			Level:          strings.ToLower(defaultString(item.Level, "info")),
 			Component:      item.Component,
-			Message:        truncateString(strings.TrimSpace(item.Message), 8000),
-			Details:        item.Details,
-			StackTrace:     truncateString(item.StackTrace, 16000),
+			Message:        truncateString(strings.TrimSpace(message), 8000),
+			Details:        details,
+			StackTrace:     truncateString(stackTrace, 16000),
 			AppVersion:     item.AppVersion,
 			DeviceUUID:     item.DeviceUUID,
 			OccurredAt:     normalizeTime(item.OccurredAt),
@@ -286,6 +297,19 @@ func encodeJSON(value interface{}) string {
 	}
 
 	return string(data)
+}
+
+func decodeSyncLogField(encoded string, fallback string) string {
+	if encoded == "" {
+		return fallback
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return fallback
+	}
+
+	return string(decoded)
 }
 
 func normalizeTime(value time.Time) time.Time {
