@@ -814,6 +814,9 @@ export class SyncService {
     const occurredAt = this.normalizeSyncTimestamp(
       systemLog.occurredAt || systemLog.createdAt
     );
+    const message = (systemLog.message || "").trim();
+    const details = this.serializeValueData(systemLog.details);
+    const stackTrace = this.serializeValueData(systemLog.stackTrace);
 
     return {
       local_id: systemLog.localId,
@@ -823,9 +826,12 @@ export class SyncService {
       source: systemLog.source || "electron-main",
       level: (systemLog.level || "info").toLowerCase(),
       component: systemLog.component || "unknown",
-      message: (systemLog.message || "").trim(),
-      details: this.serializeValueData(systemLog.details),
-      stack_trace: this.serializeValueData(systemLog.stackTrace),
+      message: "",
+      details: "",
+      stack_trace: "",
+      message_b64: this.encodeSyncPayloadValue(message),
+      details_b64: this.encodeSyncPayloadValue(details),
+      stack_trace_b64: this.encodeSyncPayloadValue(stackTrace),
       app_version: systemLog.appVersion || app.getVersion(),
       device_uuid: systemLog.deviceUUID || this.getDeviceUUID(),
       occurred_at: occurredAt,
@@ -861,6 +867,14 @@ export class SyncService {
     } catch {
       return String(value);
     }
+  }
+
+  private encodeSyncPayloadValue(value: string): string {
+    if (!value) {
+      return "";
+    }
+
+    return Buffer.from(value, "utf8").toString("base64");
   }
 
   private getDeviceUUID(): string {
