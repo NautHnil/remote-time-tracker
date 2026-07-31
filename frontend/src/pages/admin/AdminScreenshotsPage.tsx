@@ -17,6 +17,7 @@ import {
   adminService,
 } from "../../services/adminService";
 import { API_BASE_URL } from "../../services/config";
+import { useAuthStore } from "../../store/authStore";
 
 // Delete Confirmation Modal
 interface DeleteConfirmModalProps {
@@ -169,6 +170,8 @@ function ScreenshotLightboxModal({
 
 export default function AdminScreenshotsPage() {
   const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
+  const isSystemAdmin = user?.system_role === "admin" || user?.role === "admin";
   const [page, setPage] = useState(1);
   const [pageSize] = useState(24);
   const [startDate, setStartDate] = useState<string>("");
@@ -195,6 +198,7 @@ export default function AdminScreenshotsPage() {
       selectedOrgId,
       selectedWorkspaceId,
     ],
+    enabled: isSystemAdmin || !!selectedOrgId,
     queryFn: async () => {
       const params: Record<string, any> = { page, page_size: pageSize };
       if (startDate) params.start_date = startDate;
@@ -212,9 +216,17 @@ export default function AdminScreenshotsPage() {
 
   // Filter options
   const { data: usersData } = useQuery({
-    queryKey: ["admin-users-options"],
+    queryKey: ["admin-users-options", selectedOrgId, selectedWorkspaceId],
+    enabled: isSystemAdmin || !!selectedOrgId,
     queryFn: async () => {
-      const response = await adminService.getUsers({ page: 1, page_size: 200 });
+      const response = await adminService.getUserOptions({
+        page: 1,
+        page_size: 200,
+        org_id: selectedOrgId ? Number(selectedOrgId) : undefined,
+        workspace_id: selectedWorkspaceId
+          ? Number(selectedWorkspaceId)
+          : undefined,
+      });
       return response.data;
     },
   });
@@ -314,6 +326,13 @@ export default function AdminScreenshotsPage() {
   }, [workspacesData, selectedOrgId]);
 
   useEffect(() => {
+    if (!isSystemAdmin && !selectedOrgId && organizations.length > 0) {
+      setSelectedOrgId(String(organizations[0].id));
+      setPage(1);
+    }
+  }, [isSystemAdmin, organizations, selectedOrgId]);
+
+  useEffect(() => {
     if (screenshots.length === 0) {
       setSelectedScreenshot(null);
       return;
@@ -401,10 +420,11 @@ export default function AdminScreenshotsPage() {
               onChange={(e) => {
                 setSelectedOrgId(e.target.value);
                 setSelectedWorkspaceId("");
+                setSelectedUserId("");
                 setPage(1);
               }}
             >
-              <option value="">All Organizations</option>
+              {isSystemAdmin && <option value="">All Organizations</option>}
               {organizations.map((org) => (
                 <option key={org.id} value={org.id}>
                   {org.name}
@@ -421,6 +441,7 @@ export default function AdminScreenshotsPage() {
               value={selectedWorkspaceId}
               onChange={(e) => {
                 setSelectedWorkspaceId(e.target.value);
+                setSelectedUserId("");
                 setPage(1);
               }}
               disabled={!selectedOrgId}

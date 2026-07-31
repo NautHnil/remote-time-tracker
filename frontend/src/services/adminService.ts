@@ -170,6 +170,28 @@ class AdminService {
     return apiClient.get<AdminUserListResponse>("/admin/users", queryParams);
   }
 
+  async getUserOptions(
+    params: {
+      page?: number;
+      page_size?: number;
+      search?: string;
+      org_id?: number;
+      workspace_id?: number;
+    } = {},
+  ): Promise<ApiResponse<AdminUserListResponse>> {
+    const queryParams: Record<string, string | number> = {};
+    if (params.page) queryParams.page = params.page;
+    if (params.page_size) queryParams.page_size = params.page_size;
+    if (params.search) queryParams.search = params.search;
+    if (params.org_id) queryParams.org_id = params.org_id;
+    if (params.workspace_id) queryParams.workspace_id = params.workspace_id;
+
+    return apiClient.get<AdminUserListResponse>(
+      "/admin/user-options",
+      queryParams,
+    );
+  }
+
   /**
    * Get user by ID
    */

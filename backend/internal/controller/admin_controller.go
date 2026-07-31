@@ -97,6 +97,39 @@ func (c *AdminController) ListUsers(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
+func (c *AdminController) ListUserOptions(ctx *gin.Context) {
+	params := &dto.AdminUserListParams{
+		Page:      parseIntParam(ctx, "page", 1),
+		PageSize:  parseIntParam(ctx, "page_size", 200),
+		Search:    ctx.Query("search"),
+		SortBy:    ctx.Query("sort_by"),
+		SortOrder: ctx.Query("sort_order"),
+	}
+
+	if ctx.Query("org_id") != "" {
+		orgID := uint(parseIntParam(ctx, "org_id", 0))
+		params.OrgID = &orgID
+	}
+
+	if ctx.Query("workspace_id") != "" {
+		workspaceID := uint(parseIntParam(ctx, "workspace_id", 0))
+		params.WorkspaceID = &workspaceID
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
+	result, err := c.adminService.ListUserOptions(params)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
 // GetUser gets a user by ID with full details
 // @Summary Get user by ID (admin only)
 // @Description Get detailed information about a specific user

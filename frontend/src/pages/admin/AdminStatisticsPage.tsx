@@ -5,7 +5,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { format, subDays } from "date-fns";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icons } from "../../components/Icons";
 import { Input, Select } from "../../components/ui";
 import { adminService } from "../../services/adminService";
@@ -453,6 +453,7 @@ interface BoxFiltersProps {
   users: AdminUser[];
   value: StatsFilterState;
   onChange: (next: StatsFilterState) => void;
+  isSystemAdmin: boolean;
 }
 
 function BoxFilters({
@@ -461,6 +462,7 @@ function BoxFilters({
   users,
   value,
   onChange,
+  isSystemAdmin,
 }: BoxFiltersProps) {
   const filteredWorkspaces = useMemo(() => {
     if (!value.orgId) return workspaces;
@@ -476,10 +478,11 @@ function BoxFilters({
             ...value,
             orgId: e.target.value,
             workspaceId: "",
+            userId: "",
           })
         }
       >
-        <option value="">All Organizations</option>
+        {isSystemAdmin && <option value="">All Organizations</option>}
         {organizations.map((org) => (
           <option key={org.id} value={org.id}>
             {org.name}
@@ -492,6 +495,7 @@ function BoxFilters({
           onChange({
             ...value,
             workspaceId: e.target.value,
+            userId: "",
           })
         }
       >
@@ -733,15 +737,6 @@ export default function AdminStatisticsPage() {
     },
   });
 
-  const { data: usersData } = useQuery({
-    queryKey: ["admin-users-stats-options"],
-    enabled: isSystemAdmin,
-    queryFn: async () => {
-      const response = await adminService.getUsers({ page: 1, page_size: 200 });
-      return response.data?.users || [];
-    },
-  });
-
   const { data: orgsData } = useQuery({
     queryKey: ["admin-orgs-stats-options"],
     queryFn: async () => {
@@ -764,6 +759,62 @@ export default function AdminStatisticsPage() {
     },
   });
 
+  useEffect(() => {
+    const firstOrg = orgsData?.[0];
+    if (!isSystemAdmin && firstOrg) {
+      const firstOrgId = String(firstOrg.id);
+      if (!overviewFilters.orgId) {
+        setOverviewFilters((current) => ({ ...current, orgId: firstOrgId }));
+      }
+      if (!topUsersFilters.orgId) {
+        setTopUsersFilters((current) => ({ ...current, orgId: firstOrgId }));
+      }
+      if (!performanceFilters.orgId) {
+        setPerformanceFilters((current) => ({ ...current, orgId: firstOrgId }));
+      }
+    }
+  }, [
+    isSystemAdmin,
+    orgsData,
+    overviewFilters.orgId,
+    topUsersFilters.orgId,
+    performanceFilters.orgId,
+  ]);
+
+  const fetchUserOptions = async (filters: StatsFilterState) => {
+    const response = await adminService.getUserOptions({
+      page: 1,
+      page_size: 200,
+      org_id: filters.orgId ? Number(filters.orgId) : undefined,
+      workspace_id: filters.workspaceId
+        ? Number(filters.workspaceId)
+        : undefined,
+    });
+    return response.data?.users || [];
+  };
+
+  const { data: overviewUsersData } = useQuery({
+    queryKey: ["admin-user-options", "statistics-overview", overviewFilters],
+    enabled: isSystemAdmin || !!overviewFilters.orgId,
+    queryFn: () => fetchUserOptions(overviewFilters),
+  });
+
+  const { data: topUsersData } = useQuery({
+    queryKey: ["admin-user-options", "statistics-top-users", topUsersFilters],
+    enabled: isSystemAdmin || !!topUsersFilters.orgId,
+    queryFn: () => fetchUserOptions(topUsersFilters),
+  });
+
+  const { data: performanceUsersData } = useQuery({
+    queryKey: [
+      "admin-user-options",
+      "statistics-performance",
+      performanceFilters,
+    ],
+    enabled: isSystemAdmin || !!performanceFilters.orgId,
+    queryFn: () => fetchUserOptions(performanceFilters),
+  });
+
   const buildPerformanceFilters = (filters: StatsFilterState) => ({
     start_date: dateRange.start,
     end_date: dateRange.end,
@@ -778,6 +829,7 @@ export default function AdminStatisticsPage() {
       dateRange,
       overviewFilters,
     ],
+    enabled: isSystemAdmin || !!overviewFilters.orgId,
     queryFn: async () => {
       const response = await adminService.getUserPerformance(
         100,
@@ -793,6 +845,7 @@ export default function AdminStatisticsPage() {
       dateRange,
       topUsersFilters,
     ],
+    enabled: isSystemAdmin || !!topUsersFilters.orgId,
     queryFn: async () => {
       const response = await adminService.getUserPerformance(
         100,
@@ -808,6 +861,7 @@ export default function AdminStatisticsPage() {
       dateRange,
       performanceFilters,
     ],
+    enabled: isSystemAdmin || !!performanceFilters.orgId,
     queryFn: async () => {
       const response = await adminService.getUserPerformance(
         100,
@@ -839,43 +893,6 @@ export default function AdminStatisticsPage() {
       time: format(new Date(log.occurred_at), "MMM d, yyyy HH:mm"),
     })) || [];
 
-  const scopedUsers = useMemo(() => {
-    const byID = new Map<number, AdminUser>();
-    const sourceLists = [
-      overviewActivities?.users || [],
-      topUsersActivities?.users || [],
-      performanceActivities?.users || [],
-    ];
-
-    sourceLists.flat().forEach((item) => {
-      if (!byID.has(item.user_id)) {
-        const [firstName = "", ...lastNameParts] = (item.user_name || "").split(" ");
-        byID.set(item.user_id, {
-          id: item.user_id,
-          email: item.email,
-          first_name: item.first_name || firstName,
-          last_name: item.last_name || lastNameParts.join(" "),
-          full_name: item.user_name,
-          role: "user",
-          system_role: "member",
-          is_active: true,
-          last_login_at: null,
-          created_at: "",
-          updated_at: "",
-        });
-      }
-    });
-
-    return Array.from(byID.values());
-  }, [
-    overviewActivities?.users,
-    topUsersActivities?.users,
-    performanceActivities?.users,
-  ]);
-
-  const users = isSystemAdmin
-    ? ((usersData || []) as AdminUser[])
-    : scopedUsers;
   const organizations = (orgsData || []) as AdminOrganization[];
   const workspaces = (workspacesData || []) as AdminWorkspace[];
 
@@ -1086,9 +1103,12 @@ export default function AdminStatisticsPage() {
           <BoxFilters
             organizations={organizations}
             workspaces={workspaces}
-            users={users}
+            users={(overviewUsersData || []) as AdminUser[]}
             value={overviewFilters}
-            onChange={setOverviewFilters}
+            onChange={(next) => {
+              setOverviewFilters(next);
+            }}
+            isSystemAdmin={isSystemAdmin}
           />
         }
       />
@@ -1101,9 +1121,10 @@ export default function AdminStatisticsPage() {
           <BoxFilters
             organizations={organizations}
             workspaces={workspaces}
-            users={users}
+            users={(topUsersData || []) as AdminUser[]}
             value={topUsersFilters}
             onChange={setTopUsersFilters}
+            isSystemAdmin={isSystemAdmin}
           />
         }
       />
@@ -1117,9 +1138,10 @@ export default function AdminStatisticsPage() {
           <BoxFilters
             organizations={organizations}
             workspaces={workspaces}
-            users={users}
+            users={(performanceUsersData || []) as AdminUser[]}
             value={performanceFilters}
             onChange={setPerformanceFilters}
+            isSystemAdmin={isSystemAdmin}
           />
         }
       />

@@ -16,6 +16,7 @@ import (
 type AdminService interface {
 	// Users
 	ListUsers(params *dto.AdminUserListParams) (*dto.AdminUserListResponse, error)
+	ListUserOptions(params *dto.AdminUserListParams) (*dto.AdminUserListResponse, error)
 	GetUser(id uint) (*dto.AdminUserDetailResponse, error)
 	CreateUser(req *dto.AdminCreateUserRequest) (*dto.AdminUserResponse, error)
 	UpdateUser(id uint, req *dto.AdminUpdateUserRequest) (*dto.AdminUserResponse, error)
@@ -112,6 +113,19 @@ func NewAdminService(
 // ============================================================================
 
 func (s *adminService) ListUsers(params *dto.AdminUserListParams) (*dto.AdminUserListResponse, error) {
+	return s.listUsers(params)
+}
+
+func (s *adminService) ListUserOptions(params *dto.AdminUserListParams) (*dto.AdminUserListResponse, error) {
+	params.Role = ""
+	params.SystemRole = ""
+	params.IsActive = nil
+	params.SortBy = "first_name"
+	params.SortOrder = "asc"
+	return s.listUsers(params)
+}
+
+func (s *adminService) listUsers(params *dto.AdminUserListParams) (*dto.AdminUserListResponse, error) {
 	users, total, err := s.adminRepo.FindUsersWithFilters(params)
 	if err != nil {
 		return nil, err
