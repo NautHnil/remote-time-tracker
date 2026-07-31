@@ -10,22 +10,24 @@ import (
 
 // JWTClaims represents JWT token claims
 type JWTClaims struct {
-	UserID uint   `json:"user_id"`
-	Email  string `json:"email"`
-	Role   string `json:"role"`
+	UserID     uint   `json:"user_id"`
+	Email      string `json:"email"`
+	Role       string `json:"role"`
+	SystemRole string `json:"system_role"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken generates a new JWT token
-func GenerateToken(userID uint, email, role string) (string, time.Time, error) {
+func GenerateToken(userID uint, email, role, systemRole string) (string, time.Time, error) {
 	cfg := config.AppConfig.JWT
 
 	expirationTime := time.Now().Add(cfg.Expiry)
 
 	claims := &JWTClaims{
-		UserID: userID,
-		Email:  email,
-		Role:   role,
+		UserID:     userID,
+		Email:      email,
+		Role:       role,
+		SystemRole: systemRole,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -43,15 +45,16 @@ func GenerateToken(userID uint, email, role string) (string, time.Time, error) {
 }
 
 // GenerateRefreshToken generates a refresh token
-func GenerateRefreshToken(userID uint, email, role string) (string, time.Time, error) {
+func GenerateRefreshToken(userID uint, email, role, systemRole string) (string, time.Time, error) {
 	cfg := config.AppConfig.JWT
 
 	expirationTime := time.Now().Add(cfg.RefreshExpiry)
 
 	claims := &JWTClaims{
-		UserID: userID,
-		Email:  email,
-		Role:   role,
+		UserID:     userID,
+		Email:      email,
+		Role:       role,
+		SystemRole: systemRole,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

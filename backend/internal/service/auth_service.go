@@ -157,12 +157,12 @@ func (s *authService) Register(req *dto.RegisterRequest) (*dto.LoginResponse, er
 	}
 
 	// Generate tokens
-	accessToken, expiresAt, err := utils.GenerateToken(user.ID, user.Email, user.Role)
+	accessToken, expiresAt, err := utils.GenerateToken(user.ID, user.Email, user.Role, user.SystemRole)
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
 
-	refreshToken, _, err := utils.GenerateRefreshToken(user.ID, user.Email, user.Role)
+	refreshToken, _, err := utils.GenerateRefreshToken(user.ID, user.Email, user.Role, user.SystemRole)
 	if err != nil {
 		return nil, errors.New("failed to generate refresh token")
 	}
@@ -331,12 +331,12 @@ func (s *authService) Login(req *dto.LoginRequest) (*dto.LoginResponse, error) {
 	}
 
 	// Generate tokens
-	accessToken, expiresAt, err := utils.GenerateToken(user.ID, user.Email, user.Role)
+	accessToken, expiresAt, err := utils.GenerateToken(user.ID, user.Email, user.Role, user.SystemRole)
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
 
-	refreshToken, _, err := utils.GenerateRefreshToken(user.ID, user.Email, user.Role)
+	refreshToken, _, err := utils.GenerateRefreshToken(user.ID, user.Email, user.Role, user.SystemRole)
 	if err != nil {
 		return nil, errors.New("failed to generate refresh token")
 	}
@@ -380,12 +380,12 @@ func (s *authService) RefreshToken(refreshToken string) (*dto.LoginResponse, err
 	}
 
 	// Generate new tokens
-	accessToken, expiresAt, err := utils.GenerateToken(user.ID, user.Email, user.Role)
+	accessToken, expiresAt, err := utils.GenerateToken(user.ID, user.Email, user.Role, user.SystemRole)
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
 
-	newRefreshToken, _, err := utils.GenerateRefreshToken(user.ID, user.Email, user.Role)
+	newRefreshToken, _, err := utils.GenerateRefreshToken(user.ID, user.Email, user.Role, user.SystemRole)
 	if err != nil {
 		return nil, errors.New("failed to generate refresh token")
 	}

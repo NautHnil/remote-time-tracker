@@ -155,14 +155,15 @@ type AdminTimeLogSummary struct {
 
 // AdminOrgListParams represents query parameters for listing organizations
 type AdminOrgListParams struct {
-	Page       int    `form:"page"`
-	PageSize   int    `form:"page_size"`
-	Search     string `form:"search"`
-	UserID     *uint  `form:"user_id"`
-	IsActive   *bool  `form:"is_active"`
-	IsVerified *bool  `form:"is_verified"`
-	SortBy     string `form:"sort_by"`
-	SortOrder  string `form:"sort_order"`
+	Page        int    `form:"page"`
+	PageSize    int    `form:"page_size"`
+	Search      string `form:"search"`
+	UserID      *uint  `form:"user_id"`
+	OwnerUserID *uint  `form:"-"`
+	IsActive    *bool  `form:"is_active"`
+	IsVerified  *bool  `form:"is_verified"`
+	SortBy      string `form:"sort_by"`
+	SortOrder   string `form:"sort_order"`
 }
 
 // AdminOrgResponse represents an organization in admin responses
@@ -239,15 +240,16 @@ type AdminVerifyOrgRequest struct {
 
 // AdminWorkspaceListParams represents query parameters for listing workspaces
 type AdminWorkspaceListParams struct {
-	Page       int    `form:"page"`
-	PageSize   int    `form:"page_size"`
-	Search     string `form:"search"`
-	UserID     *uint  `form:"user_id"`
-	OrgID      *uint  `form:"org_id"`
-	IsActive   *bool  `form:"is_active"`
-	IsArchived *bool  `form:"is_archived"`
-	SortBy     string `form:"sort_by"`
-	SortOrder  string `form:"sort_order"`
+	Page        int    `form:"page"`
+	PageSize    int    `form:"page_size"`
+	Search      string `form:"search"`
+	UserID      *uint  `form:"user_id"`
+	OrgID       *uint  `form:"org_id"`
+	OwnerUserID *uint  `form:"-"`
+	IsActive    *bool  `form:"is_active"`
+	IsArchived  *bool  `form:"is_archived"`
+	SortBy      string `form:"sort_by"`
+	SortOrder   string `form:"sort_order"`
 }
 
 // AdminWorkspaceResponse represents a workspace in admin responses
@@ -322,6 +324,7 @@ type AdminTaskListParams struct {
 	UserID      *uint  `form:"user_id"`
 	OrgID       *uint  `form:"org_id"`
 	WorkspaceID *uint  `form:"workspace_id"`
+	OwnerUserID *uint  `form:"-"`
 	Status      string `form:"status"`
 	IsManual    *bool  `form:"is_manual"`
 	SortBy      string `form:"sort_by"`
@@ -391,6 +394,7 @@ type AdminTimeLogListParams struct {
 	UserID      *uint      `form:"user_id"`
 	OrgID       *uint      `form:"org_id"`
 	WorkspaceID *uint      `form:"workspace_id"`
+	OwnerUserID *uint      `form:"-"`
 	TaskID      *uint      `form:"task_id"`
 	Status      string     `form:"status"`
 	IsApproved  *bool      `form:"is_approved"`
@@ -464,6 +468,7 @@ type AdminScreenshotListParams struct {
 	UserID      *uint      `form:"user_id"`
 	OrgID       *uint      `form:"org_id"`
 	WorkspaceID *uint      `form:"workspace_id"`
+	OwnerUserID *uint      `form:"-"`
 	TaskID      *uint      `form:"task_id"`
 	TimeLogID   *uint      `form:"timelog_id"`
 	StartDate   *time.Time `form:"start_date"`

@@ -33,6 +33,15 @@ func NewAdminController(
 	}
 }
 
+func isSystemAdminRequest(ctx *gin.Context) bool {
+	role, _ := ctx.Get("user_role")
+	if role == "admin" {
+		return true
+	}
+	systemRole, _ := ctx.Get("system_role")
+	return systemRole == "admin"
+}
+
 // ============================================================================
 // USER MANAGEMENT (System Admin Only)
 // ============================================================================
@@ -376,6 +385,11 @@ func (c *AdminController) ListOrganizations(ctx *gin.Context) {
 		params.IsVerified = &isVerified
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListOrganizations(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -403,6 +417,14 @@ func (c *AdminController) GetOrganization(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid organization ID"})
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewOrganization(uint(orgID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "organization access denied"})
+			return
+		}
 	}
 
 	org, err := c.adminService.GetOrganization(uint(orgID))
@@ -567,6 +589,11 @@ func (c *AdminController) ListWorkspaces(ctx *gin.Context) {
 		params.IsArchived = &isArchived
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListWorkspaces(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -594,6 +621,14 @@ func (c *AdminController) GetWorkspace(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid workspace ID"})
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewWorkspace(uint(wsID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "workspace access denied"})
+			return
+		}
 	}
 
 	workspace, err := c.adminService.GetWorkspace(uint(wsID))
@@ -764,6 +799,11 @@ func (c *AdminController) ListTasks(ctx *gin.Context) {
 		params.IsManual = &isManual
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListTasks(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -791,6 +831,14 @@ func (c *AdminController) GetTask(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid task ID"})
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewTask(uint(taskID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "task access denied"})
+			return
+		}
 	}
 
 	task, err := c.adminService.GetTask(uint(taskID))
@@ -935,6 +983,11 @@ func (c *AdminController) ListTimeLogs(ctx *gin.Context) {
 		}
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListTimeLogs(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -962,6 +1015,14 @@ func (c *AdminController) GetTimeLog(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid time log ID"})
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewTimeLog(uint(tlID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "time log access denied"})
+			return
+		}
 	}
 
 	timeLog, err := c.adminService.GetTimeLog(uint(tlID))
@@ -1134,6 +1195,11 @@ func (c *AdminController) ListScreenshots(ctx *gin.Context) {
 		}
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListScreenshots(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -1163,6 +1229,14 @@ func (c *AdminController) GetScreenshot(ctx *gin.Context) {
 		return
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewScreenshot(uint(ssID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "screenshot access denied"})
+			return
+		}
+	}
+
 	screenshot, err := c.adminService.GetScreenshot(uint(ssID))
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "screenshot not found"})
@@ -1190,6 +1264,14 @@ func (c *AdminController) ViewScreenshot(ctx *gin.Context) {
 	if err != nil {
 		utils.ErrorResponse(ctx, http.StatusBadRequest, "Invalid screenshot ID")
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewScreenshot(uint(ssID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			utils.ErrorResponse(ctx, http.StatusForbidden, "Screenshot access denied")
+			return
+		}
 	}
 
 	screenshot, err := c.adminService.GetScreenshot(uint(ssID))
@@ -1641,6 +1723,7 @@ func (c *AdminController) GetUserPerformanceStats(ctx *gin.Context) {
 	var userID *uint
 	var orgID *uint
 	var workspaceID *uint
+	var ownerUserID *uint
 
 	if ctx.Query("start_date") != "" {
 		if t, err := time.Parse("2006-01-02", ctx.Query("start_date")); err == nil {
@@ -1669,7 +1752,12 @@ func (c *AdminController) GetUserPerformanceStats(ctx *gin.Context) {
 		workspaceID = &value
 	}
 
-	stats, err := c.adminService.GetUserPerformanceStats(limit, startDate, endDate, userID, orgID, workspaceID)
+	if !isSystemAdminRequest(ctx) {
+		value := ctx.GetUint("userID")
+		ownerUserID = &value
+	}
+
+	stats, err := c.adminService.GetUserPerformanceStats(limit, startDate, endDate, userID, orgID, workspaceID, ownerUserID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

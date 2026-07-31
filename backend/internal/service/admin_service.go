@@ -64,9 +64,16 @@ type AdminService interface {
 	// Statistics
 	GetOverviewStats() (*dto.AdminOverviewStats, error)
 	GetTrendStats(req *dto.AdminTrendRequest) (*dto.AdminTrendStats, error)
-	GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID *uint) ([]dto.AdminUserPerformance, error)
+	GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID, ownerUserID *uint) ([]dto.AdminUserPerformance, error)
 	GetOrgDistributionStats() (*dto.AdminOrgStats, error)
 	GetActivityStats() (*dto.AdminActivityStats, error)
+
+	// Scoped CMS access
+	CanViewOrganization(orgID uint, userID uint) (bool, error)
+	CanViewWorkspace(workspaceID uint, userID uint) (bool, error)
+	CanViewTask(taskID uint, userID uint) (bool, error)
+	CanViewTimeLog(timeLogID uint, userID uint) (bool, error)
+	CanViewScreenshot(screenshotID uint, userID uint) (bool, error)
 }
 
 type adminService struct {
@@ -793,6 +800,26 @@ func (s *adminService) BulkDeleteScreenshots(ids []uint) error {
 	return nil
 }
 
+func (s *adminService) CanViewOrganization(orgID uint, userID uint) (bool, error) {
+	return s.adminRepo.IsOrgInOwnerScope(orgID, userID)
+}
+
+func (s *adminService) CanViewWorkspace(workspaceID uint, userID uint) (bool, error) {
+	return s.adminRepo.IsWorkspaceInOwnerScope(workspaceID, userID)
+}
+
+func (s *adminService) CanViewTask(taskID uint, userID uint) (bool, error) {
+	return s.adminRepo.IsTaskInOwnerScope(taskID, userID)
+}
+
+func (s *adminService) CanViewTimeLog(timeLogID uint, userID uint) (bool, error) {
+	return s.adminRepo.IsTimeLogInOwnerScope(timeLogID, userID)
+}
+
+func (s *adminService) CanViewScreenshot(screenshotID uint, userID uint) (bool, error) {
+	return s.adminRepo.IsScreenshotInOwnerScope(screenshotID, userID)
+}
+
 // ============================================================================
 // SYSTEM LOG METHODS
 // ============================================================================
@@ -845,11 +872,11 @@ func (s *adminService) GetTrendStats(req *dto.AdminTrendRequest) (*dto.AdminTren
 	return s.adminRepo.GetTrendStats(req.Period, req.StartDate, req.EndDate)
 }
 
-func (s *adminService) GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID *uint) ([]dto.AdminUserPerformance, error) {
+func (s *adminService) GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID, ownerUserID *uint) ([]dto.AdminUserPerformance, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	return s.adminRepo.GetUserPerformanceStats(limit, startDate, endDate, userID, orgID, workspaceID)
+	return s.adminRepo.GetUserPerformanceStats(limit, startDate, endDate, userID, orgID, workspaceID, ownerUserID)
 }
 
 func (s *adminService) GetOrgDistributionStats() (*dto.AdminOrgStats, error) {
