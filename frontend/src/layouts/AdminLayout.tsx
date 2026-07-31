@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import {getRoleName} from "@/utils";
 
 // Navigation items configuration
 const navItems = [
@@ -383,7 +384,7 @@ const AdminLayout: React.FC = () => {
                 <p className="text-sm font-medium text-gray-900 truncate">
                   {user?.first_name} {user?.last_name}
                 </p>
-                <p className="text-xs text-gray-500 truncate">System Admin</p>
+                <p className="text-xs text-gray-500 truncate">{getRoleName(user?.system_role)}</p>
               </div>
               <button
                 onClick={handleLogout}
