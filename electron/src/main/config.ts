@@ -47,6 +47,7 @@ interface Config {
   syncInterval: number;
   systemLogRetentionDays: number;
   presenceHeartbeatInterval: number;
+  launchAtLogin: boolean;
   credentials?: Credentials;
   deviceUUID?: string;
   imageOptimization: ImageOptimizationConfig;
@@ -85,6 +86,7 @@ class AppConfigClass {
         presenceHeartbeatInterval: parseInt(
           ENV.VITE_PRESENCE_HEARTBEAT_INTERVAL || "15000",
         ), // 15 seconds
+        launchAtLogin: false,
         imageOptimization: {
           enabled: true,
           format: "jpeg",
@@ -126,6 +128,10 @@ class AppConfigClass {
     return this.store.get("systemLogRetentionDays");
   }
 
+  get launchAtLogin(): boolean {
+    return this.getLaunchAtLogin();
+  }
+
   getCredentials(): Credentials | undefined {
     return this.store.get("credentials");
   }
@@ -143,6 +149,11 @@ class AppConfigClass {
   }
 
   set(key: keyof Config, value: any): void {
+    if (key === "launchAtLogin") {
+      this.setLaunchAtLogin(Boolean(value));
+      return;
+    }
+
     this.store.set(key, this.sanitizeConfigValue(key, value));
   }
 
@@ -154,6 +165,7 @@ class AppConfigClass {
     const config = this.store.store;
     return {
       ...config,
+      launchAtLogin: this.getLaunchAtLogin(),
       screenshotIntervalMs: config.screenshotInterval * MS_PER_SECOND,
       syncIntervalMs: config.syncInterval * MS_PER_SECOND,
     };
@@ -211,6 +223,7 @@ class AppConfigClass {
     this.store.clear();
     this.store.set("screenshotInterval", SCREENSHOT_INTERVAL_DEFAULT_SECONDS);
     this.store.set("syncInterval", SYNC_INTERVAL_DEFAULT_SECONDS);
+    this.setLaunchAtLogin(false);
     this.store.set("imageOptimization", {
       enabled: true,
       format: "jpeg",
@@ -240,6 +253,29 @@ class AppConfigClass {
     }
 
     return value;
+  }
+
+  private getLaunchAtLogin(): boolean {
+    if (!app.isReady()) {
+      return this.store.get("launchAtLogin");
+    }
+
+    const settings = app.getLoginItemSettings();
+    const openAtLogin = Boolean(settings.openAtLogin);
+
+    if (openAtLogin !== this.store.get("launchAtLogin")) {
+      this.store.set("launchAtLogin", openAtLogin);
+    }
+
+    return openAtLogin;
+  }
+
+  private setLaunchAtLogin(enabled: boolean): void {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+      openAsHidden: true,
+    });
+    this.store.set("launchAtLogin", enabled);
   }
 
   private normalizeIntervals(): void {

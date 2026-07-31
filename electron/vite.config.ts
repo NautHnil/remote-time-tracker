@@ -39,6 +39,9 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_SYNC_INTERVAL": JSON.stringify(
         env.VITE_SYNC_INTERVAL || "60000",
       ),
+      "import.meta.env.VITE_SYSTEM_LOG_RETENTION_DAYS": JSON.stringify(
+        env.VITE_SYSTEM_LOG_RETENTION_DAYS || "30",
+      ),
       "import.meta.env.VITE_PRESENCE_HEARTBEAT_INTERVAL": JSON.stringify(
         env.VITE_PRESENCE_HEARTBEAT_INTERVAL || "15000",
       ),
