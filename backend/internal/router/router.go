@@ -90,6 +90,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 		{
 			auth.POST("/register", cfg.AuthController.Register)
 			auth.POST("/login", cfg.AuthController.Login)
+			auth.POST("/cms-login", cfg.AuthController.CMSLogin)
 			auth.POST("/refresh", cfg.AuthController.RefreshToken)
 		}
 
@@ -302,6 +303,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			if cfg.AdminController != nil {
 				admin := protected.Group("/admin")
 				admin.Use(middleware.SetUserIDMiddleware())
+				admin.Use(middleware.RequireCMSAccess())
 				{
 					// User management
 					admin.GET("/user-options", cfg.AdminController.ListUserOptions)

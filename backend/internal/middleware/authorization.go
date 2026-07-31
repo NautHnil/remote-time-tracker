@@ -76,6 +76,25 @@ func RequireSystemAdmin() gin.HandlerFunc {
 	}
 }
 
+// RequireCMSAccess requires a CMS-authorized token or system admin role.
+func RequireCMSAccess() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if IsSystemAdmin(c) {
+			c.Next()
+			return
+		}
+
+		cmsAccess, _ := c.Get("cms_access")
+		if cmsAccess == true {
+			c.Next()
+			return
+		}
+
+		utils.ErrorResponse(c, http.StatusForbidden, "CMS access denied. Organization owner access required.")
+		c.Abort()
+	}
+}
+
 // ============================================================================
 // ORGANIZATION-LEVEL MIDDLEWARE
 // ============================================================================
