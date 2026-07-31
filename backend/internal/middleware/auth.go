@@ -52,6 +52,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("userRole", claims.Role)
 		c.Set("system_role", claims.SystemRole)
 		c.Set("systemRole", claims.SystemRole)
+		c.Set("cms_access", claims.CMSAccess)
+		c.Set("cmsAccess", claims.CMSAccess)
 
 		c.Next()
 	}
@@ -75,6 +77,8 @@ func OptionalAuthMiddleware() gin.HandlerFunc {
 					c.Set("userRole", claims.Role)
 					c.Set("system_role", claims.SystemRole)
 					c.Set("systemRole", claims.SystemRole)
+					c.Set("cms_access", claims.CMSAccess)
+					c.Set("cmsAccess", claims.CMSAccess)
 				}
 			}
 		}

@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
   // Auth
   AUTH: {
     LOGIN: "/auth/login",
+    CMS_LOGIN: "/auth/cms-login",
     REGISTER: "/auth/register",
     ME: "/auth/me",
     REFRESH: "/auth/refresh",

@@ -20,7 +20,8 @@ const AdminLoginPage: React.FC = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      const isSystemAdmin = user.system_role === "admin" || user.role === "admin";
+      const isSystemAdmin =
+        user.system_role === "admin" || user.role === "admin";
       navigate(isSystemAdmin ? "/admin/dashboard" : "/admin/tasks");
     }
   }, [isAuthenticated, user, navigate]);
@@ -43,7 +44,6 @@ const AdminLoginPage: React.FC = () => {
 
     try {
       await login(email, password);
-
       const currentUser = useAuthStore.getState().user;
       const isSystemAdmin =
         currentUser?.system_role === "admin" || currentUser?.role === "admin";

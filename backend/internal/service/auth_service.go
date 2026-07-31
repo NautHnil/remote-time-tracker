@@ -15,9 +15,12 @@ import (
 type AuthService interface {
 	Register(req *dto.RegisterRequest) (*dto.LoginResponse, error)
 	Login(req *dto.LoginRequest) (*dto.LoginResponse, error)
+	CMSLogin(req *dto.LoginRequest) (*dto.LoginResponse, error)
 	RefreshToken(refreshToken string) (*dto.LoginResponse, error)
 	GetUserByID(userID uint) (*models.User, error)
 }
+
+var ErrCMSAccessDenied = errors.New("cms access denied: organization owner access required")
 
 type authService struct {
 	userRepo       repository.UserRepository
@@ -314,34 +317,74 @@ func (s *authService) acceptInvitation(user *models.User, invitation *models.Inv
 }
 
 func (s *authService) Login(req *dto.LoginRequest) (*dto.LoginResponse, error) {
-	// Find user by email
+	user, err := s.authenticateUser(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.createLoginResponse(user, false)
+}
+
+func (s *authService) CMSLogin(req *dto.LoginRequest) (*dto.LoginResponse, error) {
+	user, err := s.authenticateUser(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if !user.IsSystemAdmin() {
+		ownedOrgs, err := s.orgRepo.GetByOwnerID(user.ID)
+		if err != nil {
+			return nil, errors.New("failed to verify CMS access")
+		}
+		if len(ownedOrgs) == 0 {
+			return nil, ErrCMSAccessDenied
+		}
+	}
+
+	return s.createLoginResponse(user, true)
+}
+
+func (s *authService) authenticateUser(req *dto.LoginRequest) (*models.User, error) {
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
 		return nil, errors.New("invalid email or password")
 	}
 
-	// Check if user is active
 	if !user.IsActive {
 		return nil, errors.New("user account is inactive")
 	}
 
-	// Check password
 	if err := utils.CheckPassword(req.Password, user.PasswordHash); err != nil {
 		return nil, errors.New("invalid email or password")
 	}
 
-	// Generate tokens
-	accessToken, expiresAt, err := utils.GenerateToken(user.ID, user.Email, user.Role, user.SystemRole)
+	return user, nil
+}
+
+func (s *authService) createLoginResponse(user *models.User, cmsAccess bool) (*dto.LoginResponse, error) {
+	var accessToken string
+	var refreshToken string
+	var expiresAt time.Time
+	var err error
+
+	if cmsAccess {
+		accessToken, expiresAt, err = utils.GenerateCMSToken(user.ID, user.Email, user.Role, user.SystemRole)
+	} else {
+		accessToken, expiresAt, err = utils.GenerateToken(user.ID, user.Email, user.Role, user.SystemRole)
+	}
 	if err != nil {
 		return nil, errors.New("failed to generate access token")
 	}
 
-	refreshToken, _, err := utils.GenerateRefreshToken(user.ID, user.Email, user.Role, user.SystemRole)
+	if cmsAccess {
+		refreshToken, _, err = utils.GenerateCMSRefreshToken(user.ID, user.Email, user.Role, user.SystemRole)
+	} else {
+		refreshToken, _, err = utils.GenerateRefreshToken(user.ID, user.Email, user.Role, user.SystemRole)
+	}
 	if err != nil {
 		return nil, errors.New("failed to generate refresh token")
 	}
 
-	// Update last login
 	s.userRepo.UpdateLastLogin(user.ID)
 
 	return &dto.LoginResponse{
@@ -379,33 +422,17 @@ func (s *authService) RefreshToken(refreshToken string) (*dto.LoginResponse, err
 		return nil, errors.New("user account is inactive")
 	}
 
-	// Generate new tokens
-	accessToken, expiresAt, err := utils.GenerateToken(user.ID, user.Email, user.Role, user.SystemRole)
-	if err != nil {
-		return nil, errors.New("failed to generate access token")
+	if claims.CMSAccess && !user.IsSystemAdmin() {
+		ownedOrgs, err := s.orgRepo.GetByOwnerID(user.ID)
+		if err != nil {
+			return nil, errors.New("failed to verify CMS access")
+		}
+		if len(ownedOrgs) == 0 {
+			return nil, ErrCMSAccessDenied
+		}
 	}
 
-	newRefreshToken, _, err := utils.GenerateRefreshToken(user.ID, user.Email, user.Role, user.SystemRole)
-	if err != nil {
-		return nil, errors.New("failed to generate refresh token")
-	}
-
-	return &dto.LoginResponse{
-		AccessToken:  accessToken,
-		RefreshToken: newRefreshToken,
-		ExpiresAt:    expiresAt,
-		User: dto.UserResponse{
-			ID:          user.ID,
-			Email:       user.Email,
-			FirstName:   user.FirstName,
-			LastName:    user.LastName,
-			Role:        user.Role,
-			SystemRole:  user.SystemRole,
-			IsActive:    user.IsActive,
-			LastLoginAt: user.LastLoginAt,
-			CreatedAt:   user.CreatedAt,
-		},
-	}, nil
+	return s.createLoginResponse(user, claims.CMSAccess)
 }
 
 // GetUserByID retrieves a user by ID for verification

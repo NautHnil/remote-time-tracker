@@ -14,20 +14,31 @@ type JWTClaims struct {
 	Email      string `json:"email"`
 	Role       string `json:"role"`
 	SystemRole string `json:"system_role"`
+	CMSAccess  bool   `json:"cms_access"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken generates a new JWT token
 func GenerateToken(userID uint, email, role, systemRole string) (string, time.Time, error) {
+	return generateToken(userID, email, role, systemRole, false, config.AppConfig.JWT.Expiry)
+}
+
+// GenerateCMSToken generates a JWT token authorized for CMS routes.
+func GenerateCMSToken(userID uint, email, role, systemRole string) (string, time.Time, error) {
+	return generateToken(userID, email, role, systemRole, true, config.AppConfig.JWT.Expiry)
+}
+
+func generateToken(userID uint, email, role, systemRole string, cmsAccess bool, expiry time.Duration) (string, time.Time, error) {
 	cfg := config.AppConfig.JWT
 
-	expirationTime := time.Now().Add(cfg.Expiry)
+	expirationTime := time.Now().Add(expiry)
 
 	claims := &JWTClaims{
 		UserID:     userID,
 		Email:      email,
 		Role:       role,
 		SystemRole: systemRole,
+		CMSAccess:  cmsAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -46,29 +57,12 @@ func GenerateToken(userID uint, email, role, systemRole string) (string, time.Ti
 
 // GenerateRefreshToken generates a refresh token
 func GenerateRefreshToken(userID uint, email, role, systemRole string) (string, time.Time, error) {
-	cfg := config.AppConfig.JWT
+	return generateToken(userID, email, role, systemRole, false, config.AppConfig.JWT.RefreshExpiry)
+}
 
-	expirationTime := time.Now().Add(cfg.RefreshExpiry)
-
-	claims := &JWTClaims{
-		UserID:     userID,
-		Email:      email,
-		Role:       role,
-		SystemRole: systemRole,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now()),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(cfg.Secret))
-	if err != nil {
-		return "", time.Time{}, err
-	}
-
-	return tokenString, expirationTime, nil
+// GenerateCMSRefreshToken generates a refresh token that preserves CMS access.
+func GenerateCMSRefreshToken(userID uint, email, role, systemRole string) (string, time.Time, error) {
+	return generateToken(userID, email, role, systemRole, true, config.AppConfig.JWT.RefreshExpiry)
 }
 
 // ValidateToken validates a JWT token and returns the claims

@@ -15,6 +15,7 @@ export interface ApiResponse<T = any> {
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number>;
+  _retry?: boolean;
 }
 
 /**
@@ -52,6 +53,7 @@ function normalizeResponse<T>(data: any): ApiResponse<T> {
 
 class ApiClient {
   private baseURL: string;
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
@@ -86,6 +88,65 @@ class ApiClient {
     return url.toString();
   }
 
+  private isAuthEndpoint(endpoint: string): boolean {
+    return (
+      endpoint.includes("/auth/login") ||
+      endpoint.includes("/auth/register") ||
+      endpoint.includes("/auth/refresh")
+    );
+  }
+
+  private async refreshToken(): Promise<string | null> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = this.performTokenRefresh();
+
+    try {
+      return await this.refreshPromise;
+    } finally {
+      this.refreshPromise = null;
+    }
+  }
+
+  private async performTokenRefresh(): Promise<string | null> {
+    try {
+      const credentials = await window.electronAPI.auth.getCredentials();
+      if (!credentials?.refreshToken) {
+        return null;
+      }
+
+      const response = await fetch(`${this.baseURL}/auth/refresh`, {
+        method: "POST",
+        headers: DEFAULT_HEADERS,
+        body: JSON.stringify({ refresh_token: credentials.refreshToken }),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      const { access_token, refresh_token } = data.data || {};
+
+      if (!access_token || !refresh_token) {
+        return null;
+      }
+
+      await window.electronAPI.auth.setCredentials({
+        ...credentials,
+        accessToken: access_token,
+        refreshToken: refresh_token,
+      });
+
+      return access_token;
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      return null;
+    }
+  }
+
   /**
    * Generic request method
    */
@@ -93,24 +154,43 @@ class ApiClient {
     endpoint: string,
     options: RequestOptions = {}
   ): Promise<ApiResponse<T>> {
-    const { params, headers = {}, ...fetchOptions } = options;
+    const { params, headers = {}, _retry, ...fetchOptions } = options;
+    const requestHeaders = { ...(headers as Record<string, string>) };
 
     // Get auth token
     const token = await this.getAuthToken();
     if (token) {
-      (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+      requestHeaders["Authorization"] = `Bearer ${token}`;
     }
 
     // Merge with default headers
-    Object.assign(headers, DEFAULT_HEADERS);
+    Object.assign(requestHeaders, DEFAULT_HEADERS);
 
     const url = this.buildURL(endpoint, params);
 
     try {
       const response = await fetch(url, {
         ...fetchOptions,
-        headers: headers as HeadersInit,
+        headers: requestHeaders as HeadersInit,
       });
+
+      if (response.status === 401 && !_retry && !this.isAuthEndpoint(endpoint)) {
+        const newToken = await this.refreshToken();
+
+        if (newToken) {
+          return this.request<T>(endpoint, {
+            ...options,
+            headers: {
+              ...(headers as Record<string, string>),
+              Authorization: `Bearer ${newToken}`,
+            },
+            _retry: true,
+          });
+        }
+
+        await window.electronAPI.auth.clear();
+        throw new Error("Authentication failed");
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({
@@ -122,15 +202,9 @@ class ApiClient {
       }
 
       const data = await response.json();
-      console.log(`[apiClient] Raw response for ${endpoint}:`, data);
 
       // Normalize response to handle both wrapped and unwrapped formats
-      const normalized = normalizeResponse<T>(data);
-      console.log(
-        `[apiClient] Normalized response for ${endpoint}:`,
-        normalized
-      );
-      return normalized;
+      return normalizeResponse<T>(data);
     } catch (error) {
       console.error(`API Error [${endpoint}]:`, error);
       throw error;
