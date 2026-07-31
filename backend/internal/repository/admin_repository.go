@@ -22,21 +22,26 @@ type AdminRepository interface {
 	// Organizations
 	FindOrgsWithFilters(params *dto.AdminOrgListParams) ([]models.Organization, int64, error)
 	GetOrgStats(orgID uint) (*OrgStats, error)
+	IsOrgInOwnerScope(orgID uint, ownerID uint) (bool, error)
 
 	// Workspaces
 	FindWorkspacesWithFilters(params *dto.AdminWorkspaceListParams) ([]models.Workspace, int64, error)
 	GetWorkspaceStats(workspaceID uint) (*WorkspaceStats, error)
+	IsWorkspaceInOwnerScope(workspaceID uint, ownerID uint) (bool, error)
 
 	// Tasks
 	FindTasksWithFilters(params *dto.AdminTaskListParams) ([]models.Task, int64, error)
 	GetTaskStats(taskID uint) (*TaskStats, error)
+	IsTaskInOwnerScope(taskID uint, ownerID uint) (bool, error)
 
 	// Time Logs
 	FindTimeLogsWithFilters(params *dto.AdminTimeLogListParams) ([]models.TimeLog, int64, error)
 	BulkApproveTimeLogs(ids []uint, approvedBy uint, approved bool) error
+	IsTimeLogInOwnerScope(timeLogID uint, ownerID uint) (bool, error)
 
 	// Screenshots
 	FindScreenshotsWithFilters(params *dto.AdminScreenshotListParams) ([]models.Screenshot, int64, error)
+	IsScreenshotInOwnerScope(screenshotID uint, ownerID uint) (bool, error)
 
 	// System Logs
 	FindSystemLogsWithFilters(params *dto.AdminSystemLogListParams) ([]models.SystemLog, int64, error)
@@ -45,7 +50,7 @@ type AdminRepository interface {
 	// Statistics
 	GetOverviewStats() (*dto.AdminOverviewStats, error)
 	GetTrendStats(period string, startDate, endDate time.Time) (*dto.AdminTrendStats, error)
-	GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID *uint) ([]dto.AdminUserPerformance, error)
+	GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID, ownerUserID *uint) ([]dto.AdminUserPerformance, error)
 	GetOrgDistributionStats() (*dto.AdminOrgStats, error)
 	GetActivityStats() (*dto.AdminActivityStats, error)
 }
@@ -284,6 +289,10 @@ func (r *adminRepository) FindOrgsWithFilters(params *dto.AdminOrgListParams) ([
 		query = query.Where("owner_id = ?", *params.UserID)
 	}
 
+	if params.OwnerUserID != nil {
+		query = query.Where("owner_id = ?", *params.OwnerUserID)
+	}
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -328,6 +337,14 @@ func (r *adminRepository) GetOrgStats(orgID uint) (*OrgStats, error) {
 	return stats, nil
 }
 
+func (r *adminRepository) IsOrgInOwnerScope(orgID uint, ownerID uint) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.Organization{}).
+		Where("id = ? AND owner_id = ? AND deleted_at IS NULL", orgID, ownerID).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // ============================================================================
 // WORKSPACE METHODS
 // ============================================================================
@@ -349,6 +366,11 @@ func (r *adminRepository) FindWorkspacesWithFilters(params *dto.AdminWorkspaceLi
 
 	if params.UserID != nil {
 		query = query.Where("admin_id = ?", *params.UserID)
+	}
+
+	if params.OwnerUserID != nil {
+		query = query.Joins("JOIN organizations AS scope_orgs ON scope_orgs.id = workspaces.organization_id").
+			Where("(scope_orgs.owner_id = ? OR workspaces.admin_id = ?)", *params.OwnerUserID, *params.OwnerUserID)
 	}
 
 	if params.IsActive != nil {
@@ -403,6 +425,16 @@ func (r *adminRepository) GetWorkspaceStats(workspaceID uint) (*WorkspaceStats, 
 	return stats, nil
 }
 
+func (r *adminRepository) IsWorkspaceInOwnerScope(workspaceID uint, ownerID uint) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.Workspace{}).
+		Joins("JOIN organizations ON organizations.id = workspaces.organization_id").
+		Where("workspaces.id = ? AND workspaces.deleted_at IS NULL", workspaceID).
+		Where("(organizations.owner_id = ? OR workspaces.admin_id = ?)", ownerID, ownerID).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // ============================================================================
 // TASK METHODS
 // ============================================================================
@@ -428,6 +460,25 @@ func (r *adminRepository) FindTasksWithFilters(params *dto.AdminTaskListParams) 
 
 	if params.WorkspaceID != nil {
 		query = query.Where("workspace_id = ?", *params.WorkspaceID)
+	}
+
+	if params.OwnerUserID != nil {
+		query = query.Where(`
+			(
+			EXISTS (
+				SELECT 1 FROM organizations
+				WHERE organizations.id = tasks.organization_id
+					AND organizations.owner_id = ?
+					AND organizations.deleted_at IS NULL
+			)
+			OR EXISTS (
+				SELECT 1 FROM workspaces
+				WHERE workspaces.id = tasks.workspace_id
+					AND workspaces.admin_id = ?
+					AND workspaces.deleted_at IS NULL
+			)
+			)
+		`, *params.OwnerUserID, *params.OwnerUserID)
 	}
 
 	if params.Status != "" {
@@ -490,6 +541,30 @@ func (r *adminRepository) GetTaskStats(taskID uint) (*TaskStats, error) {
 	return stats, nil
 }
 
+func (r *adminRepository) IsTaskInOwnerScope(taskID uint, ownerID uint) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.Task{}).
+		Where("tasks.id = ? AND tasks.deleted_at IS NULL", taskID).
+		Where(`
+			(
+			EXISTS (
+				SELECT 1 FROM organizations
+				WHERE organizations.id = tasks.organization_id
+					AND organizations.owner_id = ?
+					AND organizations.deleted_at IS NULL
+			)
+			OR EXISTS (
+				SELECT 1 FROM workspaces
+				WHERE workspaces.id = tasks.workspace_id
+					AND workspaces.admin_id = ?
+					AND workspaces.deleted_at IS NULL
+			)
+			)
+		`, ownerID, ownerID).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // ============================================================================
 // TIMELOG METHODS
 // ============================================================================
@@ -510,6 +585,25 @@ func (r *adminRepository) FindTimeLogsWithFilters(params *dto.AdminTimeLogListPa
 
 	if params.WorkspaceID != nil {
 		query = query.Where("time_logs.workspace_id = ?", *params.WorkspaceID)
+	}
+
+	if params.OwnerUserID != nil {
+		query = query.Where(`
+			(
+			EXISTS (
+				SELECT 1 FROM organizations
+				WHERE organizations.id = time_logs.organization_id
+					AND organizations.owner_id = ?
+					AND organizations.deleted_at IS NULL
+			)
+			OR EXISTS (
+				SELECT 1 FROM workspaces
+				WHERE workspaces.id = time_logs.workspace_id
+					AND workspaces.admin_id = ?
+					AND workspaces.deleted_at IS NULL
+			)
+			)
+		`, *params.OwnerUserID, *params.OwnerUserID)
 	}
 
 	if params.TaskID != nil {
@@ -582,6 +676,30 @@ func (r *adminRepository) BulkApproveTimeLogs(ids []uint, approvedBy uint, appro
 		Updates(updates).Error
 }
 
+func (r *adminRepository) IsTimeLogInOwnerScope(timeLogID uint, ownerID uint) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.TimeLog{}).
+		Where("time_logs.id = ? AND time_logs.deleted_at IS NULL", timeLogID).
+		Where(`
+			(
+			EXISTS (
+				SELECT 1 FROM organizations
+				WHERE organizations.id = time_logs.organization_id
+					AND organizations.owner_id = ?
+					AND organizations.deleted_at IS NULL
+			)
+			OR EXISTS (
+				SELECT 1 FROM workspaces
+				WHERE workspaces.id = time_logs.workspace_id
+					AND workspaces.admin_id = ?
+					AND workspaces.deleted_at IS NULL
+			)
+			)
+		`, ownerID, ownerID).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // ============================================================================
 // SCREENSHOT METHODS
 // ============================================================================
@@ -602,6 +720,25 @@ func (r *adminRepository) FindScreenshotsWithFilters(params *dto.AdminScreenshot
 
 	if params.WorkspaceID != nil {
 		query = query.Where("screenshots.workspace_id = ?", *params.WorkspaceID)
+	}
+
+	if params.OwnerUserID != nil {
+		query = query.Where(`
+			(
+			EXISTS (
+				SELECT 1 FROM organizations
+				WHERE organizations.id = screenshots.organization_id
+					AND organizations.owner_id = ?
+					AND organizations.deleted_at IS NULL
+			)
+			OR EXISTS (
+				SELECT 1 FROM workspaces
+				WHERE workspaces.id = screenshots.workspace_id
+					AND workspaces.admin_id = ?
+					AND workspaces.deleted_at IS NULL
+			)
+			)
+		`, *params.OwnerUserID, *params.OwnerUserID)
 	}
 
 	if params.TaskID != nil {
@@ -648,6 +785,30 @@ func (r *adminRepository) FindScreenshotsWithFilters(params *dto.AdminScreenshot
 	}
 
 	return screenshots, total, nil
+}
+
+func (r *adminRepository) IsScreenshotInOwnerScope(screenshotID uint, ownerID uint) (bool, error) {
+	var count int64
+	err := r.db.Model(&models.Screenshot{}).
+		Where("screenshots.id = ? AND screenshots.deleted_at IS NULL", screenshotID).
+		Where(`
+			(
+			EXISTS (
+				SELECT 1 FROM organizations
+				WHERE organizations.id = screenshots.organization_id
+					AND organizations.owner_id = ?
+					AND organizations.deleted_at IS NULL
+			)
+			OR EXISTS (
+				SELECT 1 FROM workspaces
+				WHERE workspaces.id = screenshots.workspace_id
+					AND workspaces.admin_id = ?
+					AND workspaces.deleted_at IS NULL
+			)
+			)
+		`, ownerID, ownerID).
+		Count(&count).Error
+	return count > 0, err
 }
 
 // ============================================================================
@@ -866,10 +1027,11 @@ func (r *adminRepository) GetTrendStats(period string, startDate, endDate time.T
 	return stats, nil
 }
 
-func (r *adminRepository) GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID *uint) ([]dto.AdminUserPerformance, error) {
+func (r *adminRepository) GetUserPerformanceStats(limit int, startDate, endDate *time.Time, userID, orgID, workspaceID, ownerUserID *uint) ([]dto.AdminUserPerformance, error) {
 	var performers []dto.AdminUserPerformance
 	timeLogArgs := []interface{}{}
 	screenshotArgs := []interface{}{}
+	userArgs := []interface{}{}
 	timeLogFilters := "WHERE deleted_at IS NULL"
 	screenshotFilters := "WHERE deleted_at IS NULL"
 	userFilters := "WHERE users.deleted_at IS NULL"
@@ -890,6 +1052,7 @@ func (r *adminRepository) GetUserPerformanceStats(limit int, startDate, endDate 
 
 	if userID != nil {
 		userFilters += " AND users.id = ?"
+		userArgs = append(userArgs, *userID)
 	}
 
 	if orgID != nil {
@@ -906,11 +1069,68 @@ func (r *adminRepository) GetUserPerformanceStats(limit int, startDate, endDate 
 		screenshotArgs = append(screenshotArgs, *workspaceID)
 	}
 
+	if ownerUserID != nil {
+		timeLogFilters += `
+			AND (
+				organization_id IN (
+					SELECT id FROM organizations
+					WHERE owner_id = ? AND deleted_at IS NULL
+				)
+				OR workspace_id IN (
+					SELECT workspaces.id FROM workspaces
+					JOIN organizations ON organizations.id = workspaces.organization_id
+					WHERE (workspaces.admin_id = ? OR organizations.owner_id = ?)
+						AND workspaces.deleted_at IS NULL
+						AND organizations.deleted_at IS NULL
+				)
+			)`
+		timeLogArgs = append(timeLogArgs, *ownerUserID, *ownerUserID, *ownerUserID)
+
+		screenshotFilters += `
+			AND (
+				organization_id IN (
+					SELECT id FROM organizations
+					WHERE owner_id = ? AND deleted_at IS NULL
+				)
+				OR workspace_id IN (
+					SELECT workspaces.id FROM workspaces
+					JOIN organizations ON organizations.id = workspaces.organization_id
+					WHERE (workspaces.admin_id = ? OR organizations.owner_id = ?)
+						AND workspaces.deleted_at IS NULL
+						AND organizations.deleted_at IS NULL
+				)
+			)`
+		screenshotArgs = append(screenshotArgs, *ownerUserID, *ownerUserID, *ownerUserID)
+
+		userFilters += `
+			AND (
+				EXISTS (
+					SELECT 1 FROM organization_members
+					JOIN organizations ON organizations.id = organization_members.organization_id
+					WHERE organization_members.user_id = users.id
+						AND organizations.owner_id = ?
+						AND organization_members.is_active = true
+						AND organization_members.deleted_at IS NULL
+						AND organizations.deleted_at IS NULL
+				)
+				OR EXISTS (
+					SELECT 1 FROM workspace_members
+					JOIN workspaces ON workspaces.id = workspace_members.workspace_id
+					JOIN organizations ON organizations.id = workspaces.organization_id
+					WHERE workspace_members.user_id = users.id
+						AND (workspaces.admin_id = ? OR organizations.owner_id = ?)
+						AND workspace_members.is_active = true
+						AND workspace_members.deleted_at IS NULL
+						AND workspaces.deleted_at IS NULL
+						AND organizations.deleted_at IS NULL
+				)
+			)`
+		userArgs = append(userArgs, *ownerUserID, *ownerUserID, *ownerUserID)
+	}
+
 	args := append([]interface{}{}, timeLogArgs...)
 	args = append(args, screenshotArgs...)
-	if userID != nil {
-		args = append(args, *userID)
-	}
+	args = append(args, userArgs...)
 	args = append(args, limit)
 
 	r.db.Raw(`

@@ -12,6 +12,7 @@ const navItems = [
   {
     name: "Dashboard",
     path: "/admin/dashboard",
+    systemOnly: true,
     icon: (
       <svg
         className="w-5 h-5"
@@ -31,6 +32,7 @@ const navItems = [
   {
     name: "Users",
     path: "/admin/users",
+    systemOnly: true,
     icon: (
       <svg
         className="w-5 h-5"
@@ -145,6 +147,7 @@ const navItems = [
   {
     name: "System Settings",
     path: "/admin/system-settings",
+    systemOnly: true,
     icon: (
       <svg
         className="w-5 h-5"
@@ -170,6 +173,7 @@ const navItems = [
   {
     name: "System Logs",
     path: "/admin/system-logs",
+    systemOnly: true,
     icon: (
       <svg
         className="w-5 h-5"
@@ -215,13 +219,29 @@ const AdminLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const isSystemAdmin = user?.system_role === "admin" || user?.role === "admin";
+  const visibleNavItems = navItems.filter(
+    (item) => isSystemAdmin || !item.systemOnly,
+  );
 
-  // Check admin access
   useEffect(() => {
-    if (!isAuthenticated || user?.system_role !== "admin") {
+    if (!isAuthenticated) {
       navigate("/admin/login");
+      return;
     }
-  }, [isAuthenticated, user, navigate]);
+
+    if (!isSystemAdmin) {
+      const isSystemOnlyRoute = navItems.some(
+        (item) =>
+          item.systemOnly &&
+          (location.pathname === item.path ||
+            location.pathname.startsWith(`${item.path}/`)),
+      );
+      if (location.pathname === "/admin" || isSystemOnlyRoute) {
+        navigate("/admin/tasks", { replace: true });
+      }
+    }
+  }, [isAuthenticated, isSystemAdmin, location.pathname, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -238,8 +258,7 @@ const AdminLayout: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  // Don't render if not admin
-  if (!isAuthenticated || user?.system_role !== "admin") {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -327,7 +346,7 @@ const AdminLayout: React.FC = () => {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-3">
           <ul className="space-y-1">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <li key={item.path}>
                 <Link
                   to={item.path}

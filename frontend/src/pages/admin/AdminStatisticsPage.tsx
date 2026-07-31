@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 import { Icons } from "../../components/Icons";
 import { Input, Select } from "../../components/ui";
 import { adminService } from "../../services/adminService";
+import { useAuthStore } from "../../store/authStore";
 import type { AdminOrganization, AdminUser, AdminWorkspace } from "../../types/admin";
 
 // Stat Card Component
@@ -676,6 +677,8 @@ function UserPerformanceTable({
 }
 
 export default function AdminStatisticsPage() {
+  const user = useAuthStore((state) => state.user);
+  const isSystemAdmin = user?.system_role === "admin" || user?.role === "admin";
   const [dateRange, setDateRange] = useState({
     start: format(subDays(new Date(), 30), "yyyy-MM-dd"),
     end: format(new Date(), "yyyy-MM-dd"),
@@ -700,6 +703,7 @@ export default function AdminStatisticsPage() {
   // Fetch system stats
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["admin-stats"],
+    enabled: isSystemAdmin,
     queryFn: async () => {
       const response = await adminService.getSystemStats();
       return response.data;
@@ -708,6 +712,7 @@ export default function AdminStatisticsPage() {
 
   const { data: activityStats, isLoading: activityLoading } = useQuery({
     queryKey: ["admin-activity-stats"],
+    enabled: isSystemAdmin,
     queryFn: async () => {
       const response = await adminService.getActivityStats();
       return response.data;
@@ -716,6 +721,7 @@ export default function AdminStatisticsPage() {
 
   const { data: recentLogs, isLoading: recentLogsLoading } = useQuery({
     queryKey: ["admin-recent-system-activity"],
+    enabled: isSystemAdmin,
     queryFn: async () => {
       const response = await adminService.getSystemLogs({
         page: 1,
@@ -729,6 +735,7 @@ export default function AdminStatisticsPage() {
 
   const { data: usersData } = useQuery({
     queryKey: ["admin-users-stats-options"],
+    enabled: isSystemAdmin,
     queryFn: async () => {
       const response = await adminService.getUsers({ page: 1, page_size: 200 });
       return response.data?.users || [];
@@ -832,7 +839,43 @@ export default function AdminStatisticsPage() {
       time: format(new Date(log.occurred_at), "MMM d, yyyy HH:mm"),
     })) || [];
 
-  const users = (usersData || []) as AdminUser[];
+  const scopedUsers = useMemo(() => {
+    const byID = new Map<number, AdminUser>();
+    const sourceLists = [
+      overviewActivities?.users || [],
+      topUsersActivities?.users || [],
+      performanceActivities?.users || [],
+    ];
+
+    sourceLists.flat().forEach((item) => {
+      if (!byID.has(item.user_id)) {
+        const [firstName = "", ...lastNameParts] = (item.user_name || "").split(" ");
+        byID.set(item.user_id, {
+          id: item.user_id,
+          email: item.email,
+          first_name: item.first_name || firstName,
+          last_name: item.last_name || lastNameParts.join(" "),
+          full_name: item.user_name,
+          role: "user",
+          system_role: "member",
+          is_active: true,
+          last_login_at: null,
+          created_at: "",
+          updated_at: "",
+        });
+      }
+    });
+
+    return Array.from(byID.values());
+  }, [
+    overviewActivities?.users,
+    topUsersActivities?.users,
+    performanceActivities?.users,
+  ]);
+
+  const users = isSystemAdmin
+    ? ((usersData || []) as AdminUser[])
+    : scopedUsers;
   const organizations = (orgsData || []) as AdminOrganization[];
   const workspaces = (workspacesData || []) as AdminWorkspace[];
 
@@ -854,10 +897,12 @@ export default function AdminStatisticsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            System Statistics
+            {isSystemAdmin ? "System Statistics" : "Team Statistics"}
           </h1>
           <p className="text-gray-600 mt-1">
-            Overview of system activity and performance
+            {isSystemAdmin
+              ? "Overview of system activity and performance"
+              : "Tracked work statistics for members in organizations and workspaces you own"}
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -884,12 +929,13 @@ export default function AdminStatisticsPage() {
       </div>
 
       {/* Stats Grid */}
-      {statsLoading || activityLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {isSystemAdmin && (
+        statsLoading || activityLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             title="Total Users"
             value={formatNumber(stats?.total_users)}
@@ -1014,21 +1060,24 @@ export default function AdminStatisticsPage() {
             icon={Icons.Timer}
             color="green"
           />
-        </div>
+          </div>
+        )
       )}
 
       {/* Charts and Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ActivityChart
-          hourlyStats={activityStats?.activity_by_hour || []}
-          peakHour={activityStats?.peak_hour || 0}
-          peakHourCount={activityStats?.peak_hour_count || 0}
-        />
-        <RecentActivity
-          isLoading={recentLogsLoading}
-          activities={recentActivities}
-        />
-      </div>
+      {isSystemAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ActivityChart
+            hourlyStats={activityStats?.activity_by_hour || []}
+            peakHour={activityStats?.peak_hour || 0}
+            peakHourCount={activityStats?.peak_hour_count || 0}
+          />
+          <RecentActivity
+            isLoading={recentLogsLoading}
+            activities={recentActivities}
+          />
+        </div>
+      )}
 
       <TrackerOverview
         users={overviewActivities?.users || []}
