@@ -123,9 +123,39 @@ func (r *adminRepository) FindUsersWithFilters(params *dto.AdminUserListParams) 
 		query = query.Where("is_active = ?", *params.IsActive)
 	}
 
-	if params.OrgID != nil {
+	if params.WorkspaceID != nil {
+		query = query.Joins("JOIN workspace_members ON workspace_members.user_id = users.id").
+			Where("workspace_members.workspace_id = ? AND workspace_members.is_active = true AND workspace_members.deleted_at IS NULL", *params.WorkspaceID)
+	} else if params.OrgID != nil {
 		query = query.Joins("JOIN organization_members ON organization_members.user_id = users.id").
-			Where("organization_members.organization_id = ?", *params.OrgID)
+			Where("organization_members.organization_id = ? AND organization_members.is_active = true AND organization_members.deleted_at IS NULL", *params.OrgID)
+	}
+
+	if params.OwnerUserID != nil {
+		query = query.Where(`
+			(
+				EXISTS (
+					SELECT 1 FROM organization_members AS scoped_org_members
+					JOIN organizations AS scoped_orgs ON scoped_orgs.id = scoped_org_members.organization_id
+					WHERE scoped_org_members.user_id = users.id
+						AND scoped_orgs.owner_id = ?
+						AND scoped_org_members.is_active = true
+						AND scoped_org_members.deleted_at IS NULL
+						AND scoped_orgs.deleted_at IS NULL
+				)
+				OR EXISTS (
+					SELECT 1 FROM workspace_members AS scoped_workspace_members
+					JOIN workspaces AS scoped_workspaces ON scoped_workspaces.id = scoped_workspace_members.workspace_id
+					JOIN organizations AS scoped_workspace_orgs ON scoped_workspace_orgs.id = scoped_workspaces.organization_id
+					WHERE scoped_workspace_members.user_id = users.id
+						AND (scoped_workspaces.admin_id = ? OR scoped_workspace_orgs.owner_id = ?)
+						AND scoped_workspace_members.is_active = true
+						AND scoped_workspace_members.deleted_at IS NULL
+						AND scoped_workspaces.deleted_at IS NULL
+						AND scoped_workspace_orgs.deleted_at IS NULL
+				)
+			)
+		`, *params.OwnerUserID, *params.OwnerUserID, *params.OwnerUserID)
 	}
 
 	// Count total

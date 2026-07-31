@@ -8,15 +8,17 @@ import "time"
 
 // AdminUserListParams represents query parameters for listing users
 type AdminUserListParams struct {
-	Page       int    `form:"page"`
-	PageSize   int    `form:"page_size"`
-	Search     string `form:"search"`
-	Role       string `form:"role"`
-	SystemRole string `form:"system_role"`
-	IsActive   *bool  `form:"is_active"`
-	OrgID      *uint  `form:"org_id"`
-	SortBy     string `form:"sort_by"`
-	SortOrder  string `form:"sort_order"`
+	Page        int    `form:"page"`
+	PageSize    int    `form:"page_size"`
+	Search      string `form:"search"`
+	Role        string `form:"role"`
+	SystemRole  string `form:"system_role"`
+	IsActive    *bool  `form:"is_active"`
+	OrgID       *uint  `form:"org_id"`
+	WorkspaceID *uint  `form:"workspace_id"`
+	OwnerUserID *uint  `form:"-"`
+	SortBy      string `form:"sort_by"`
+	SortOrder   string `form:"sort_order"`
 }
 
 // AdminUserResponse represents a user in admin responses
