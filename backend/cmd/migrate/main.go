@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/beuphecan/remote-time-tracker/internal/config"
-	"github.com/beuphecan/remote-time-tracker/internal/database"
+	"remote-time-tracker.dev/internal/config"
+	"remote-time-tracker.dev/internal/database"
 )
 
 func main() {

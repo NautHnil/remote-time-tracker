@@ -19,12 +19,6 @@ permissions:
 
 env:
   NODE_VERSION: "20.x"
-  VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://localhost:8080/api/v1' }}
-  VITE_WEBSITE_DOMAIN: ${{ secrets.VITE_WEBSITE_DOMAIN || 'http://localhost:3000' }}
-  VITE_INVITE_WEBSITE_DOMAIN: ${{ secrets.VITE_INVITE_WEBSITE_DOMAIN || 'http://localhost:4000' }}
-  VITE_SCREENSHOT_INTERVAL: ${{ secrets.VITE_SCREENSHOT_INTERVAL || '300000' }}
-  VITE_SYNC_INTERVAL: ${{ secrets.VITE_SYNC_INTERVAL || '60000' }}
-  VITE_PRESENCE_HEARTBEAT_INTERVAL: ${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL || '15000' }}
 
 jobs:
   # ============================================
@@ -143,21 +137,35 @@ jobs:
           rm -rf node_modules
           npm ci
 
-      - name: Create .env file from secrets
+      - name: Set environment variables and generate env.ts
         working-directory: ./electron
         shell: bash
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_WEBSITE_DOMAIN: ${{ secrets.VITE_WEBSITE_DOMAIN }}
+          VITE_INVITE_WEBSITE_DOMAIN: ${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
+          VITE_SCREENSHOT_INTERVAL: ${{ secrets.VITE_SCREENSHOT_INTERVAL }}
+          VITE_SYNC_INTERVAL: ${{ secrets.VITE_SYNC_INTERVAL }}
+          VITE_SYSTEM_LOG_RETENTION_DAYS: ${{ secrets.VITE_SYSTEM_LOG_RETENTION_DAYS }}
+          VITE_PRESENCE_HEARTBEAT_INTERVAL: ${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
         run: |
           cat > .env << 'EOF'
           NODE_ENV=production
-          VITE_API_URL=${{ env.VITE_API_URL }}
-          VITE_WEBSITE_DOMAIN=${{ env.VITE_WEBSITE_DOMAIN }}
-          VITE_INVITE_WEBSITE_DOMAIN=${{ env.VITE_INVITE_WEBSITE_DOMAIN }}
-          VITE_SCREENSHOT_INTERVAL=${{ env.VITE_SCREENSHOT_INTERVAL }}
-          VITE_SYNC_INTERVAL=${{ env.VITE_SYNC_INTERVAL }}
-          VITE_PRESENCE_HEARTBEAT_INTERVAL=${{ env.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          VITE_WEBSITE_DOMAIN=${{ secrets.VITE_WEBSITE_DOMAIN }}
+          VITE_INVITE_WEBSITE_DOMAIN=${{ secrets.VITE_INVITE_WEBSITE_DOMAIN }}
+          VITE_SCREENSHOT_INTERVAL=${{ secrets.VITE_SCREENSHOT_INTERVAL }}
+          VITE_SYNC_INTERVAL=${{ secrets.VITE_SYNC_INTERVAL }}
+          VITE_SYSTEM_LOG_RETENTION_DAYS=${{ secrets.VITE_SYSTEM_LOG_RETENTION_DAYS }}
+          VITE_PRESENCE_HEARTBEAT_INTERVAL=${{ secrets.VITE_PRESENCE_HEARTBEAT_INTERVAL }}
           EOF
           echo "✅ .env file created successfully at: .env"
           ls -la .env
+          echo "🔧 Generating env.ts from secrets..."
+          node scripts/generate-env.js
+          echo ""
+          echo "📋 Generated env.ts content:"
+          cat src/main/env.ts
 
       # ========== macOS specific steps ==========
       - name: Setup macOS native modules
@@ -187,6 +195,7 @@ jobs:
         working-directory: ./electron
         shell: bash
         run: |
+          cat .env
           echo "📦 Packaging for ${{ matrix.platform }}..."
 
           # Build command varies by platform
@@ -418,7 +427,7 @@ jobs:
             | Platform | Type | Download |
             |----------|------|----------|
             | **Windows** | Installer | [Remote Time Tracker Setup ${{ env.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker.Setup.${{ env.VERSION }}.exe) |
-            | **Windows** | Portable | [Remote Time Tracker ${{ env.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker.${{ env.VERSION }}.exe) |
+            | **Windows** | Portable | [Remote Time Tracker Portable ${{ env.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker.Portable.${{ env.VERSION }}.exe) |
             | **macOS** | Apple Silicon (M1/M2/M3) | [Remote Time Tracker-${{ env.VERSION }}-arm64.dmg](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker-${{ env.VERSION }}-arm64.dmg) |
             | **macOS** | Intel (x64) | [Remote Time Tracker-${{ env.VERSION }}-x64.dmg](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker-${{ env.VERSION }}-x64.dmg) |
             | **Linux** | AppImage | [Remote Time Tracker-${{ env.VERSION }}-x86_64.AppImage](https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION_TAG }}/Remote.Time.Tracker-${{ env.VERSION }}-x86_64.AppImage) |

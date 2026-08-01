@@ -34,7 +34,9 @@ export interface OrganizationListItem {
   role: string;
   member_count: number;
   workspace_count: number;
-  is_owner: boolean;
+  is_owner?: boolean;
+  is_active?: boolean;
+  joined_at?: string;
   created_at: string;
 }
 

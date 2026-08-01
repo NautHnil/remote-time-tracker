@@ -132,6 +132,7 @@ type BatchSyncRequest struct {
 	WorkspaceID    *uint                `json:"workspace_id"`    // Default workspace ID for all items
 	TimeLogs       []SyncTimeLogItem    `json:"time_logs"`
 	Screenshots    []SyncScreenshotItem `json:"screenshots"`
+	SystemLogs     []SyncSystemLogItem  `json:"system_logs"`
 	DeviceInfo     *SyncDeviceInfoItem  `json:"device_info"`
 }
 
@@ -182,12 +183,34 @@ type SyncDeviceInfoItem struct {
 	IPAddress  string `json:"ip_address"`
 }
 
+// SyncSystemLogItem represents a system log item to sync from Electron.
+type SyncSystemLogItem struct {
+	LocalID        string    `json:"local_id" binding:"required"`
+	OrganizationID *uint     `json:"organization_id"`
+	WorkspaceID    *uint     `json:"workspace_id"`
+	Source         string    `json:"source"`
+	Level          string    `json:"level"`
+	Component      string    `json:"component"`
+	Message        string    `json:"message"`
+	MessageB64     string    `json:"message_b64"`
+	Details        string    `json:"details"`
+	DetailsB64     string    `json:"details_b64"`
+	StackTrace     string    `json:"stack_trace"`
+	StackTraceB64  string    `json:"stack_trace_b64"`
+	AppVersion     string    `json:"app_version"`
+	DeviceUUID     string    `json:"device_uuid"`
+	OccurredAt     time.Time `json:"occurred_at" binding:"required"`
+	RequestID      string    `json:"request_id"`
+	SessionLocalID string    `json:"session_local_id"`
+}
+
 // BatchSyncResponse represents a batch sync response
 type BatchSyncResponse struct {
 	Success         bool                `json:"success"`
 	Message         string              `json:"message"`
 	TimeLogsSync    SyncResult          `json:"time_logs_sync"`
 	ScreenshotsSync SyncResult          `json:"screenshots_sync"`
+	SystemLogsSync  SyncResult          `json:"system_logs_sync"`
 	DeviceInfo      *DeviceInfoResponse `json:"device_info"`
 	SyncedAt        time.Time           `json:"synced_at"`
 }

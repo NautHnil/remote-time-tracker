@@ -6,7 +6,9 @@
 import React from "react";
 import ModernTimeTracker from "../components/ModernTimeTracker";
 import { OrganizationsView } from "../components/organizations";
+import { SettingsTabId } from "../components/settings/Settings";
 import ScreenshotViewer from "../components/ScreenshotViewer";
+import { UpdateStep } from "../components/settings/UpdateSection";
 import { Settings } from "../components/settings";
 import StatisticsView from "../components/StatisticsView";
 import TasksView from "../components/TasksView";
@@ -17,6 +19,18 @@ import { View } from "../layout";
 interface AppRouterProps {
   currentView: View;
   onNavigateToTracker: () => void;
+  settingsTab: SettingsTabId;
+  onSettingsTabChange: (tab: SettingsTabId) => void;
+  updateState: {
+    version: string;
+    step: UpdateStep;
+    availableVersion: string | null;
+    progress: number;
+    errorMessage: string;
+  };
+  onCheckUpdates: () => void | Promise<void>;
+  onDownloadUpdate: () => void | Promise<void>;
+  onInstallUpdate: () => void | Promise<void>;
 }
 
 // Views that require a workspace to be selected
@@ -38,6 +52,12 @@ const workspaceRequiredViews: View[] = [
 const AppRouter: React.FC<AppRouterProps> = ({
   currentView,
   onNavigateToTracker,
+  settingsTab,
+  onSettingsTabChange,
+  updateState,
+  onCheckUpdates,
+  onDownloadUpdate,
+  onInstallUpdate,
 }) => {
   const { workspaces, currentOrgId, currentWorkspaceId } = useAuth();
 
@@ -72,7 +92,16 @@ const AppRouter: React.FC<AppRouterProps> = ({
     case "workspaces":
       return <WorkspacesView />;
     case "settings":
-      return <Settings />;
+      return (
+        <Settings
+          activeTab={settingsTab}
+          onTabChange={onSettingsTabChange}
+          updateState={updateState}
+          onCheckUpdates={onCheckUpdates}
+          onDownloadUpdate={onDownloadUpdate}
+          onInstallUpdate={onInstallUpdate}
+        />
+      );
     default:
       return <OrganizationsView />;
   }

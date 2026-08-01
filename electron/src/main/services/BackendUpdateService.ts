@@ -9,13 +9,15 @@
  * 5. App downloads through backend (which adds GitHub auth)
  */
 
-import { app, BrowserWindow, dialog, shell } from "electron";
+import { app, BrowserWindow, shell } from "electron";
 import log from "electron-log";
+import { spawn } from "child_process";
 import * as fs from "fs";
 import * as http from "http";
 import * as https from "https";
 import * as path from "path";
 import { AppConfig } from "../config";
+import { deleteFileWithRetries } from "../utils/FileDeletion";
 
 // Configure logging
 log.transports.file.level = "info";
@@ -42,6 +44,10 @@ export interface DownloadProgress {
   transferred: number;
   total: number;
   bytesPerSecond: number;
+}
+
+interface UpdateCheckOptions {
+  allowDevelopment?: boolean;
 }
 
 export type BackendUpdateEvent =
@@ -187,17 +193,18 @@ export class BackendUpdateService {
   /**
    * Check for updates via backend proxy
    */
-  async checkForUpdates(): Promise<{
+  async checkForUpdates(options: UpdateCheckOptions = {}): Promise<{
     success: boolean;
     updateAvailable?: boolean;
     info?: UpdateCheckResponse;
     error?: string;
   }> {
     try {
-      // Skip in development unless testing
+      // Skip in development by default, but allow explicit manual checks.
       if (
         process.env.NODE_ENV === "development" &&
-        process.env.TEST_UPDATES !== "true"
+        process.env.TEST_UPDATES !== "true" &&
+        !options.allowDevelopment
       ) {
         log.info("Skipping update check in development mode");
         this.sendEvent({ type: "update-not-available" });
@@ -247,7 +254,8 @@ export class BackendUpdateService {
    * Download update file through backend proxy
    */
   async downloadUpdate(
-    updateInfo?: UpdateCheckResponse
+    updateInfo?: UpdateCheckResponse,
+    options: UpdateCheckOptions = {}
   ): Promise<{ success: boolean; filePath?: string; error?: string }> {
     try {
       if (this.isDownloading) {
@@ -260,7 +268,7 @@ export class BackendUpdateService {
       const info = updateInfo || this.downloadedUpdateInfo;
       if (!info || !info.files || info.files.length === 0) {
         // Fetch latest update info
-        const checkResult = await this.checkForUpdates();
+        const checkResult = await this.checkForUpdates(options);
         if (!checkResult.updateAvailable || !checkResult.info?.files?.length) {
           this.isDownloading = false;
           return { success: false, error: "No update available to download" };
@@ -397,7 +405,10 @@ export class BackendUpdateService {
 
         if (res.statusCode !== 200) {
           file.close();
-          fs.unlinkSync(destPath);
+          void deleteFileWithRetries(destPath, {
+            fileLabel: path.basename(destPath),
+            logPrefix: "Cleanup",
+          });
           reject(new Error(`Download failed: HTTP ${res.statusCode}`));
           return;
         }
@@ -441,7 +452,10 @@ export class BackendUpdateService {
 
       req.on("error", (e) => {
         file.close();
-        fs.unlinkSync(destPath);
+        void deleteFileWithRetries(destPath, {
+          fileLabel: path.basename(destPath),
+          logPrefix: "Cleanup",
+        });
         reject(e);
       });
 
@@ -476,7 +490,10 @@ export class BackendUpdateService {
 
         if (res.statusCode !== 200) {
           file.close();
-          if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
+          void deleteFileWithRetries(destPath, {
+            fileLabel: path.basename(destPath),
+            logPrefix: "Cleanup",
+          });
           reject(new Error(`Download failed: HTTP ${res.statusCode}`));
           return;
         }
@@ -519,7 +536,10 @@ export class BackendUpdateService {
 
       req.on("error", (e) => {
         file.close();
-        if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
+        void deleteFileWithRetries(destPath, {
+          fileLabel: path.basename(destPath),
+          logPrefix: "Cleanup",
+        });
         reject(e);
       });
     });
@@ -540,40 +560,66 @@ export class BackendUpdateService {
 
     try {
       if (platform === "darwin") {
-        // On macOS, open the DMG and show instructions
-        await shell.openPath(filePath);
-
-        await dialog.showMessageBox({
-          type: "info",
-          title: "Install Update",
-          message: "Update Downloaded Successfully",
-          detail:
-            "The update installer has been opened.\n\n" +
-            "Please follow these steps:\n" +
-            "1. Drag the app to your Applications folder\n" +
-            "2. Replace the existing app when prompted\n" +
-            "3. Restart the application",
-          buttons: ["OK"],
-        });
-
+        this.launchInstallerAfterQuit(filePath, platform);
+        app.quit();
         return { success: true };
       } else if (platform === "win32") {
-        // On Windows, run the installer
-        shell.openPath(filePath);
-        // Quit the app to allow installation
+        const openResult = await shell.openPath(filePath);
+        if (openResult) {
+          return { success: false, error: openResult };
+        }
         setTimeout(() => app.quit(), 1000);
         return { success: true };
       } else {
-        // On Linux, make AppImage executable and run
-        fs.chmodSync(filePath, "755");
-        shell.openPath(filePath);
-        setTimeout(() => app.quit(), 1000);
+        this.launchInstallerAfterQuit(filePath, platform);
+        app.quit();
         return { success: true };
       }
     } catch (error: any) {
       log.error("Install failed:", error);
       return { success: false, error: error?.message || String(error) };
     }
+  }
+
+  private launchInstallerAfterQuit(
+    filePath: string,
+    platform: string
+  ) {
+    if (platform === "darwin") {
+      const child = spawn(
+        "sh",
+        ["-c", 'sleep 1; open "$1"', "sh", filePath],
+        {
+          detached: true,
+          stdio: "ignore",
+        }
+      );
+      child.unref();
+      log.info(`Scheduled macOS installer open after quit: ${filePath}`);
+      return;
+    }
+
+    if (platform === "linux") {
+      fs.chmodSync(filePath, "755");
+      const child = spawn(
+        "sh",
+        [
+          "-c",
+          'sleep 1; chmod +x "$1"; "$1" >/dev/null 2>&1 &',
+          "sh",
+          filePath,
+        ],
+        {
+          detached: true,
+          stdio: "ignore",
+        }
+      );
+      child.unref();
+      log.info(`Scheduled Linux installer open after quit: ${filePath}`);
+      return;
+    }
+
+    throw new Error(`Unsupported platform for deferred install: ${platform}`);
   }
 
   /**

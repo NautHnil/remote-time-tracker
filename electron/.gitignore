@@ -2,6 +2,7 @@ node_modules/
 dist/
 dist-electron/
 .env
+.env.prod
 *.log
 screenshots/
 *.sqlite
@@ -9,3 +10,5 @@ screenshots/
 *.sqlite-shm
 .DS_Store
 Thumbs.db
+# Auto-generated env file
+src/main/env.ts

@@ -6,22 +6,40 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
-	"github.com/beuphecan/remote-time-tracker/internal/service"
-	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/config"
+	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/service"
+	"remote-time-tracker.dev/internal/utils"
 )
 
 // AdminController handles admin-only HTTP requests
 type AdminController struct {
-	adminService service.AdminService
+	adminService     service.AdminService
+	systemService    service.SystemService
+	systemLogService service.SystemLogService
 }
 
 // NewAdminController creates a new admin controller
-func NewAdminController(adminService service.AdminService) *AdminController {
+func NewAdminController(
+	adminService service.AdminService,
+	systemService service.SystemService,
+	systemLogService service.SystemLogService,
+) *AdminController {
 	return &AdminController{
-		adminService: adminService,
+		adminService:     adminService,
+		systemService:    systemService,
+		systemLogService: systemLogService,
 	}
+}
+
+func isSystemAdminRequest(ctx *gin.Context) bool {
+	role, _ := ctx.Get("user_role")
+	if role == "admin" {
+		return true
+	}
+	systemRole, _ := ctx.Get("system_role")
+	return systemRole == "admin"
 }
 
 // ============================================================================
@@ -71,6 +89,39 @@ func (c *AdminController) ListUsers(ctx *gin.Context) {
 	}
 
 	result, err := c.adminService.ListUsers(params)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
+func (c *AdminController) ListUserOptions(ctx *gin.Context) {
+	params := &dto.AdminUserListParams{
+		Page:      parseIntParam(ctx, "page", 1),
+		PageSize:  parseIntParam(ctx, "page_size", 200),
+		Search:    ctx.Query("search"),
+		SortBy:    ctx.Query("sort_by"),
+		SortOrder: ctx.Query("sort_order"),
+	}
+
+	if ctx.Query("org_id") != "" {
+		orgID := uint(parseIntParam(ctx, "org_id", 0))
+		params.OrgID = &orgID
+	}
+
+	if ctx.Query("workspace_id") != "" {
+		workspaceID := uint(parseIntParam(ctx, "workspace_id", 0))
+		params.WorkspaceID = &workspaceID
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
+	result, err := c.adminService.ListUserOptions(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -367,6 +418,11 @@ func (c *AdminController) ListOrganizations(ctx *gin.Context) {
 		params.IsVerified = &isVerified
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListOrganizations(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -394,6 +450,14 @@ func (c *AdminController) GetOrganization(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid organization ID"})
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewOrganization(uint(orgID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "organization access denied"})
+			return
+		}
 	}
 
 	org, err := c.adminService.GetOrganization(uint(orgID))
@@ -558,6 +622,11 @@ func (c *AdminController) ListWorkspaces(ctx *gin.Context) {
 		params.IsArchived = &isArchived
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListWorkspaces(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -585,6 +654,14 @@ func (c *AdminController) GetWorkspace(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid workspace ID"})
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewWorkspace(uint(wsID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "workspace access denied"})
+			return
+		}
 	}
 
 	workspace, err := c.adminService.GetWorkspace(uint(wsID))
@@ -755,6 +832,11 @@ func (c *AdminController) ListTasks(ctx *gin.Context) {
 		params.IsManual = &isManual
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListTasks(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -782,6 +864,14 @@ func (c *AdminController) GetTask(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid task ID"})
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewTask(uint(taskID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "task access denied"})
+			return
+		}
 	}
 
 	task, err := c.adminService.GetTask(uint(taskID))
@@ -926,6 +1016,11 @@ func (c *AdminController) ListTimeLogs(ctx *gin.Context) {
 		}
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListTimeLogs(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -953,6 +1048,14 @@ func (c *AdminController) GetTimeLog(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid time log ID"})
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewTimeLog(uint(tlID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "time log access denied"})
+			return
+		}
 	}
 
 	timeLog, err := c.adminService.GetTimeLog(uint(tlID))
@@ -1125,6 +1228,11 @@ func (c *AdminController) ListScreenshots(ctx *gin.Context) {
 		}
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		userID := ctx.GetUint("userID")
+		params.OwnerUserID = &userID
+	}
+
 	result, err := c.adminService.ListScreenshots(params)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -1154,6 +1262,14 @@ func (c *AdminController) GetScreenshot(ctx *gin.Context) {
 		return
 	}
 
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewScreenshot(uint(ssID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "screenshot access denied"})
+			return
+		}
+	}
+
 	screenshot, err := c.adminService.GetScreenshot(uint(ssID))
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "screenshot not found"})
@@ -1181,6 +1297,14 @@ func (c *AdminController) ViewScreenshot(ctx *gin.Context) {
 	if err != nil {
 		utils.ErrorResponse(ctx, http.StatusBadRequest, "Invalid screenshot ID")
 		return
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		canView, err := c.adminService.CanViewScreenshot(uint(ssID), ctx.GetUint("userID"))
+		if err != nil || !canView {
+			utils.ErrorResponse(ctx, http.StatusForbidden, "Screenshot access denied")
+			return
+		}
 	}
 
 	screenshot, err := c.adminService.GetScreenshot(uint(ssID))
@@ -1253,6 +1377,293 @@ func (c *AdminController) BulkDeleteScreenshots(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "screenshots deleted successfully"})
+}
+
+// ============================================================================
+// SYSTEM LOG MANAGEMENT
+// ============================================================================
+
+// ListSystemLogs lists all system logs
+// @Summary List system logs (admin only)
+// @Description Get paginated list of backend and Electron system logs with filtering options
+// @Tags admin
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Items per page" default(20)
+// @Param search query string false "Search by message/component/request/device"
+// @Param user_id query int false "Filter by user"
+// @Param org_id query int false "Filter by organization"
+// @Param workspace_id query int false "Filter by workspace"
+// @Param source query string false "Filter by source"
+// @Param level query string false "Filter by level"
+// @Param device_uuid query string false "Filter by device UUID"
+// @Param start_date query string false "Filter start date (RFC3339)"
+// @Param end_date query string false "Filter end date (RFC3339)"
+// @Success 200 {object} dto.AdminSystemLogListResponse "System log list"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Forbidden"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /admin/system-logs [get]
+func (c *AdminController) ListSystemLogs(ctx *gin.Context) {
+	params := &dto.AdminSystemLogListParams{
+		Page:       parseIntParam(ctx, "page", 1),
+		PageSize:   parseIntParam(ctx, "page_size", 20),
+		Search:     ctx.Query("search"),
+		Source:     ctx.Query("source"),
+		Level:      ctx.Query("level"),
+		DeviceUUID: ctx.Query("device_uuid"),
+		SortBy:     ctx.Query("sort_by"),
+		SortOrder:  ctx.Query("sort_order"),
+	}
+
+	if ctx.Query("user_id") != "" {
+		userID := uint(parseIntParam(ctx, "user_id", 0))
+		params.UserID = &userID
+	}
+
+	if ctx.Query("org_id") != "" {
+		orgID := uint(parseIntParam(ctx, "org_id", 0))
+		params.OrgID = &orgID
+	}
+
+	if ctx.Query("workspace_id") != "" {
+		workspaceID := uint(parseIntParam(ctx, "workspace_id", 0))
+		params.WorkspaceID = &workspaceID
+	}
+
+	if ctx.Query("start_date") != "" {
+		if parsed, err := time.Parse(time.RFC3339, ctx.Query("start_date")); err == nil {
+			params.StartDate = &parsed
+		}
+	}
+
+	if ctx.Query("end_date") != "" {
+		if parsed, err := time.Parse(time.RFC3339, ctx.Query("end_date")); err == nil {
+			params.EndDate = &parsed
+		}
+	}
+
+	result, err := c.adminService.ListSystemLogs(params)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, result)
+}
+
+// GetSystemLog gets a system log by ID
+// @Summary Get system log (admin only)
+// @Description Get detailed information for a specific system log entry
+// @Tags admin
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "System log ID"
+// @Success 200 {object} dto.AdminSystemLogResponse "System log details"
+// @Failure 400 {object} dto.ErrorResponse "Invalid system log ID"
+// @Failure 404 {object} dto.ErrorResponse "System log not found"
+// @Router /admin/system-logs/{id} [get]
+func (c *AdminController) GetSystemLog(ctx *gin.Context) {
+	systemLogID, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid system log ID"})
+		return
+	}
+
+	systemLog, err := c.adminService.GetSystemLog(uint(systemLogID))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "system log not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, systemLog)
+}
+
+// CleanupSystemLogs removes expired system logs using retention policy
+// @Summary Cleanup system logs (admin only)
+// @Description Delete old system logs using the configured retention policy or an override provided by admin
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.AdminCleanupSystemLogsRequest false "Optional retention override"
+// @Success 200 {object} dto.AdminCleanupSystemLogsResponse "Cleanup result"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 500 {object} dto.ErrorResponse "Cleanup failed"
+// @Router /admin/system-logs/cleanup [post]
+func (c *AdminController) CleanupSystemLogs(ctx *gin.Context) {
+	var req dto.AdminCleanupSystemLogsRequest
+	if ctx.Request.ContentLength > 0 {
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
+	retentionDays := config.AppConfig.Log.SystemLogRetentionDays
+	if req.RetentionDays != nil {
+		retentionDays = *req.RetentionDays
+	}
+
+	deletedCount, err := c.systemLogService.CleanupExpiredLogs(retentionDays)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.AdminCleanupSystemLogsResponse{
+		DeletedCount:  deletedCount,
+		RetentionDays: retentionDays,
+	})
+}
+
+// GetSystemLogPolicy returns retention policy for system logs
+// @Summary Get system log policy (admin only)
+// @Description Get the configured system log retention and cleanup interval
+// @Tags admin
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.AdminSystemLogPolicyResponse "System log policy"
+// @Router /admin/system-logs/policy [get]
+func (c *AdminController) GetSystemLogPolicy(ctx *gin.Context) {
+	policy := c.systemLogService.GetRetentionPolicy()
+	ctx.JSON(http.StatusOK, dto.AdminSystemLogPolicyResponse{
+		RetentionDays:        policy.RetentionDays,
+		CleanupInterval:      policy.CleanupInterval.String(),
+		CleanupIntervalHuman: policy.CleanupInterval.Round(time.Minute).String(),
+		RuntimeOnly:          false,
+	})
+}
+
+// ListSystemConfigs returns supported system-wide config values for admin UI
+// @Summary List system configs (admin only)
+// @Description Get supported persisted system configuration values with metadata
+// @Tags admin
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.AdminSystemConfigListResponse "System configs"
+// @Router /admin/system-configs [get]
+func (c *AdminController) ListSystemConfigs(ctx *gin.Context) {
+	configs, err := c.systemService.ListSystemConfigs()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := dto.AdminSystemConfigListResponse{
+		Configs: make([]dto.AdminSystemConfigResponse, 0, len(configs)),
+	}
+
+	for _, configEntry := range configs {
+		response.Configs = append(response.Configs, dto.AdminSystemConfigResponse{
+			Key:         configEntry.Key,
+			Label:       configEntry.Label,
+			Description: configEntry.Description,
+			Category:    configEntry.Category,
+			ValueType:   configEntry.ValueType,
+			Value:       configEntry.Value,
+			Default:     configEntry.Default,
+			UpdatedAt:   configEntry.UpdatedAt,
+		})
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
+// UpdateSystemConfig updates one supported system config
+// @Summary Update system config (admin only)
+// @Description Persist and apply a supported system configuration value
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param key path string true "Config key"
+// @Param request body dto.AdminUpdateSystemConfigRequest true "Updated config value"
+// @Success 200 {object} dto.AdminSystemConfigResponse "Updated config"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Router /admin/system-configs/{key} [put]
+func (c *AdminController) UpdateSystemConfig(ctx *gin.Context) {
+	var req dto.AdminUpdateSystemConfigRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	updatedConfig, err := c.systemService.UpdateSystemConfig(ctx.Param("key"), req.Value)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, dto.AdminSystemConfigResponse{
+		Key:         updatedConfig.Key,
+		Label:       updatedConfig.Label,
+		Description: updatedConfig.Description,
+		Category:    updatedConfig.Category,
+		ValueType:   updatedConfig.ValueType,
+		Value:       updatedConfig.Value,
+		Default:     updatedConfig.Default,
+		UpdatedAt:   updatedConfig.UpdatedAt,
+	})
+}
+
+// UpdateSystemLogPolicy updates runtime retention policy for system logs
+// @Summary Update system log policy (admin only)
+// @Description Update runtime system log retention and cleanup interval. Changes apply immediately but do not persist across restart.
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.AdminUpdateSystemLogPolicyRequest true "Updated system log policy"
+// @Success 200 {object} dto.AdminSystemLogPolicyResponse "Updated system log policy"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Router /admin/system-logs/policy [put]
+func (c *AdminController) UpdateSystemLogPolicy(ctx *gin.Context) {
+	var req dto.AdminUpdateSystemLogPolicyRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	policy := c.systemLogService.GetRetentionPolicy()
+	retentionDays := policy.RetentionDays
+	cleanupInterval := policy.CleanupInterval
+
+	if req.RetentionDays != nil {
+		retentionDays = *req.RetentionDays
+	}
+
+	if req.CleanupInterval != "" {
+		parsed, err := time.ParseDuration(req.CleanupInterval)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid cleanup_interval duration"})
+			return
+		}
+		cleanupInterval = parsed
+	}
+
+	if retentionDays < 1 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "retention_days must be at least 1"})
+		return
+	}
+
+	if cleanupInterval < time.Minute {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "cleanup_interval must be at least 1m"})
+		return
+	}
+
+	c.systemLogService.UpdateRetentionPolicy(retentionDays, cleanupInterval)
+	config.AppConfig.Log.SystemLogRetentionDays = retentionDays
+	config.AppConfig.Log.SystemLogCleanupInterval = cleanupInterval
+
+	updatedPolicy := c.systemLogService.GetRetentionPolicy()
+	ctx.JSON(http.StatusOK, dto.AdminSystemLogPolicyResponse{
+		RetentionDays:        updatedPolicy.RetentionDays,
+		CleanupInterval:      updatedPolicy.CleanupInterval.String(),
+		CleanupIntervalHuman: updatedPolicy.CleanupInterval.Round(time.Minute).String(),
+		RuntimeOnly:          false,
+	})
 }
 
 // ============================================================================
@@ -1331,6 +1742,8 @@ func (c *AdminController) GetTrendStats(ctx *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param limit query int false "Number of top users" default(10)
+// @Param start_date query string false "Start date (YYYY-MM-DD)"
+// @Param end_date query string false "End date (YYYY-MM-DD)"
 // @Success 200 {array} dto.AdminUserPerformance "User performance list"
 // @Failure 401 {object} dto.ErrorResponse "Unauthorized"
 // @Failure 403 {object} dto.ErrorResponse "Forbidden"
@@ -1338,8 +1751,46 @@ func (c *AdminController) GetTrendStats(ctx *gin.Context) {
 // @Router /admin/stats/user-performance [get]
 func (c *AdminController) GetUserPerformanceStats(ctx *gin.Context) {
 	limit := parseIntParam(ctx, "limit", 10)
+	var startDate *time.Time
+	var endDate *time.Time
+	var userID *uint
+	var orgID *uint
+	var workspaceID *uint
+	var ownerUserID *uint
 
-	stats, err := c.adminService.GetUserPerformanceStats(limit)
+	if ctx.Query("start_date") != "" {
+		if t, err := time.Parse("2006-01-02", ctx.Query("start_date")); err == nil {
+			startDate = &t
+		}
+	}
+
+	if ctx.Query("end_date") != "" {
+		if t, err := time.Parse("2006-01-02", ctx.Query("end_date")); err == nil {
+			endDate = &t
+		}
+	}
+
+	if ctx.Query("user_id") != "" {
+		value := uint(parseIntParam(ctx, "user_id", 0))
+		userID = &value
+	}
+
+	if ctx.Query("org_id") != "" {
+		value := uint(parseIntParam(ctx, "org_id", 0))
+		orgID = &value
+	}
+
+	if ctx.Query("workspace_id") != "" {
+		value := uint(parseIntParam(ctx, "workspace_id", 0))
+		workspaceID = &value
+	}
+
+	if !isSystemAdminRequest(ctx) {
+		value := ctx.GetUint("userID")
+		ownerUserID = &value
+	}
+
+	stats, err := c.adminService.GetUserPerformanceStats(limit, startDate, endDate, userID, orgID, workspaceID, ownerUserID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

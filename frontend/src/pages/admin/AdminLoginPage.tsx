@@ -17,10 +17,12 @@ const AdminLoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Redirect if already authenticated as admin
+  // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user?.system_role === "admin") {
-      navigate("/admin/dashboard");
+    if (isAuthenticated && user) {
+      const isSystemAdmin =
+        user.system_role === "admin" || user.role === "admin";
+      navigate(isSystemAdmin ? "/admin/dashboard" : "/admin/tasks");
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -42,16 +44,10 @@ const AdminLoginPage: React.FC = () => {
 
     try {
       await login(email, password);
-
-      // Check if user is admin after login
       const currentUser = useAuthStore.getState().user;
-      if (currentUser?.system_role !== "admin") {
-        setLocalError("Access denied. Admin privileges required.");
-        useAuthStore.getState().logout();
-        return;
-      }
-
-      navigate("/admin/dashboard");
+      const isSystemAdmin =
+        currentUser?.system_role === "admin" || currentUser?.role === "admin";
+      navigate(isSystemAdmin ? "/admin/dashboard" : "/admin/tasks");
     } catch (err: any) {
       setLocalError(err.message || "Login failed");
     }

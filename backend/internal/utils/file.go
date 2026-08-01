@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/config"
+	"remote-time-tracker.dev/internal/config"
 )
 
 // SaveUploadedFile saves an uploaded file to disk

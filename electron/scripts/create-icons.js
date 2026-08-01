@@ -34,22 +34,22 @@ const createSVGIcon = (size = 512) => {
       <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
     </linearGradient>
   </defs>
-  
+
   <circle cx="256" cy="256" r="240" fill="url(#grad1)"/>
   <circle cx="256" cy="256" r="200" fill="white" opacity="0.9"/>
-  
+
   <g stroke="#1d4ed8" stroke-width="6" opacity="0.7">
     <line x1="256" y1="76" x2="256" y2="106"/>
     <line x1="436" y1="256" x2="406" y2="256"/>
     <line x1="256" y1="436" x2="256" y2="406"/>
     <line x1="76" y1="256" x2="106" y2="256"/>
   </g>
-  
+
   <g stroke="#1d4ed8" stroke-width="10" stroke-linecap="round">
     <line x1="256" y1="256" x2="206" y2="156"/>
     <line x1="256" y1="256" x2="356" y2="206"/>
   </g>
-  
+
   <circle cx="256" cy="256" r="16" fill="#1d4ed8"/>
   <circle cx="256" cy="380" r="24" fill="#ef4444"/>
 </svg>`;
@@ -101,7 +101,7 @@ async function main() {
     } catch (error) {
       console.error("\n❌ Failed to install dependencies");
       console.error(
-        "💡 Try: cd electron && npm install --no-save sharp png2icons\n"
+        "💡 Try: cd electron && npm install --no-save sharp png2icons\n",
       );
       process.exit(1);
     }
@@ -124,6 +124,8 @@ async function main() {
     { name: "icon-16.png", size: 16 },
     { name: "tray-icon.png", size: 32 }, // Tray
     { name: "tray-icon@2x.png", size: 64 },
+    { name: "tray-iconTemplate.png", size: 16 }, // macOS template (will be set as template image)
+    { name: "tray-iconTemplate@2x.png", size: 32 },
   ];
 
   for (const { name, size } of sizes) {
@@ -155,6 +157,17 @@ async function main() {
       console.log("  ✅ icon.ico created");
     } else {
       throw new Error("ICO output is empty");
+    }
+
+    // Create tray icon ICO for Windows (smaller sizes only)
+    const trayPngBuffers = [
+      fs.readFileSync(path.join(assetsDir, "icon-32.png")),
+      fs.readFileSync(path.join(assetsDir, "icon-16.png")),
+    ];
+    const trayOutput = png2icons.createICO(trayPngBuffers);
+    if (trayOutput && trayOutput.length > 0) {
+      fs.writeFileSync(path.join(assetsDir, "tray-icon.ico"), trayOutput);
+      console.log("  ✅ tray-icon.ico created");
     }
   } catch (error) {
     console.log("  ⚠️  Could not create ICO:", error.message);

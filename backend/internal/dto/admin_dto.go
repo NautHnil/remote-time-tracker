@@ -8,15 +8,17 @@ import "time"
 
 // AdminUserListParams represents query parameters for listing users
 type AdminUserListParams struct {
-	Page       int    `form:"page"`
-	PageSize   int    `form:"page_size"`
-	Search     string `form:"search"`
-	Role       string `form:"role"`
-	SystemRole string `form:"system_role"`
-	IsActive   *bool  `form:"is_active"`
-	OrgID      *uint  `form:"org_id"`
-	SortBy     string `form:"sort_by"`
-	SortOrder  string `form:"sort_order"`
+	Page        int    `form:"page"`
+	PageSize    int    `form:"page_size"`
+	Search      string `form:"search"`
+	Role        string `form:"role"`
+	SystemRole  string `form:"system_role"`
+	IsActive    *bool  `form:"is_active"`
+	OrgID       *uint  `form:"org_id"`
+	WorkspaceID *uint  `form:"workspace_id"`
+	OwnerUserID *uint  `form:"-"`
+	SortBy      string `form:"sort_by"`
+	SortOrder   string `form:"sort_order"`
 }
 
 // AdminUserResponse represents a user in admin responses
@@ -155,14 +157,15 @@ type AdminTimeLogSummary struct {
 
 // AdminOrgListParams represents query parameters for listing organizations
 type AdminOrgListParams struct {
-	Page       int    `form:"page"`
-	PageSize   int    `form:"page_size"`
-	Search     string `form:"search"`
-	UserID     *uint  `form:"user_id"`
-	IsActive   *bool  `form:"is_active"`
-	IsVerified *bool  `form:"is_verified"`
-	SortBy     string `form:"sort_by"`
-	SortOrder  string `form:"sort_order"`
+	Page        int    `form:"page"`
+	PageSize    int    `form:"page_size"`
+	Search      string `form:"search"`
+	UserID      *uint  `form:"user_id"`
+	OwnerUserID *uint  `form:"-"`
+	IsActive    *bool  `form:"is_active"`
+	IsVerified  *bool  `form:"is_verified"`
+	SortBy      string `form:"sort_by"`
+	SortOrder   string `form:"sort_order"`
 }
 
 // AdminOrgResponse represents an organization in admin responses
@@ -239,15 +242,16 @@ type AdminVerifyOrgRequest struct {
 
 // AdminWorkspaceListParams represents query parameters for listing workspaces
 type AdminWorkspaceListParams struct {
-	Page       int    `form:"page"`
-	PageSize   int    `form:"page_size"`
-	Search     string `form:"search"`
-	UserID     *uint  `form:"user_id"`
-	OrgID      *uint  `form:"org_id"`
-	IsActive   *bool  `form:"is_active"`
-	IsArchived *bool  `form:"is_archived"`
-	SortBy     string `form:"sort_by"`
-	SortOrder  string `form:"sort_order"`
+	Page        int    `form:"page"`
+	PageSize    int    `form:"page_size"`
+	Search      string `form:"search"`
+	UserID      *uint  `form:"user_id"`
+	OrgID       *uint  `form:"org_id"`
+	OwnerUserID *uint  `form:"-"`
+	IsActive    *bool  `form:"is_active"`
+	IsArchived  *bool  `form:"is_archived"`
+	SortBy      string `form:"sort_by"`
+	SortOrder   string `form:"sort_order"`
 }
 
 // AdminWorkspaceResponse represents a workspace in admin responses
@@ -322,6 +326,7 @@ type AdminTaskListParams struct {
 	UserID      *uint  `form:"user_id"`
 	OrgID       *uint  `form:"org_id"`
 	WorkspaceID *uint  `form:"workspace_id"`
+	OwnerUserID *uint  `form:"-"`
 	Status      string `form:"status"`
 	IsManual    *bool  `form:"is_manual"`
 	SortBy      string `form:"sort_by"`
@@ -391,6 +396,7 @@ type AdminTimeLogListParams struct {
 	UserID      *uint      `form:"user_id"`
 	OrgID       *uint      `form:"org_id"`
 	WorkspaceID *uint      `form:"workspace_id"`
+	OwnerUserID *uint      `form:"-"`
 	TaskID      *uint      `form:"task_id"`
 	Status      string     `form:"status"`
 	IsApproved  *bool      `form:"is_approved"`
@@ -464,6 +470,7 @@ type AdminScreenshotListParams struct {
 	UserID      *uint      `form:"user_id"`
 	OrgID       *uint      `form:"org_id"`
 	WorkspaceID *uint      `form:"workspace_id"`
+	OwnerUserID *uint      `form:"-"`
 	TaskID      *uint      `form:"task_id"`
 	TimeLogID   *uint      `form:"timelog_id"`
 	StartDate   *time.Time `form:"start_date"`
@@ -501,6 +508,105 @@ type AdminScreenshotResponse struct {
 type AdminScreenshotListResponse struct {
 	Screenshots []AdminScreenshotResponse `json:"screenshots"`
 	Pagination  AdminPaginationResponse   `json:"pagination"`
+}
+
+// ============================================================================
+// SYSTEM LOGS
+// ============================================================================
+
+// AdminSystemLogListParams represents query parameters for listing system logs
+type AdminSystemLogListParams struct {
+	Page        int        `form:"page"`
+	PageSize    int        `form:"page_size"`
+	Search      string     `form:"search"`
+	UserID      *uint      `form:"user_id"`
+	OrgID       *uint      `form:"org_id"`
+	WorkspaceID *uint      `form:"workspace_id"`
+	Source      string     `form:"source"`
+	Level       string     `form:"level"`
+	DeviceUUID  string     `form:"device_uuid"`
+	StartDate   *time.Time `form:"start_date"`
+	EndDate     *time.Time `form:"end_date"`
+	SortBy      string     `form:"sort_by"`
+	SortOrder   string     `form:"sort_order"`
+}
+
+// AdminSystemLogResponse represents a system log in admin responses
+type AdminSystemLogResponse struct {
+	ID             uint      `json:"id"`
+	UserID         *uint     `json:"user_id"`
+	UserEmail      string    `json:"user_email"`
+	UserName       string    `json:"user_name"`
+	DeviceID       *uint     `json:"device_id"`
+	OrganizationID *uint     `json:"organization_id"`
+	OrgName        string    `json:"org_name"`
+	WorkspaceID    *uint     `json:"workspace_id"`
+	WorkspaceName  string    `json:"workspace_name"`
+	Source         string    `json:"source"`
+	Level          string    `json:"level"`
+	Component      string    `json:"component"`
+	Message        string    `json:"message"`
+	Details        string    `json:"details"`
+	StackTrace     string    `json:"stack_trace"`
+	AppVersion     string    `json:"app_version"`
+	DeviceUUID     string    `json:"device_uuid"`
+	RequestID      string    `json:"request_id"`
+	SessionLocalID string    `json:"session_local_id"`
+	OccurredAt     time.Time `json:"occurred_at"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+// AdminSystemLogListResponse represents system log list response
+type AdminSystemLogListResponse struct {
+	SystemLogs []AdminSystemLogResponse `json:"system_logs"`
+	Pagination AdminPaginationResponse  `json:"pagination"`
+}
+
+// AdminCleanupSystemLogsRequest represents request to clean up old system logs
+type AdminCleanupSystemLogsRequest struct {
+	RetentionDays *int `json:"retention_days"`
+}
+
+// AdminCleanupSystemLogsResponse represents cleanup result
+type AdminCleanupSystemLogsResponse struct {
+	DeletedCount  int64 `json:"deleted_count"`
+	RetentionDays int   `json:"retention_days"`
+}
+
+// AdminSystemLogPolicyResponse represents system log retention policy info
+type AdminSystemLogPolicyResponse struct {
+	RetentionDays        int    `json:"retention_days"`
+	CleanupInterval      string `json:"cleanup_interval"`
+	CleanupIntervalHuman string `json:"cleanup_interval_human"`
+	RuntimeOnly          bool   `json:"runtime_only"`
+}
+
+// AdminUpdateSystemLogPolicyRequest represents request to update system log policy
+type AdminUpdateSystemLogPolicyRequest struct {
+	RetentionDays   *int   `json:"retention_days"`
+	CleanupInterval string `json:"cleanup_interval"`
+}
+
+// AdminSystemConfigResponse represents a system-wide configuration entry
+type AdminSystemConfigResponse struct {
+	Key         string     `json:"key"`
+	Label       string     `json:"label"`
+	Description string     `json:"description"`
+	Category    string     `json:"category"`
+	ValueType   string     `json:"value_type"`
+	Value       string     `json:"value"`
+	Default     string     `json:"default"`
+	UpdatedAt   *time.Time `json:"updated_at"`
+}
+
+// AdminSystemConfigListResponse represents the list of supported system configs
+type AdminSystemConfigListResponse struct {
+	Configs []AdminSystemConfigResponse `json:"configs"`
+}
+
+// AdminUpdateSystemConfigRequest represents request to update one system config
+type AdminUpdateSystemConfigRequest struct {
+	Value string `json:"value" binding:"required"`
 }
 
 // AdminBulkDeleteRequest represents bulk delete request
@@ -561,12 +667,20 @@ type AdminUserStats struct {
 
 // AdminUserPerformance represents user performance data
 type AdminUserPerformance struct {
-	UserID        uint   `json:"user_id"`
-	UserName      string `json:"user_name"`
-	Email         string `json:"email"`
-	TotalDuration int64  `json:"total_duration"`
-	TaskCount     int64  `json:"task_count"`
-	Rank          int    `json:"rank"`
+	UserID             uint       `json:"user_id"`
+	UserName           string     `json:"user_name"`
+	Email              string     `json:"email"`
+	TotalDuration      int64      `json:"total_duration"`
+	ApprovedDuration   int64      `json:"approved_duration"`
+	TaskCount          int64      `json:"task_count"`
+	SessionCount       int64      `json:"session_count"`
+	ApprovedSessions   int64      `json:"approved_sessions"`
+	ActiveDays         int64      `json:"active_days"`
+	AvgDailyDuration   int64      `json:"avg_daily_duration"`
+	AvgSessionDuration int64      `json:"avg_session_duration"`
+	ScreenshotCount    int64      `json:"screenshot_count"`
+	LastActivityAt     *time.Time `json:"last_activity_at"`
+	Rank               int        `json:"rank"`
 }
 
 // AdminOrgStats represents organization statistics
@@ -592,12 +706,14 @@ type AdminTopWorkspace struct {
 
 // AdminActivityStats represents activity statistics
 type AdminActivityStats struct {
-	TodayDuration    int64             `json:"today_duration"`
-	TodayActiveUsers int64             `json:"today_active_users"`
-	TodayScreenshots int64             `json:"today_screenshots"`
-	ActivityByHour   []AdminHourlyStat `json:"activity_by_hour"`
-	PeakHour         int               `json:"peak_hour"`
-	PeakHourCount    int64             `json:"peak_hour_count"`
+	TodayDuration          int64             `json:"today_duration"`
+	TodayActiveUsers       int64             `json:"today_active_users"` // Backward compatibility: same as users_with_activity_today
+	UsersWithActivityToday int64             `json:"users_with_activity_today"`
+	WorkingUsersRealtime   int64             `json:"working_users_realtime"`
+	TodayScreenshots       int64             `json:"today_screenshots"`
+	ActivityByHour         []AdminHourlyStat `json:"activity_by_hour"`
+	PeakHour               int               `json:"peak_hour"`
+	PeakHourCount          int64             `json:"peak_hour_count"`
 }
 
 // AdminHourlyStat represents hourly statistics

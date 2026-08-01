@@ -34,7 +34,10 @@ export const authService = {
    * Admin login
    */
   login: (email: string, password: string) =>
-    apiClient.post<AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, { email, password }),
+    apiClient.post<AuthResponse>(API_ENDPOINTS.AUTH.CMS_LOGIN, {
+      email,
+      password,
+    }),
 
   /**
    * Get current user

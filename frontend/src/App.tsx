@@ -1,11 +1,14 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AdminLayout, AdminProtectedRoute } from "./components/admin";
+import DownloadPage from "./pages/DownloadPage";
 import JoinOrganizationPage from "./pages/JoinOrganizationPage";
 import {
   AdminDashboardPage,
   AdminLoginPage,
   AdminOrganizationsPage,
   AdminScreenshotsPage,
+  AdminSystemLogsPage,
+  AdminSystemSettingsPage,
   AdminStatisticsPage,
   AdminTasksPage,
   AdminTimeLogsPage,
@@ -19,6 +22,7 @@ function InviteRoute() {
       <Routes>
         {/* Public route - Join organization via invite link */}
         <Route path="/join/:inviteCode" element={<JoinOrganizationPage />} />
+        <Route path="/download" element={<DownloadPage />} />
 
         {/* Default redirect to home */}
         <Route path="/" element={<Navigate to="/" replace />} />
@@ -34,6 +38,8 @@ function BaseRoute() {
       <Routes>
         {/* Legacy login redirect to admin login */}
         <Route path="/login" element={<Navigate to="/admin/login" replace />} />
+        <Route path="/join/:inviteCode" element={<JoinOrganizationPage />} />
+        <Route path="/download" element={<DownloadPage />} />
 
         {/* Admin Login - Always accessible */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -55,6 +61,8 @@ function BaseRoute() {
           <Route path="tasks" element={<AdminTasksPage />} />
           <Route path="timelogs" element={<AdminTimeLogsPage />} />
           <Route path="screenshots" element={<AdminScreenshotsPage />} />
+          <Route path="system-logs" element={<AdminSystemLogsPage />} />
+          <Route path="system-settings" element={<AdminSystemSettingsPage />} />
           <Route path="statistics" element={<AdminStatisticsPage />} />
         </Route>
 

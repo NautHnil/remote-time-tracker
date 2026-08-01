@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/service"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/service"
 )
 
 // AdminPresenceController handles admin presence stream

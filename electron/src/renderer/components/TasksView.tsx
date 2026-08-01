@@ -98,12 +98,45 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
   }, []);
 
   const handleDelete = useCallback(
-    async (id: number) => {
-      if (!confirm("Are you sure you want to delete this task?")) return;
-
+    async (task: Task) => {
       try {
-        const result = await window.electronAPI.tasks.delete(id);
+        const trackingStatus = await window.electronAPI.timeTracker.getStatus();
+        const isTaskCurrentlyRunning =
+          trackingStatus.isTracking &&
+          trackingStatus.currentTimeLog?.isManualTask &&
+          trackingStatus.currentTimeLog?.taskId === task.id;
+
+        if (isTaskCurrentlyRunning) {
+          const confirmStop = confirm(
+            `Task "${task.title}" is currently running. Stop it before deleting?`,
+          );
+          if (!confirmStop) return;
+
+          await window.electronAPI.timeTracker.stop(task.title);
+          await presenceService.heartbeat("idle");
+          await window.electronAPI.tasks.update(task.id, {
+            status: "completed",
+          });
+
+          const confirmDeleteAfterStop = confirm(
+            `Task "${task.title}" has been stopped. Delete this task and all screenshots linked to it?`,
+          );
+          if (!confirmDeleteAfterStop) {
+            await loadTasks();
+            return;
+          }
+        } else {
+          const confirmDelete = confirm(
+            `Delete task "${task.title}" and all screenshots linked to it?`,
+          );
+          if (!confirmDelete) return;
+        }
+
+        const result = await window.electronAPI.tasks.delete(task.id);
         if (result.success) {
+          if (selectedTask?.id === task.id) {
+            setSelectedTask(null);
+          }
           await loadTasks();
         } else {
           alert(result.message || "Failed to delete task");
@@ -113,7 +146,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
         alert(error.message || "An error occurred while deleting task");
       }
     },
-    [loadTasks],
+    [loadTasks, selectedTask],
   );
 
   const handleCreateTask = useCallback(async () => {
@@ -150,6 +183,17 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
   const handleStartTask = useCallback(
     async (task: Task) => {
       try {
+        // Check screen capture permission first (macOS/Linux)
+        // This will show the native permission dialog if not granted
+        const permissionResult =
+          await window.electronAPI.screenshots.requestPermission();
+        console.log("🔐 Permission check result:", permissionResult);
+
+        if (!permissionResult.granted) {
+          // Permission not granted - dialog was already shown by main process
+          return;
+        }
+
         // Only allow starting manual tasks
         if (!task.is_manual) {
           alert(
@@ -583,7 +627,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete(task.id);
+                                handleDelete(task);
                               }}
                               className="p-1.5 text-red-400 hover:text-red-300 transition-colors rounded hover:bg-red-500/10"
                               title="Delete"
@@ -606,7 +650,7 @@ export default function TasksView({ onNavigateToTracker }: TasksViewProps) {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDelete(task.id);
+                                handleDelete(task);
                               }}
                               className="p-1.5 text-red-400 hover:text-red-300 transition-colors rounded hover:bg-red-500/10"
                               title="Delete"

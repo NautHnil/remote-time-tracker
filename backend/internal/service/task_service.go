@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
-	"github.com/beuphecan/remote-time-tracker/internal/models"
-	"github.com/beuphecan/remote-time-tracker/internal/repository"
 	"github.com/google/uuid"
+	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/models"
+	"remote-time-tracker.dev/internal/repository"
 )
 
 // TaskService handles task business logic
@@ -21,13 +21,18 @@ type TaskService interface {
 }
 
 type taskService struct {
-	taskRepo repository.TaskRepository
+	taskRepo       repository.TaskRepository
+	screenshotRepo repository.ScreenshotRepository
 }
 
 // NewTaskService creates a new task service
-func NewTaskService(taskRepo repository.TaskRepository) TaskService {
+func NewTaskService(
+	taskRepo repository.TaskRepository,
+	screenshotRepo repository.ScreenshotRepository,
+) TaskService {
 	return &taskService{
-		taskRepo: taskRepo,
+		taskRepo:       taskRepo,
+		screenshotRepo: screenshotRepo,
 	}
 }
 
@@ -137,7 +142,7 @@ func (s *taskService) Delete(id, userID uint) error {
 		return errors.New("unauthorized access to task")
 	}
 
-	return s.taskRepo.Delete(id)
+	return deleteTaskAndScreenshots(task, s.taskRepo, s.screenshotRepo)
 }
 
 func (s *taskService) GetActiveTasks(userID uint) ([]dto.TaskWithStats, error) {

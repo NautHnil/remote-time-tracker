@@ -8,7 +8,14 @@ import {
   useConfirmDialog,
   usePromptDialog,
 } from "../../dialogs/index";
-import { Card, SectionHeader, StatCard } from "../ui";
+import { Card, SectionHeader } from "../ui";
+
+interface StorageBreakdown {
+  applicationCache: number;
+  tempCaptureFiles: number;
+  databaseCache: number;
+  syncedLogs: number;
+}
 
 interface ScreenshotPathInfo {
   path: string;
@@ -16,9 +23,24 @@ interface ScreenshotPathInfo {
   defaultPath: string;
 }
 
+const EMPTY_STORAGE_BREAKDOWN: StorageBreakdown = {
+  applicationCache: 0,
+  tempCaptureFiles: 0,
+  databaseCache: 0,
+  syncedLogs: 0,
+};
+
 export function StorageTab() {
   const [storageSize, setStorageSize] = useState<number>(0);
+  const [storageBreakdown, setStorageBreakdown] = useState<StorageBreakdown>(
+    EMPTY_STORAGE_BREAKDOWN,
+  );
+  const [loadingStorageSize, setLoadingStorageSize] = useState(false);
   const [cleaningUp, setCleaningUp] = useState(false);
+  const [clearingAppCache, setClearingAppCache] = useState(false);
+  const [cleaningTemp, setCleaningTemp] = useState(false);
+  const [clearingSqliteCache, setClearingSqliteCache] = useState(false);
+  const [clearingLogs, setClearingLogs] = useState(false);
   const [screenshotPath, setScreenshotPath] =
     useState<ScreenshotPathInfo | null>(null);
   const [changingPath, setChangingPath] = useState(false);
@@ -35,13 +57,17 @@ export function StorageTab() {
   }, []);
 
   const loadStorageSize = async () => {
+    setLoadingStorageSize(true);
     try {
       const result = await window.electronAPI.storage.getSize();
       if (result.success) {
-        setStorageSize(result.totalSize);
+        setStorageSize(result.totalSize || 0);
+        setStorageBreakdown(result.breakdown || EMPTY_STORAGE_BREAKDOWN);
       }
     } catch (error) {
       console.error("Error loading storage size:", error);
+    } finally {
+      setLoadingStorageSize(false);
     }
   };
 
@@ -61,11 +87,24 @@ export function StorageTab() {
   };
 
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
+    if (bytes === 0) return "0 bytes";
     const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
+    const sizes = ["bytes", "KB", "MB", "GB", "TB", "PB"];
+    const unitIndex = Math.min(
+      Math.floor(Math.log(bytes) / Math.log(k)),
+      sizes.length - 1,
+    );
+    const value = bytes / Math.pow(k, unitIndex);
+    const formattedValue =
+      unitIndex === 0
+        ? Math.round(value).toString()
+        : value >= 100
+          ? value.toFixed(0)
+          : value >= 10
+            ? value.toFixed(1)
+            : value.toFixed(2);
+
+    return `${formattedValue.replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1")} ${sizes[unitIndex]}`;
   };
 
   const handleCleanupSynced = async () => {
@@ -288,6 +327,185 @@ export function StorageTab() {
     }
   };
 
+  const handleClearAppCache = async () => {
+    confirmDialog.show({
+      title: "Clear Application Cache",
+      message:
+        "This clears temporary Chromium and app cache files.\n\nTracked data, screenshots, and settings will remain intact.\n\nContinue?",
+      confirmText: "Clear Cache",
+      onConfirm: async () => {
+        confirmDialog.close();
+        try {
+          setClearingAppCache(true);
+          const result = await window.electronAPI.storage.clearAppCache();
+
+          if (result.success) {
+            alertDialog.show({
+              title: "Success",
+              message: `Application cache cleared.\n\nFreed: ${formatBytes(result.clearedBytes || 0)}`,
+              type: "success",
+            });
+            await loadStorageSize();
+          } else {
+            alertDialog.show({
+              title: "Failed",
+              message:
+                "Failed to clear application cache: " +
+                (result.error || "Unknown error"),
+              type: "error",
+            });
+          }
+        } catch (error: any) {
+          alertDialog.show({
+            title: "Failed",
+            message: "Failed to clear application cache: " + error.message,
+            type: "error",
+          });
+        } finally {
+          setClearingAppCache(false);
+        }
+      },
+    });
+  };
+
+  const handleCleanupTemp = async () => {
+    confirmDialog.show({
+      title: "Cleanup Temp Capture Files",
+      message:
+        "This removes temporary screenshot capture files left in the system temp folder.\n\nTracked data, screenshots, and settings will remain intact.\n\nContinue?",
+      confirmText: "Cleanup Temp",
+      onConfirm: async () => {
+        confirmDialog.close();
+        try {
+          setCleaningTemp(true);
+          const result = await window.electronAPI.storage.cleanupTemp();
+
+          if (result.success) {
+            alertDialog.show({
+              title: "Success",
+              message:
+                `${result.message || "Temporary capture files cleaned up."}\n\n` +
+                `Deleted: ${result.deletedCount || 0} files\n` +
+                `Freed: ${formatBytes(result.clearedBytes || 0)}`,
+              type: "success",
+            });
+            await loadStorageSize();
+          } else {
+            alertDialog.show({
+              title: "Failed",
+              message:
+                "Failed to cleanup temp files: " +
+                (result.error || "Unknown error"),
+              type: "error",
+            });
+          }
+        } catch (error: any) {
+          alertDialog.show({
+            title: "Failed",
+            message: "Failed to cleanup temp files: " + error.message,
+            type: "error",
+          });
+        } finally {
+          setCleaningTemp(false);
+        }
+      },
+    });
+  };
+
+  const handleClearSqliteCache = async () => {
+    confirmDialog.show({
+      title: "Optimize Database Storage",
+      message:
+        "This clears temporary database cache and compacts the local database.\n\nYour tracked data will be kept.\n\nContinue?",
+      confirmText: "Optimize",
+      onConfirm: async () => {
+        confirmDialog.close();
+        try {
+          setClearingSqliteCache(true);
+          const result = await window.electronAPI.storage.clearSqliteCache();
+
+          if (result.success) {
+            alertDialog.show({
+              title: "Success",
+              message: `Database cache cleared successfully.\n\nFreed: ${formatBytes(result.clearedBytes || 0)}`,
+              type: "success",
+            });
+            await loadStorageSize();
+          } else {
+            alertDialog.show({
+              title: "Failed",
+              message:
+                "Failed to clear database cache: " +
+                (result.error || "Unknown error"),
+              type: "error",
+            });
+          }
+        } catch (error: any) {
+          alertDialog.show({
+            title: "Failed",
+            message: "Failed to clear database cache: " + error.message,
+            type: "error",
+          });
+        } finally {
+          setClearingSqliteCache(false);
+        }
+      },
+    });
+  };
+
+  const handleClearSyncedLogs = async () => {
+    confirmDialog.show({
+      title: "Clean Synced Logs",
+      message:
+        "This removes synced system logs stored locally and compacts the database.\n\nIf you enable hard clean, all logs will be deleted, including logs that have not been synced yet.\n\nContinue?",
+      confirmText: "Clean Logs",
+      checkboxLabel: "Use hard clean logs",
+      checkboxDescription:
+        "Delete all local logs, including logs that have not been synced to the server yet.",
+      onConfirm: async (hardClean) => {
+        confirmDialog.close();
+        try {
+          setClearingLogs(true);
+          const result = await window.electronAPI.storage.clearSyncedLogs(
+            !!hardClean
+          );
+
+          if (result.success) {
+            alertDialog.show({
+              title: "Success",
+              message:
+                `${
+                  result.hardClean
+                    ? "Hard clean logs completed successfully."
+                    : "Synced logs cleaned successfully."
+                }\n\n` +
+                `Deleted: ${result.deletedCount || 0} logs\n` +
+                `Freed: ${formatBytes(result.clearedBytes || 0)}`,
+              type: "success",
+            });
+            await loadStorageSize();
+          } else {
+            alertDialog.show({
+              title: "Failed",
+              message:
+                "Failed to clean synced logs: " +
+                (result.error || "Unknown error"),
+              type: "error",
+            });
+          }
+        } catch (error: any) {
+          alertDialog.show({
+            title: "Failed",
+            message: "Failed to clean synced logs: " + error.message,
+            type: "error",
+          });
+        } finally {
+          setClearingLogs(false);
+        }
+      },
+    });
+  };
+
   return (
     <>
       <Card className="p-6">
@@ -298,12 +516,68 @@ export function StorageTab() {
         />
 
         <div className="mb-6">
-          <StatCard
-            label="Local Storage Used"
-            value={formatBytes(storageSize)}
-            icon={<Icons.HardDrive className="w-6 h-6" />}
-            color="blue"
-          />
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 dark:border-blue-500/30 dark:bg-blue-500/10">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300">
+                  Local Storage Used
+                </p>
+                <div className="mt-2 flex items-center gap-3">
+                  <p className="text-3xl font-bold leading-none text-gray-900 dark:text-white">
+                    {formatBytes(storageSize)}
+                  </p>
+                  {loadingStorageSize && (
+                    <Icons.RefreshCw className="h-4 w-4 animate-spin text-blue-600 dark:text-blue-300" />
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => void loadStorageSize()}
+                disabled={loadingStorageSize}
+                title="Recalculate storage usage"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+              >
+                <Icons.RefreshCw
+                  className={`h-4 w-4 ${loadingStorageSize ? "animate-spin" : ""}`}
+                />
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-2">
+              <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-gray-900/40">
+                <span className="text-gray-600 dark:text-gray-300">
+                  Application cache
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatBytes(storageBreakdown.applicationCache)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-gray-900/40">
+                <span className="text-gray-600 dark:text-gray-300">
+                  Temp Capture files
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatBytes(storageBreakdown.tempCaptureFiles)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-gray-900/40">
+                <span className="text-gray-600 dark:text-gray-300">
+                  Database cache
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatBytes(storageBreakdown.databaseCache)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2 text-sm dark:bg-gray-900/40">
+                <span className="text-gray-600 dark:text-gray-300">
+                  Synced logs
+                </span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {formatBytes(storageBreakdown.syncedLogs)}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Screenshot Folder Location */}
@@ -369,6 +643,109 @@ export function StorageTab() {
         </div>
 
         <div className="space-y-4">
+          <div className="p-4 rounded-xl border border-sky-200 dark:border-sky-500/30 bg-sky-50 dark:bg-sky-500/10">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                <Icons.RefreshCw className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Clear Application Cache
+                </h4>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Remove temporary Chromium cache and other app cache files
+                  without touching tracked data.
+                </p>
+                <button
+                  onClick={handleClearAppCache}
+                  disabled={clearingAppCache}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+                >
+                  <Icons.RefreshCw className="w-4 h-4" />
+                  {clearingAppCache ? "Clearing..." : "Clear Cache"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl border border-cyan-200 dark:border-cyan-500/30 bg-cyan-50 dark:bg-cyan-500/10">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-500/20 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
+                <Icons.Trash className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Cleanup Temp Capture Files
+                </h4>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Remove leftover temporary screenshot capture artifacts for the
+                  current platform. Windows cleans legacy capture temp files,
+                  macOS cleans orphan screenshot-desktop temp images, and Linux
+                  performs a safe no-op when no platform-specific temp cleanup
+                  is required.
+                </p>
+                <button
+                  onClick={handleCleanupTemp}
+                  disabled={cleaningTemp}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+                >
+                  <Icons.Trash className="w-4 h-4" />
+                  {cleaningTemp ? "Cleaning..." : "Cleanup Temp"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl border border-violet-200 dark:border-violet-500/30 bg-violet-50 dark:bg-violet-500/10">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                <Icons.Database className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Clear Database Cache
+                </h4>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Truncate database WAL/SHM cache and compact the local database
+                  while keeping tracking records intact.
+                </p>
+                <button
+                  onClick={handleClearSqliteCache}
+                  disabled={clearingSqliteCache}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+                >
+                  <Icons.Database className="w-4 h-4" />
+                  {clearingSqliteCache ? "Optimizing..." : "Optimize DB"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <Icons.Trash className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
+                  Clean Synced Logs
+                </h4>
+                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                  Remove synced system logs by default, or enable hard clean to
+                  delete all local logs including unsynced entries.
+                </p>
+                <button
+                  onClick={handleClearSyncedLogs}
+                  disabled={clearingLogs}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors disabled:cursor-not-allowed"
+                >
+                  <Icons.Trash className="w-4 h-4" />
+                  {clearingLogs ? "Cleaning..." : "Clean Logs"}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="p-4 rounded-xl border border-orange-200 dark:border-orange-500/30 bg-orange-50 dark:bg-orange-500/10">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600 dark:text-orange-400">

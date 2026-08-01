@@ -71,6 +71,19 @@ interface ElectronAPI {
       hasTimer: boolean;
       currentTaskId?: number;
     }>;
+    // Screen capture permission (macOS/Linux)
+    getPermissionStatus: () => Promise<{
+      granted: boolean;
+      status: string;
+      platform: string;
+      message?: string;
+    }>;
+    requestPermission: () => Promise<{
+      granted: boolean;
+      status: string;
+      platform: string;
+      message?: string;
+    }>;
     getOptimizationSettings: () => Promise<ImageOptimizationSettings>;
     updateOptimizationSettings: (
       settings: Partial<ImageOptimizationSettings>,
@@ -90,8 +103,44 @@ interface ElectronAPI {
   };
   storage: {
     cleanupSynced: (keepDays?: number) => Promise<any>;
-    getSize: () => Promise<any>;
+    getSize: () => Promise<{
+      success: boolean;
+      totalSize?: number;
+      breakdown?: {
+        applicationCache: number;
+        tempCaptureFiles: number;
+        databaseCache: number;
+        syncedLogs: number;
+      };
+      error?: string;
+    }>;
     deleteOld: (daysOld?: number) => Promise<any>;
+    clearAppCache: () => Promise<{
+      success: boolean;
+      clearedBytes?: number;
+      error?: string;
+    }>;
+    cleanupTemp: () => Promise<{
+      success: boolean;
+      deletedCount?: number;
+      clearedBytes?: number;
+      tempPath?: string;
+      scannedPaths?: string[];
+      message?: string;
+      error?: string;
+    }>;
+    clearSqliteCache: () => Promise<{
+      success: boolean;
+      clearedBytes?: number;
+      error?: string;
+    }>;
+    clearSyncedLogs: (hardClean?: boolean) => Promise<{
+      success: boolean;
+      hardClean?: boolean;
+      deletedCount?: number;
+      clearedBytes?: number;
+      error?: string;
+    }>;
     getScreenshotPath: () => Promise<{
       success: boolean;
       path?: string;
@@ -132,10 +181,17 @@ interface ElectronAPI {
     }>;
     forceStopAndQuit: () => Promise<boolean>;
   };
+  deeplink: {
+    onJoinOrganization: (callback: (inviteCode: string) => void) => () => void;
+  };
   updates: {
     check: () => Promise<any>;
     download: () => Promise<any>;
     install: () => Promise<any>;
+    checkBackend: () => Promise<any>;
+    downloadBackend: () => Promise<any>;
+    installBackend: () => Promise<any>;
+    openDownloads: () => Promise<any>;
     onEvent: (cb: (event: any) => void) => () => void;
   };
   getScreenshots: (options?: {

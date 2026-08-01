@@ -1,13 +1,15 @@
 package router
 
 import (
-	"github.com/beuphecan/remote-time-tracker/internal/config"
-	"github.com/beuphecan/remote-time-tracker/internal/controller"
-	"github.com/beuphecan/remote-time-tracker/internal/middleware"
-	"github.com/beuphecan/remote-time-tracker/internal/service"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"remote-time-tracker.dev/internal/config"
+	"remote-time-tracker.dev/internal/controller"
+	"remote-time-tracker.dev/internal/middleware"
+	"remote-time-tracker.dev/internal/service"
 )
 
 // RouterConfig holds all dependencies for router setup
@@ -34,6 +36,7 @@ type RouterConfig struct {
 	// Services for middleware
 	OrganizationService service.OrganizationService
 	WorkspaceService    service.WorkspaceService
+	SystemLogService    service.SystemLogService
 }
 
 // SetupRouter configures and returns the Gin router
@@ -60,8 +63,15 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 	router := gin.Default()
 
 	// Apply middleware
-	router.Use(middleware.Logger())
+	router.Use(middleware.Logger(cfg.SystemLogService))
 	router.Use(middleware.CORSMiddleware())
+
+	// Default route
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Welcome to Remote Time Tracker API",
+		})
+	})
 
 	// Serve static files (screenshots)
 	router.Static("/uploads", config.AppConfig.Upload.Path)
@@ -70,7 +80,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 	router.GET("/health", middleware.HealthCheck)
 
 	// Swagger documentation
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API v1 routes
 	v1 := router.Group("/api/v1")
@@ -80,6 +90,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 		{
 			auth.POST("/register", cfg.AuthController.Register)
 			auth.POST("/login", cfg.AuthController.Login)
+			auth.POST("/cms-login", cfg.AuthController.CMSLogin)
 			auth.POST("/refresh", cfg.AuthController.RefreshToken)
 		}
 
@@ -114,7 +125,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			publicDownloads := v1.Group("/public/downloads")
 			{
 				publicDownloads.GET("/latest", cfg.UpdateController.GetPublicDownloadLinks)
-				publicDownloads.GET("/file/:version/:filename", cfg.UpdateController.DownloadAsset) // Reuse existing handler
+				publicDownloads.GET("/file/:version/:filename", cfg.UpdateController.DownloadPublicAsset)
 			}
 		}
 
@@ -167,9 +178,9 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			}
 
 			// Sync
-			sync := protected.Group("/sync")
+			sync := protected.Group("/sync-data")
 			{
-				sync.POST("/batch", cfg.SyncController.BatchSync)
+				sync.POST("/batch-sync", cfg.SyncController.BatchSync)
 			}
 
 			// Screenshots
@@ -211,7 +222,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 				{
 					orgs.GET("", cfg.OrganizationController.List)
 					orgs.POST("", cfg.OrganizationController.Create)
-					orgs.GET("/join/:invite_code", cfg.OrganizationController.GetOrgByInviteCode)
+					orgs.GET("/join/:invite_code", cfg.OrganizationController.GetProtectedOrgByInviteCode)
 					orgs.POST("/join/:invite_code", cfg.OrganizationController.JoinByInviteCode)
 
 					// Organization-specific routes (require org membership)
@@ -291,10 +302,14 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 			// Admin routes (system admin only)
 			if cfg.AdminController != nil {
 				admin := protected.Group("/admin")
-				admin.Use(middleware.RequireSystemAdmin())
+				admin.Use(middleware.SetUserIDMiddleware())
+				admin.Use(middleware.RequireCMSAccess())
 				{
 					// User management
+					admin.GET("/user-options", cfg.AdminController.ListUserOptions)
+
 					users := admin.Group("/users")
+					users.Use(middleware.RequireSystemAdmin())
 					{
 						users.GET("", cfg.AdminController.ListUsers)
 						users.POST("", cfg.AdminController.CreateUser)
@@ -308,7 +323,7 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 
 					// Presence stream
 					if cfg.AdminPresenceController != nil {
-						admin.GET("/presence/stream", cfg.AdminPresenceController.Stream)
+						admin.GET("/presence/stream", middleware.RequireSystemAdmin(), cfg.AdminPresenceController.Stream)
 					}
 
 					// Organization management
@@ -316,9 +331,9 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 					{
 						orgs.GET("", cfg.AdminController.ListOrganizations)
 						orgs.GET("/:id", cfg.AdminController.GetOrganization)
-						orgs.PUT("/:id", cfg.AdminController.UpdateOrganization)
-						orgs.DELETE("/:id", cfg.AdminController.DeleteOrganization)
-						orgs.PUT("/:id/verify", cfg.AdminController.VerifyOrganization)
+						orgs.PUT("/:id", middleware.RequireSystemAdmin(), cfg.AdminController.UpdateOrganization)
+						orgs.DELETE("/:id", middleware.RequireSystemAdmin(), cfg.AdminController.DeleteOrganization)
+						orgs.PUT("/:id/verify", middleware.RequireSystemAdmin(), cfg.AdminController.VerifyOrganization)
 					}
 
 					// Workspace management
@@ -326,9 +341,9 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 					{
 						workspaces.GET("", cfg.AdminController.ListWorkspaces)
 						workspaces.GET("/:id", cfg.AdminController.GetWorkspace)
-						workspaces.PUT("/:id", cfg.AdminController.UpdateWorkspace)
-						workspaces.DELETE("/:id", cfg.AdminController.DeleteWorkspace)
-						workspaces.PUT("/:id/archive", cfg.AdminController.ArchiveWorkspace)
+						workspaces.PUT("/:id", middleware.RequireSystemAdmin(), cfg.AdminController.UpdateWorkspace)
+						workspaces.DELETE("/:id", middleware.RequireSystemAdmin(), cfg.AdminController.DeleteWorkspace)
+						workspaces.PUT("/:id/archive", middleware.RequireSystemAdmin(), cfg.AdminController.ArchiveWorkspace)
 					}
 
 					// Task management
@@ -336,8 +351,8 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 					{
 						tasks.GET("", cfg.AdminController.ListTasks)
 						tasks.GET("/:id", cfg.AdminController.GetTask)
-						tasks.PUT("/:id", cfg.AdminController.UpdateTask)
-						tasks.DELETE("/:id", cfg.AdminController.DeleteTask)
+						tasks.PUT("/:id", middleware.RequireSystemAdmin(), cfg.AdminController.UpdateTask)
+						tasks.DELETE("/:id", middleware.RequireSystemAdmin(), cfg.AdminController.DeleteTask)
 					}
 
 					// Time log management
@@ -345,9 +360,9 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 					{
 						timelogs.GET("", cfg.AdminController.ListTimeLogs)
 						timelogs.GET("/:id", cfg.AdminController.GetTimeLog)
-						timelogs.PUT("/:id", cfg.AdminController.UpdateTimeLog)
-						timelogs.DELETE("/:id", cfg.AdminController.DeleteTimeLog)
-						timelogs.POST("/approve", cfg.AdminController.ApproveTimeLogs)
+						timelogs.PUT("/:id", middleware.RequireSystemAdmin(), cfg.AdminController.UpdateTimeLog)
+						timelogs.DELETE("/:id", middleware.RequireSystemAdmin(), cfg.AdminController.DeleteTimeLog)
+						timelogs.POST("/approve", middleware.RequireSystemAdmin(), cfg.AdminController.ApproveTimeLogs)
 					}
 
 					// Screenshot management
@@ -356,19 +371,36 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 						screenshots.GET("", cfg.AdminController.ListScreenshots)
 						screenshots.GET("/:id", cfg.AdminController.GetScreenshot)
 						screenshots.GET("/:id/view", cfg.AdminController.ViewScreenshot)
-						screenshots.DELETE("/:id", cfg.AdminController.DeleteScreenshot)
-						screenshots.POST("/bulk-delete", cfg.AdminController.BulkDeleteScreenshots)
+						screenshots.DELETE("/:id", middleware.RequireSystemAdmin(), cfg.AdminController.DeleteScreenshot)
+						screenshots.POST("/bulk-delete", middleware.RequireSystemAdmin(), cfg.AdminController.BulkDeleteScreenshots)
+					}
+
+					systemLogs := admin.Group("/system-logs")
+					systemLogs.Use(middleware.RequireSystemAdmin())
+					{
+						systemLogs.GET("", cfg.AdminController.ListSystemLogs)
+						systemLogs.GET("/policy", cfg.AdminController.GetSystemLogPolicy)
+						systemLogs.PUT("/policy", cfg.AdminController.UpdateSystemLogPolicy)
+						systemLogs.GET("/:id", cfg.AdminController.GetSystemLog)
+						systemLogs.POST("/cleanup", cfg.AdminController.CleanupSystemLogs)
+					}
+
+					systemConfigs := admin.Group("/system-configs")
+					systemConfigs.Use(middleware.RequireSystemAdmin())
+					{
+						systemConfigs.GET("", cfg.AdminController.ListSystemConfigs)
+						systemConfigs.PUT("/:key", cfg.AdminController.UpdateSystemConfig)
 					}
 
 					// Statistics & Reports
 					stats := admin.Group("/stats")
 					{
-						stats.GET("", cfg.AdminController.GetSystemStats)
-						stats.GET("/overview", cfg.AdminController.GetOverviewStats)
-						stats.GET("/trends", cfg.AdminController.GetTrendStats)
+						stats.GET("", middleware.RequireSystemAdmin(), cfg.AdminController.GetSystemStats)
+						stats.GET("/overview", middleware.RequireSystemAdmin(), cfg.AdminController.GetOverviewStats)
+						stats.GET("/trends", middleware.RequireSystemAdmin(), cfg.AdminController.GetTrendStats)
 						stats.GET("/user-performance", cfg.AdminController.GetUserPerformanceStats)
-						stats.GET("/org-distribution", cfg.AdminController.GetOrgDistributionStats)
-						stats.GET("/activity", cfg.AdminController.GetActivityStats)
+						stats.GET("/org-distribution", middleware.RequireSystemAdmin(), cfg.AdminController.GetOrgDistributionStats)
+						stats.GET("/activity", middleware.RequireSystemAdmin(), cfg.AdminController.GetActivityStats)
 					}
 				}
 			}

@@ -5,7 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icons } from "../../components/Icons";
 import Pagination from "../../components/Pagination";
 import { Button, IconButton, Input, Select } from "../../components/ui";
@@ -16,6 +16,7 @@ import {
   AdminWorkspace,
   adminService,
 } from "../../services/adminService";
+import { useAuthStore } from "../../store/authStore";
 
 // Task Detail Modal Component
 interface TaskDetailModalProps {
@@ -187,6 +188,8 @@ function DeleteConfirmModal({
 
 export default function AdminTasksPage() {
   const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
+  const isSystemAdmin = user?.system_role === "admin" || user?.role === "admin";
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [search, setSearch] = useState("");
@@ -212,6 +215,7 @@ export default function AdminTasksPage() {
       selectedOrgId,
       selectedWorkspaceId,
     ],
+    enabled: isSystemAdmin || !!selectedOrgId,
     queryFn: async () => {
       const params: Record<string, any> = { page, page_size: pageSize };
       if (search) params.search = search;
@@ -229,9 +233,17 @@ export default function AdminTasksPage() {
   });
 
   const { data: usersData } = useQuery({
-    queryKey: ["admin-users-options"],
+    queryKey: ["admin-users-options", selectedOrgId, selectedWorkspaceId],
+    enabled: isSystemAdmin || !!selectedOrgId,
     queryFn: async () => {
-      const response = await adminService.getUsers({ page: 1, page_size: 200 });
+      const response = await adminService.getUserOptions({
+        page: 1,
+        page_size: 200,
+        org_id: selectedOrgId ? Number(selectedOrgId) : undefined,
+        workspace_id: selectedWorkspaceId
+          ? Number(selectedWorkspaceId)
+          : undefined,
+      });
       return response.data;
     },
   });
@@ -258,6 +270,14 @@ export default function AdminTasksPage() {
       return response.data;
     },
   });
+
+  useEffect(() => {
+    const organizations = orgsData?.organizations || [];
+    if (!isSystemAdmin && !selectedOrgId && organizations.length > 0) {
+      setSelectedOrgId(String(organizations[0].id));
+      setPage(1);
+    }
+  }, [isSystemAdmin, orgsData, selectedOrgId]);
 
   // Delete task mutation
   const deleteTaskMutation = useMutation({
@@ -304,10 +324,12 @@ export default function AdminTasksPage() {
   // Handle undefined data
   const tasks = data?.tasks || [];
   const pagination = data?.pagination || {
+    page,
     total_items: 0,
     total_pages: 0,
-    current_page: page,
     page_size: pageSize,
+    has_next: false,
+    has_prev: false,
   };
 
   const users = (usersData?.users || []) as AdminUser[];
@@ -394,10 +416,11 @@ export default function AdminTasksPage() {
             onChange={(e) => {
               setSelectedOrgId(e.target.value);
               setSelectedWorkspaceId("");
+              setSelectedUserId("");
               setPage(1);
             }}
           >
-            <option value="">All Organizations</option>
+            {isSystemAdmin && <option value="">All Organizations</option>}
             {organizations.map((org) => (
               <option key={org.id} value={org.id}>
                 {org.name}
@@ -409,6 +432,7 @@ export default function AdminTasksPage() {
             value={selectedWorkspaceId}
             onChange={(e) => {
               setSelectedWorkspaceId(e.target.value);
+              setSelectedUserId("");
               setPage(1);
             }}
             disabled={!selectedOrgId}

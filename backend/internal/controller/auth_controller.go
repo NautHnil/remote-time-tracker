@@ -1,12 +1,13 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
-	"github.com/beuphecan/remote-time-tracker/internal/service"
-	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/service"
+	"remote-time-tracker.dev/internal/utils"
 )
 
 // AuthController handles authentication endpoints
@@ -71,6 +72,28 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "Login successful", response)
+}
+
+// CMSLogin handles CMS-specific login with backend permission validation.
+func (ctrl *AuthController) CMSLogin(c *gin.Context) {
+	var req dto.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response, err := ctrl.authService.CMSLogin(&req)
+	if err != nil {
+		if errors.Is(err, service.ErrCMSAccessDenied) {
+			utils.ErrorResponse(c, http.StatusForbidden, "Access denied. You must own at least one organization to access CMS.")
+			return
+		}
+
+		utils.ErrorResponse(c, http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "CMS login successful", response)
 }
 
 // RefreshToken handles token refresh

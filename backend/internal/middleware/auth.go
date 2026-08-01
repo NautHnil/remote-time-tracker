@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/utils"
 )
 
 // AuthMiddleware validates JWT tokens
@@ -50,6 +50,10 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("userEmail", claims.Email)
 		c.Set("user_role", claims.Role)
 		c.Set("userRole", claims.Role)
+		c.Set("system_role", claims.SystemRole)
+		c.Set("systemRole", claims.SystemRole)
+		c.Set("cms_access", claims.CMSAccess)
+		c.Set("cmsAccess", claims.CMSAccess)
 
 		c.Next()
 	}
@@ -71,6 +75,10 @@ func OptionalAuthMiddleware() gin.HandlerFunc {
 					c.Set("userEmail", claims.Email)
 					c.Set("user_role", claims.Role)
 					c.Set("userRole", claims.Role)
+					c.Set("system_role", claims.SystemRole)
+					c.Set("systemRole", claims.SystemRole)
+					c.Set("cms_access", claims.CMSAccess)
+					c.Set("cmsAccess", claims.CMSAccess)
 				}
 			}
 		}

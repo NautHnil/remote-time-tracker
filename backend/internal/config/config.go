@@ -46,6 +46,7 @@ type DatabaseConfig struct {
 	DBName   string
 	SSLMode  string
 	TimeZone string
+	Schema   string
 }
 
 // JWTConfig holds JWT-related configuration
@@ -69,8 +70,10 @@ type CORSConfig struct {
 
 // LogConfig holds logging configuration
 type LogConfig struct {
-	Level  string
-	Format string
+	Level                    string
+	Format                   string
+	SystemLogRetentionDays   int
+	SystemLogCleanupInterval time.Duration
 }
 
 // PresenceConfig holds presence/heartbeat configuration
@@ -102,6 +105,7 @@ func Load() (*Config, error) {
 			DBName:   getEnv("DB_NAME", "remote_time_tracker"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
 			TimeZone: getEnv("DB_TIMEZONE", "UTC"),
+			Schema:   getEnv("DB_SCHEMA", ""),
 		},
 		JWT: JWTConfig{
 			Secret:        getEnv("JWT_SECRET", "change-this-secret"),
@@ -117,8 +121,10 @@ func Load() (*Config, error) {
 			AllowedOrigins: parseOrigins(getEnv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")),
 		},
 		Log: LogConfig{
-			Level:  getEnv("LOG_LEVEL", "debug"),
-			Format: getEnv("LOG_FORMAT", "json"),
+			Level:                    getEnv("LOG_LEVEL", "debug"),
+			Format:                   getEnv("LOG_FORMAT", "json"),
+			SystemLogRetentionDays:   parseInt(getEnv("SYSTEM_LOG_RETENTION_DAYS", "30")),
+			SystemLogCleanupInterval: parseDuration(getEnv("SYSTEM_LOG_CLEANUP_INTERVAL", "6h")),
 		},
 		GitHub: GitHubConfig{
 			Token: getEnv("GITHUB_TOKEN", ""),
@@ -137,7 +143,7 @@ func Load() (*Config, error) {
 
 // GetDSN returns the database connection string
 func (c *DatabaseConfig) GetDSN() string {
-	return fmt.Sprintf(
+	dsn := fmt.Sprintf(
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s",
 		c.Host,
 		c.User,
@@ -147,6 +153,12 @@ func (c *DatabaseConfig) GetDSN() string {
 		c.SSLMode,
 		c.TimeZone,
 	)
+
+	if c.Schema != "" {
+		dsn += fmt.Sprintf(" search_path=%s", c.Schema)
+	}
+
+	return dsn
 }
 
 // Helper functions
@@ -187,6 +199,15 @@ func parseInt64(s string) int64 {
 	if err != nil {
 		log.Printf("Failed to parse int64 %s, using default 10485760", s)
 		return 10485760
+	}
+	return i
+}
+
+func parseInt(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		log.Printf("Failed to parse int %s, using default 0", s)
+		return 0
 	}
 	return i
 }

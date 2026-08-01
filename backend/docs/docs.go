@@ -339,6 +339,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/presence/stream": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Stream presence updates via Server-Sent Events",
+                "produces": [
+                    "text/event-stream"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Presence stream (admin only)",
+                "responses": {
+                    "200": {
+                        "description": "SSE stream",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/screenshots": {
             "get": {
                 "security": [
@@ -595,6 +620,65 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/screenshots/{id}/view": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "View a screenshot file inline in browser",
+                "produces": [
+                    "image/png",
+                    "image/jpeg"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "View screenshot file (admin only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Screenshot ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Screenshot image",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid screenshot ID",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Screenshot not found",
                         "schema": {
                             "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
                         }
@@ -860,6 +944,18 @@ const docTemplate = `{
                         "description": "Number of top users",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -886,6 +982,360 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/system-configs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get supported persisted system configuration values with metadata",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List system configs (admin only)",
+                "responses": {
+                    "200": {
+                        "description": "System configs",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigListResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/system-configs/{key}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Persist and apply a supported system configuration value",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update system config (admin only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Config key",
+                        "name": "key",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated config value",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateSystemConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated config",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/system-logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get paginated list of backend and Electron system logs with filtering options",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List system logs (admin only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by message/component/request/device",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by user",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by organization",
+                        "name": "org_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by workspace",
+                        "name": "workspace_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by source",
+                        "name": "source",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by level",
+                        "name": "level",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by device UUID",
+                        "name": "device_uuid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter start date (RFC3339)",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter end date (RFC3339)",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "System log list",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/system-logs/cleanup": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete old system logs using the configured retention policy or an override provided by admin",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Cleanup system logs (admin only)",
+                "parameters": [
+                    {
+                        "description": "Optional retention override",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminCleanupSystemLogsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cleanup result",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminCleanupSystemLogsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Cleanup failed",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/system-logs/policy": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the configured system log retention and cleanup interval",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get system log policy (admin only)",
+                "responses": {
+                    "200": {
+                        "description": "System log policy",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogPolicyResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update runtime system log retention and cleanup interval. Changes apply immediately but do not persist across restart.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update system log policy (admin only)",
+                "parameters": [
+                    {
+                        "description": "Updated system log policy",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateSystemLogPolicyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated system log policy",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogPolicyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/system-logs/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get detailed information for a specific system log entry",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get system log (admin only)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "System log ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "System log details",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid system log ID",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "System log not found",
                         "schema": {
                             "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
                         }
@@ -1532,6 +1982,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "integer",
+                        "description": "Filter by owner",
+                        "name": "user_id",
+                        "in": "query"
+                    },
+                    {
                         "type": "boolean",
                         "description": "Filter by active status",
                         "name": "is_active",
@@ -2053,6 +2509,12 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Filter by organization",
                         "name": "org_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter by admin user",
+                        "name": "user_id",
                         "in": "query"
                     },
                     {
@@ -2851,7 +3313,12 @@ const docTemplate = `{
         },
         "/organizations/join/{invite_code}": {
             "get": {
-                "description": "Get public organization info by invite code (used before joining)",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get organization info by invite code for authenticated users before joining",
                 "produces": [
                     "application/json"
                 ],
@@ -2877,6 +3344,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invite code required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
                         }
@@ -3967,6 +4440,123 @@ const docTemplate = `{
                 }
             }
         },
+        "/presence/heartbeat": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update user's presence status (working/idle) with heartbeat",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "presence"
+                ],
+                "summary": "Presence heartbeat",
+                "parameters": [
+                    {
+                        "description": "Presence heartbeat request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PresenceHeartbeatRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Presence updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PresenceStatusResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/downloads/file/{version}/{filename}": {
+            "get": {
+                "description": "Download a specific public release asset for the website download page",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "updates"
+                ],
+                "summary": "Download public release asset",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Version tag (e.g., v1.0.0)",
+                        "name": "version",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Asset filename",
+                        "name": "filename",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "File download",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Asset not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/public/downloads/latest": {
             "get": {
                 "description": "Get download links for all platforms (public endpoint, no authentication)",
@@ -3986,6 +4576,47 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/public/organizations/invite/{invite_code}": {
+            "get": {
+                "description": "Get public organization info by invite code (used before joining)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organizations"
+                ],
+                "summary": "Get organization by invite code",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invite code",
+                        "name": "invite_code",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invite code required",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Organization not found",
                         "schema": {
                             "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
                         }
@@ -4592,7 +5223,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/sync/batch": {
+        "/sync-data/batch-sync": {
             "post": {
                 "security": [
                     {
@@ -5694,6 +6325,11 @@ const docTemplate = `{
         },
         "/updates/check": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Check if a new version of the desktop app is available",
                 "consumes": [
                     "application/json"
@@ -5740,6 +6376,11 @@ const docTemplate = `{
         },
         "/updates/download/{version}/{filename}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Download a specific release asset (installer/update file)",
                 "produces": [
                     "application/octet-stream"
@@ -5794,6 +6435,11 @@ const docTemplate = `{
         },
         "/updates/latest": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get information about the latest available version",
                 "produces": [
                     "application/json"
@@ -5834,8 +6480,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/updates/notes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get release notes for a specific version or the latest release",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "updates"
+                ],
+                "summary": "Get release notes",
+                "responses": {
+                    "200": {
+                        "description": "Release notes",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseNotesResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Release not found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/updates/notes/{version}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get release notes for a specific version or the latest release",
                 "produces": [
                     "application/json"
@@ -5877,6 +6565,11 @@ const docTemplate = `{
         },
         "/updates/yml/{platform}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Get the latest.yml file for electron-updater auto-update",
                 "produces": [
                     "application/x-yaml"
@@ -6449,12 +7142,19 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "today_active_users": {
+                    "description": "Backward compatibility: same as users_with_activity_today",
                     "type": "integer"
                 },
                 "today_duration": {
                     "type": "integer"
                 },
                 "today_screenshots": {
+                    "type": "integer"
+                },
+                "users_with_activity_today": {
+                    "type": "integer"
+                },
+                "working_users_realtime": {
                     "type": "integer"
                 }
             }
@@ -6517,6 +7217,25 @@ const docTemplate = `{
             "properties": {
                 "system_role": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminCleanupSystemLogsRequest": {
+            "type": "object",
+            "properties": {
+                "retention_days": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminCleanupSystemLogsResponse": {
+            "type": "object",
+            "properties": {
+                "deleted_count": {
+                    "type": "integer"
+                },
+                "retention_days": {
+                    "type": "integer"
                 }
             }
         },
@@ -6993,6 +7712,145 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigListResponse": {
+            "type": "object",
+            "properties": {
+                "configs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigResponse"
+                    }
+                }
+            }
+        },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "default": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                },
+                "value_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogListResponse": {
+            "type": "object",
+            "properties": {
+                "pagination": {
+                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse"
+                },
+                "system_logs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogResponse"
+                    }
+                }
+            }
+        },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogPolicyResponse": {
+            "type": "object",
+            "properties": {
+                "cleanup_interval": {
+                    "type": "string"
+                },
+                "cleanup_interval_human": {
+                    "type": "string"
+                },
+                "retention_days": {
+                    "type": "integer"
+                },
+                "runtime_only": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogResponse": {
+            "type": "object",
+            "properties": {
+                "app_version": {
+                    "type": "string"
+                },
+                "component": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "string"
+                },
+                "device_id": {
+                    "type": "integer"
+                },
+                "device_uuid": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "occurred_at": {
+                    "type": "string"
+                },
+                "org_name": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "integer"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "session_local_id": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "stack_trace": {
+                    "type": "string"
+                },
+                "user_email": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "user_name": {
+                    "type": "string"
+                },
+                "workspace_id": {
+                    "type": "integer"
+                },
+                "workspace_name": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskDetailResponse": {
             "type": "object",
             "properties": {
@@ -7383,6 +8241,28 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateSystemConfigRequest": {
+            "type": "object",
+            "required": [
+                "value"
+            ],
+            "properties": {
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateSystemLogPolicyRequest": {
+            "type": "object",
+            "properties": {
+                "cleanup_interval": {
+                    "type": "string"
+                },
+                "retention_days": {
+                    "type": "integer"
+                }
+            }
+        },
         "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateTaskRequest": {
             "type": "object",
             "properties": {
@@ -7500,6 +8380,12 @@ const docTemplate = `{
                 "last_name": {
                     "type": "string"
                 },
+                "last_presence_at": {
+                    "type": "string"
+                },
+                "last_working_at": {
+                    "type": "string"
+                },
                 "organizations": {
                     "type": "array",
                     "items": {
@@ -7508,6 +8394,9 @@ const docTemplate = `{
                 },
                 "orgs_count": {
                     "type": "integer"
+                },
+                "presence_status": {
+                    "type": "string"
                 },
                 "recent_tasks": {
                     "type": "array",
@@ -7568,10 +8457,34 @@ const docTemplate = `{
         "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserPerformance": {
             "type": "object",
             "properties": {
+                "active_days": {
+                    "type": "integer"
+                },
+                "approved_duration": {
+                    "type": "integer"
+                },
+                "approved_sessions": {
+                    "type": "integer"
+                },
+                "avg_daily_duration": {
+                    "type": "integer"
+                },
+                "avg_session_duration": {
+                    "type": "integer"
+                },
                 "email": {
                     "type": "string"
                 },
+                "last_activity_at": {
+                    "type": "string"
+                },
                 "rank": {
+                    "type": "integer"
+                },
+                "screenshot_count": {
+                    "type": "integer"
+                },
+                "session_count": {
                     "type": "integer"
                 },
                 "task_count": {
@@ -7612,8 +8525,17 @@ const docTemplate = `{
                 "last_name": {
                     "type": "string"
                 },
+                "last_presence_at": {
+                    "type": "string"
+                },
+                "last_working_at": {
+                    "type": "string"
+                },
                 "orgs_count": {
                     "type": "integer"
+                },
+                "presence_status": {
+                    "type": "string"
                 },
                 "role": {
                     "type": "string"
@@ -7888,6 +8810,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncScreenshotItem"
                     }
                 },
+                "system_logs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncSystemLogItem"
+                    }
+                },
                 "time_logs": {
                     "type": "array",
                     "items": {
@@ -7917,6 +8845,9 @@ const docTemplate = `{
                 },
                 "synced_at": {
                     "type": "string"
+                },
+                "system_logs_sync": {
+                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncResult"
                 },
                 "time_logs_sync": {
                     "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncResult"
@@ -8481,6 +9412,35 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.PresenceHeartbeatRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "device_id": {
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "working, idle",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.PresenceStatusResponse": {
+            "type": "object",
+            "properties": {
+                "last_presence_at": {
+                    "type": "string"
+                },
+                "last_working_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_beuphecan_remote-time-tracker_internal_dto.PublicDownloadsResponse": {
             "type": "object",
             "properties": {
@@ -8831,6 +9791,58 @@ const docTemplate = `{
                 },
                 "workspace_id": {
                     "description": "Workspace ID the screenshot belongs to",
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_beuphecan_remote-time-tracker_internal_dto.SyncSystemLogItem": {
+            "type": "object",
+            "required": [
+                "local_id",
+                "message",
+                "occurred_at"
+            ],
+            "properties": {
+                "app_version": {
+                    "type": "string"
+                },
+                "component": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "string"
+                },
+                "device_uuid": {
+                    "type": "string"
+                },
+                "level": {
+                    "type": "string"
+                },
+                "local_id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "occurred_at": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "integer"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "session_local_id": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "stack_trace": {
+                    "type": "string"
+                },
+                "workspace_id": {
                     "type": "integer"
                 }
             }
@@ -9262,6 +10274,9 @@ const docTemplate = `{
                 },
                 "role": {
                     "type": "string"
+                },
+                "system_role": {
+                    "type": "string"
                 }
             }
         },
@@ -9525,6 +10540,10 @@ const docTemplate = `{
         {
             "description": "Data synchronization from Electron desktop app",
             "name": "sync"
+        },
+        {
+            "description": "User presence and live activity endpoints",
+            "name": "presence"
         },
         {
             "description": "Organization management - Create, manage organizations and members",

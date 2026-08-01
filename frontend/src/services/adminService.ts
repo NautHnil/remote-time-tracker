@@ -14,6 +14,10 @@ import type {
   AdminPagination,
   AdminScreenshot,
   AdminScreenshotFilterParams,
+  AdminSystemConfig,
+  AdminSystemConfigListResponse,
+  AdminSystemLog,
+  AdminSystemLogFilterParams,
   AdminTask,
   AdminTaskDetail,
   AdminTaskFilterParams,
@@ -22,6 +26,7 @@ import type {
   AdminTimeLogFilterParams,
   AdminTrendFilterParams,
   AdminTrendStats,
+  AdminUpdateSystemConfigRequest,
   AdminUser,
   AdminUserDetail,
   AdminUserFilterParams,
@@ -43,6 +48,10 @@ export type {
   AdminPagination,
   AdminScreenshot,
   AdminScreenshotFilterParams,
+  AdminSystemConfig,
+  AdminSystemConfigListResponse,
+  AdminSystemLog,
+  AdminSystemLogFilterParams,
   AdminTask,
   AdminTaskDetail,
   AdminTaskFilterParams,
@@ -51,6 +60,7 @@ export type {
   AdminTimeLogFilterParams,
   AdminTrendFilterParams,
   AdminTrendStats,
+  AdminUpdateSystemConfigRequest,
   AdminUser,
   AdminUserDetail,
   AdminUserFilterParams,
@@ -92,6 +102,23 @@ export interface AdminTimeLogListResponse {
 export interface AdminScreenshotListResponse {
   screenshots: AdminScreenshot[];
   pagination: AdminPagination;
+}
+
+export interface AdminSystemLogListResponse {
+  system_logs: AdminSystemLog[];
+  pagination: AdminPagination;
+}
+
+export interface AdminCleanupSystemLogsResponse {
+  deleted_count: number;
+  retention_days: number;
+}
+
+export interface AdminSystemLogPolicyResponse {
+  retention_days: number;
+  cleanup_interval: string;
+  cleanup_interval_human: string;
+  runtime_only: boolean;
 }
 
 // ============================================================================
@@ -141,6 +168,28 @@ class AdminService {
     if (params.org_id) queryParams.org_id = params.org_id;
 
     return apiClient.get<AdminUserListResponse>("/admin/users", queryParams);
+  }
+
+  async getUserOptions(
+    params: {
+      page?: number;
+      page_size?: number;
+      search?: string;
+      org_id?: number;
+      workspace_id?: number;
+    } = {},
+  ): Promise<ApiResponse<AdminUserListResponse>> {
+    const queryParams: Record<string, string | number> = {};
+    if (params.page) queryParams.page = params.page;
+    if (params.page_size) queryParams.page_size = params.page_size;
+    if (params.search) queryParams.search = params.search;
+    if (params.org_id) queryParams.org_id = params.org_id;
+    if (params.workspace_id) queryParams.workspace_id = params.workspace_id;
+
+    return apiClient.get<AdminUserListResponse>(
+      "/admin/user-options",
+      queryParams,
+    );
   }
 
   /**
@@ -519,6 +568,82 @@ class AdminService {
   }
 
   // ==========================================================================
+  // SYSTEM LOG MANAGEMENT
+  // ==========================================================================
+
+  /**
+   * Get paginated list of all system logs
+   */
+  async getSystemLogs(
+    params: AdminSystemLogFilterParams = {},
+  ): Promise<ApiResponse<AdminSystemLogListResponse>> {
+    const queryParams: Record<string, string | number> = {};
+    if (params.page) queryParams.page = params.page;
+    if (params.page_size) queryParams.page_size = params.page_size;
+    if (params.search) queryParams.search = params.search;
+    if (params.user_id) queryParams.user_id = params.user_id;
+    if (params.org_id) queryParams.org_id = params.org_id;
+    if (params.workspace_id) queryParams.workspace_id = params.workspace_id;
+    if (params.source) queryParams.source = params.source;
+    if (params.level) queryParams.level = params.level;
+    if (params.device_uuid) queryParams.device_uuid = params.device_uuid;
+    if (params.start_date) queryParams.start_date = params.start_date;
+    if (params.end_date) queryParams.end_date = params.end_date;
+    if (params.sort_by) queryParams.sort_by = params.sort_by;
+    if (params.sort_order) queryParams.sort_order = params.sort_order;
+
+    return apiClient.get<AdminSystemLogListResponse>(
+      "/admin/system-logs",
+      queryParams,
+    );
+  }
+
+  /**
+   * Get system log by ID
+   */
+  async getSystemLog(
+    systemLogId: number,
+  ): Promise<ApiResponse<AdminSystemLog>> {
+    return apiClient.get<AdminSystemLog>(`/admin/system-logs/${systemLogId}`);
+  }
+
+  async cleanupSystemLogs(
+    retentionDays?: number,
+  ): Promise<ApiResponse<AdminCleanupSystemLogsResponse>> {
+    return apiClient.post<AdminCleanupSystemLogsResponse>(
+      "/admin/system-logs/cleanup",
+      retentionDays ? { retention_days: retentionDays } : {},
+    );
+  }
+
+  async getSystemLogPolicy(): Promise<ApiResponse<AdminSystemLogPolicyResponse>> {
+    return apiClient.get<AdminSystemLogPolicyResponse>(
+      "/admin/system-logs/policy",
+    );
+  }
+
+  async updateSystemLogPolicy(data: {
+    retention_days?: number;
+    cleanup_interval?: string;
+  }): Promise<ApiResponse<AdminSystemLogPolicyResponse>> {
+    return apiClient.put<AdminSystemLogPolicyResponse>(
+      "/admin/system-logs/policy",
+      data,
+    );
+  }
+
+  async getSystemConfigs(): Promise<ApiResponse<AdminSystemConfigListResponse>> {
+    return apiClient.get<AdminSystemConfigListResponse>("/admin/system-configs");
+  }
+
+  async updateSystemConfig(
+    key: string,
+    data: AdminUpdateSystemConfigRequest,
+  ): Promise<ApiResponse<AdminSystemConfig>> {
+    return apiClient.put<AdminSystemConfig>(`/admin/system-configs/${key}`, data);
+  }
+
+  // ==========================================================================
   // STATISTICS & REPORTS
   // ==========================================================================
 
@@ -555,10 +680,24 @@ class AdminService {
    */
   async getUserPerformance(
     limit = 10,
+    params: {
+      start_date?: string;
+      end_date?: string;
+      user_id?: number;
+      org_id?: number;
+      workspace_id?: number;
+    } = {},
   ): Promise<ApiResponse<AdminUserPerformance[]>> {
     return apiClient.get<AdminUserPerformance[]>(
       "/admin/stats/user-performance",
-      { limit },
+      {
+        limit,
+        ...(params.start_date ? { start_date: params.start_date } : {}),
+        ...(params.end_date ? { end_date: params.end_date } : {}),
+        ...(params.user_id ? { user_id: params.user_id } : {}),
+        ...(params.org_id ? { org_id: params.org_id } : {}),
+        ...(params.workspace_id ? { workspace_id: params.workspace_id } : {}),
+      },
     );
   }
 

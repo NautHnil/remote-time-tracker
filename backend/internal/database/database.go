@@ -3,13 +3,13 @@ package database
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	"github.com/beuphecan/remote-time-tracker/internal/config"
-	"github.com/beuphecan/remote-time-tracker/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"remote-time-tracker.dev/internal/config"
 )
 
 var DB *gorm.DB
@@ -45,7 +45,11 @@ func Connect(cfg *config.DatabaseConfig) (*gorm.DB, error) {
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	DB = db
-	log.Println("✅ Database connected successfully")
+	if cfg.Schema != "" {
+		log.Printf("✅ Database connected successfully (search_path=%s)", cfg.Schema)
+	} else {
+		log.Println("✅ Database connected successfully")
+	}
 
 	return db, nil
 }
@@ -55,24 +59,33 @@ func AutoMigrate(db *gorm.DB) error {
 	log.Println("🔄 Running database migrations...")
 
 	err := db.AutoMigrate(
-		// Core models
-		&models.User{},
-		&models.Task{},
-		&models.TimeLog{},
-		&models.Screenshot{},
-		&models.DeviceInfo{},
-		&models.SyncLog{},
-		&models.AuditLog{},
-		// Organization & Workspace models
-		&models.Organization{},
-		&models.OrganizationMember{},
-		&models.WorkspaceRole{},
-		&models.Workspace{},
-		&models.WorkspaceMember{},
-		&models.Invitation{},
+	//// Core models
+	//&models.User{},
+	//&models.Task{},
+	//&models.TimeLog{},
+	//&models.Screenshot{},
+	//&models.DeviceInfo{},
+	//&models.SyncLog{},
+	//&models.SystemLog{},
+	//&models.SystemConfig{},
+	//&models.AuditLog{},
+	//// Organization & Workspace models
+	//&models.Organization{},
+	//&models.OrganizationMember{},
+	//&models.WorkspaceRole{},
+	//&models.Workspace{},
+	//&models.WorkspaceMember{},
+	//&models.Invitation{},
 	)
 
 	if err != nil {
+		if strings.Contains(err.Error(), "permission denied for schema") {
+			return fmt.Errorf(
+				"failed to run migrations: %w. The configured database role does not have CREATE permission on the target schema. Grant CREATE on that schema or set DB_SCHEMA to a schema owned by this role",
+				err,
+			)
+		}
+
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 

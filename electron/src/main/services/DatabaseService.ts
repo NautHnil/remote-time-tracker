@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
 import { AppConfig } from "../config";
+import { deleteFileWithRetries } from "../utils/FileDeletion";
 
 export interface TimeLog {
   id?: number;
@@ -41,6 +42,27 @@ export interface Screenshot {
   isEncrypted?: boolean;
   checksum?: string;
   isSynced: boolean;
+  createdAt: string;
+}
+
+export interface SystemLog {
+  id?: number;
+  localId: string;
+  organizationId?: number;
+  workspaceId?: number;
+  userId?: number;
+  source: "electron-main" | "electron-renderer";
+  level: "debug" | "info" | "warn" | "error";
+  component?: string;
+  message: string;
+  details?: string;
+  stackTrace?: string;
+  appVersion?: string;
+  deviceUUID?: string;
+  requestId?: string;
+  sessionLocalId?: string;
+  isSynced: boolean;
+  occurredAt: string;
   createdAt: string;
 }
 
@@ -122,6 +144,30 @@ export class DatabaseService {
         item_id INTEGER NOT NULL,
         retry_count INTEGER DEFAULT 0,
         last_error TEXT,
+        created_at TEXT NOT NULL
+      )
+    `);
+
+    // System logs table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS system_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        local_id TEXT UNIQUE NOT NULL,
+        organization_id INTEGER,
+        workspace_id INTEGER,
+        user_id INTEGER,
+        source TEXT NOT NULL,
+        level TEXT NOT NULL,
+        component TEXT,
+        message TEXT NOT NULL,
+        details TEXT,
+        stack_trace TEXT,
+        app_version TEXT,
+        device_uuid TEXT,
+        request_id TEXT,
+        session_local_id TEXT,
+        is_synced INTEGER DEFAULT 0,
+        occurred_at TEXT NOT NULL,
         created_at TEXT NOT NULL
       )
     `);
@@ -305,6 +351,12 @@ export class DatabaseService {
       `);
       this.db.exec(`
         CREATE INDEX IF NOT EXISTS idx_screenshots_workspace_id ON screenshots(workspace_id)
+      `);
+      this.db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_system_logs_is_synced ON system_logs(is_synced)
+      `);
+      this.db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_system_logs_occurred_at ON system_logs(occurred_at)
       `);
     } catch (error) {
       console.error("Migration error:", error);
@@ -560,9 +612,10 @@ export class DatabaseService {
     if (screenshot?.file_path) {
       // Delete file from filesystem
       try {
-        if (fs.existsSync(screenshot.file_path)) {
-          fs.unlinkSync(screenshot.file_path);
-        }
+        await deleteFileWithRetries(screenshot.file_path, {
+          fileLabel: `screenshot ${path.basename(screenshot.file_path)}`,
+          logPrefix: "Delete",
+        });
       } catch (error) {
         console.error("Failed to delete screenshot file:", error);
       }
@@ -601,6 +654,17 @@ export class DatabaseService {
   async deleteScreenshotByFilePath(filePath: string): Promise<void> {
     if (!this.db) throw new Error("Database not initialized");
 
+    if (filePath) {
+      try {
+        await deleteFileWithRetries(filePath, {
+          fileLabel: `screenshot ${path.basename(filePath)}`,
+          logPrefix: "Delete",
+        });
+      } catch (error) {
+        console.error("Failed to delete screenshot file by path:", error);
+      }
+    }
+
     this.db
       .prepare("DELETE FROM screenshots WHERE file_path = ?")
       .run(filePath);
@@ -628,6 +692,140 @@ export class DatabaseService {
       .all(taskId);
 
     return rows.map(this.rowToScreenshot);
+  }
+
+  // System logs methods
+  async createSystemLog(systemLog: Omit<SystemLog, "id">): Promise<SystemLog> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const stmt = this.db.prepare(`
+      INSERT INTO system_logs (
+        local_id, organization_id, workspace_id, user_id, source, level, component,
+        message, details, stack_trace, app_version, device_uuid, request_id,
+        session_local_id, is_synced, occurred_at, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(
+      systemLog.localId,
+      systemLog.organizationId ?? null,
+      systemLog.workspaceId ?? null,
+      systemLog.userId ?? null,
+      systemLog.source,
+      systemLog.level,
+      systemLog.component ?? null,
+      systemLog.message,
+      systemLog.details ?? null,
+      systemLog.stackTrace ?? null,
+      systemLog.appVersion ?? null,
+      systemLog.deviceUUID ?? null,
+      systemLog.requestId ?? null,
+      systemLog.sessionLocalId ?? null,
+      systemLog.isSynced ? 1 : 0,
+      systemLog.occurredAt,
+      systemLog.createdAt,
+    );
+
+    return { ...systemLog, id: result.lastInsertRowid as number };
+  }
+
+  async getUnsyncedSystemLogs(limit: number = 500): Promise<SystemLog[]> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const rows = this.db
+      .prepare(
+        "SELECT * FROM system_logs WHERE is_synced = 0 ORDER BY occurred_at ASC LIMIT ?",
+      )
+      .all(limit);
+    return rows.map(this.rowToSystemLog);
+  }
+
+  async markSystemLogAsSynced(localId: string): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    this.db
+      .prepare("UPDATE system_logs SET is_synced = 1 WHERE local_id = ?")
+      .run(localId);
+  }
+
+  async cleanupSyncedSystemLogsBeforeDate(date: string): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const result = this.db
+      .prepare(
+        "DELETE FROM system_logs WHERE is_synced = 1 AND occurred_at < ?",
+      )
+      .run(date);
+
+    return result.changes;
+  }
+
+  async clearSyncedSystemLogs(): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const result = this.db
+      .prepare("DELETE FROM system_logs WHERE is_synced = 1")
+      .run();
+
+    return result.changes;
+  }
+
+  async clearAllSystemLogs(): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const result = this.db.prepare("DELETE FROM system_logs").run();
+
+    return result.changes;
+  }
+
+  async getSyncedSystemLogsSize(): Promise<number> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    const row = this.db
+      .prepare(
+        `
+          SELECT COALESCE(
+            SUM(
+              LENGTH(COALESCE(local_id, '')) +
+              LENGTH(COALESCE(CAST(organization_id AS TEXT), '')) +
+              LENGTH(COALESCE(CAST(workspace_id AS TEXT), '')) +
+              LENGTH(COALESCE(CAST(user_id AS TEXT), '')) +
+              LENGTH(COALESCE(source, '')) +
+              LENGTH(COALESCE(level, '')) +
+              LENGTH(COALESCE(component, '')) +
+              LENGTH(COALESCE(message, '')) +
+              LENGTH(COALESCE(details, '')) +
+              LENGTH(COALESCE(stack_trace, '')) +
+              LENGTH(COALESCE(app_version, '')) +
+              LENGTH(COALESCE(device_uuid, '')) +
+              LENGTH(COALESCE(request_id, '')) +
+              LENGTH(COALESCE(session_local_id, '')) +
+              LENGTH(COALESCE(CAST(is_synced AS TEXT), '')) +
+              LENGTH(COALESCE(occurred_at, '')) +
+              LENGTH(COALESCE(created_at, ''))
+            ),
+            0
+          ) AS total
+          FROM system_logs
+          WHERE is_synced = 1
+        `,
+      )
+      .get() as { total: number | null };
+
+    return row.total ?? 0;
+  }
+
+  getSqliteCacheSize(): number {
+    const databasePath = AppConfig.getDatabasePath();
+    const cacheFiles = [`${databasePath}-wal`, `${databasePath}-shm`];
+
+    return cacheFiles.reduce((total, filePath) => {
+      if (!fs.existsSync(filePath)) {
+        return total;
+      }
+
+      return total + fs.statSync(filePath).size;
+    }, 0);
   }
 
   // Task-related methods (queries against synced backend data)
@@ -707,8 +905,39 @@ export class DatabaseService {
     };
   }
 
+  private rowToSystemLog(row: any): SystemLog {
+    return {
+      id: row.id,
+      localId: row.local_id,
+      organizationId: row.organization_id,
+      workspaceId: row.workspace_id,
+      userId: row.user_id,
+      source: row.source,
+      level: row.level,
+      component: row.component,
+      message: row.message,
+      details: row.details,
+      stackTrace: row.stack_trace,
+      appVersion: row.app_version,
+      deviceUUID: row.device_uuid,
+      requestId: row.request_id,
+      sessionLocalId: row.session_local_id,
+      isSynced: row.is_synced === 1,
+      occurredAt: row.occurred_at,
+      createdAt: row.created_at,
+    };
+  }
+
   private camelToSnake(str: string): string {
     return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+  }
+
+  async clearSqliteCache(): Promise<void> {
+    if (!this.db) throw new Error("Database not initialized");
+
+    this.db.pragma("wal_checkpoint(TRUNCATE)");
+    this.db.exec("VACUUM");
+    this.db.exec("PRAGMA optimize");
   }
 
   async close(): Promise<void> {

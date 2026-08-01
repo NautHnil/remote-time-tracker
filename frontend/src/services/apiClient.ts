@@ -18,6 +18,7 @@ interface RequestOptions extends RequestInit {
 
 class ApiClient {
   private baseURL: string;
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
@@ -55,6 +56,20 @@ class ApiClient {
    * Handle token refresh
    */
   private async refreshToken(): Promise<string | null> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.refreshPromise = this.performTokenRefresh();
+
+    try {
+      return await this.refreshPromise;
+    } finally {
+      this.refreshPromise = null;
+    }
+  }
+
+  private async performTokenRefresh(): Promise<string | null> {
     try {
       const refreshToken = localStorage.getItem("refresh_token");
       if (!refreshToken) return null;
@@ -78,6 +93,24 @@ class ApiClient {
     return null;
   }
 
+  private isAuthEndpoint(endpoint: string): boolean {
+    return (
+      endpoint.includes("/auth/login") ||
+      endpoint.includes("/auth/cms-login") ||
+      endpoint.includes("/auth/register") ||
+      endpoint.includes("/auth/refresh")
+    );
+  }
+
+  private clearAuthAndRedirect(): void {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+
+    if (!window.location.pathname.includes("/admin/login")) {
+      window.location.href = "/admin/login";
+    }
+  }
+
   /**
    * Generic request method
    */
@@ -85,50 +118,41 @@ class ApiClient {
     endpoint: string,
     options: RequestOptions = {},
   ): Promise<ApiResponse<T>> {
-    const { params, headers = {}, ...fetchOptions } = options;
+    const { params, headers = {}, _retry, ...fetchOptions } = options;
+    const requestHeaders = { ...(headers as Record<string, string>) };
 
     // Get auth token
     const token = this.getAuthToken();
     if (token) {
-      (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+      requestHeaders["Authorization"] = `Bearer ${token}`;
     }
 
     // Merge with default headers
-    Object.assign(headers, DEFAULT_HEADERS);
+    Object.assign(requestHeaders, DEFAULT_HEADERS);
 
     const url = this.buildURL(endpoint, params);
 
     try {
       const response = await fetch(url, {
         ...fetchOptions,
-        headers: headers as HeadersInit,
+        headers: requestHeaders as HeadersInit,
       });
 
       // Handle 401 Unauthorized
-      if (response.status === 401 && !fetchOptions._retry) {
-        // Don't try to refresh token for auth endpoints (login/register)
-        const isAuthEndpoint =
-          endpoint.includes("/auth/login") ||
-          endpoint.includes("/auth/register");
-
-        if (!isAuthEndpoint) {
+      if (response.status === 401 && !_retry) {
+        if (!this.isAuthEndpoint(endpoint)) {
           const newToken = await this.refreshToken();
           if (newToken) {
-            // Retry with new token
-            (headers as Record<string, string>)["Authorization"] =
-              `Bearer ${newToken}`;
             return this.request<T>(endpoint, {
               ...options,
-              headers,
+              headers: {
+                ...(headers as Record<string, string>),
+                Authorization: `Bearer ${newToken}`,
+              },
               _retry: true,
-            } as any);
+            });
           } else {
-            // Redirect to login only if not already on login page
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("refresh_token");
-            if (!window.location.pathname.includes("/login")) {
-              window.location.href = "/login";
-            }
+            this.clearAuthAndRedirect();
             throw new Error("Authentication failed");
           }
         }

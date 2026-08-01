@@ -6,12 +6,14 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
+import {getRoleName} from "@/utils";
 
 // Navigation items configuration
 const navItems = [
   {
     name: "Dashboard",
     path: "/admin/dashboard",
+    systemOnly: true,
     icon: (
       <svg
         className="w-5 h-5"
@@ -31,6 +33,7 @@ const navItems = [
   {
     name: "Users",
     path: "/admin/users",
+    systemOnly: true,
     icon: (
       <svg
         className="w-5 h-5"
@@ -143,6 +146,52 @@ const navItems = [
     ),
   },
   {
+    name: "System Settings",
+    path: "/admin/system-settings",
+    systemOnly: true,
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M10.325 4.317a1 1 0 011.35-.936l1.8.789a1 1 0 00.813 0l1.8-.789a1 1 0 011.35.936l.173 1.958a1 1 0 00.49.785l1.623 1.169a1 1 0 01.204 1.52l-1.286 1.487a1 1 0 00-.244.776l.354 1.933a1 1 0 01-1.108 1.134l-1.948-.262a1 1 0 00-.764.208l-1.58 1.246a1 1 0 01-1.533 0l-1.58-1.246a1 1 0 00-.764-.208l-1.948.262a1 1 0 01-1.108-1.134l.354-1.933a1 1 0 00-.244-.776L2.42 9.603a1 1 0 01.204-1.52l1.623-1.169a1 1 0 00.49-.785l.173-1.958z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 15a3 3 0 100-6 3 3 0 000 6z"
+        />
+      </svg>
+    ),
+  },
+  {
+    name: "System Logs",
+    path: "/admin/system-logs",
+    systemOnly: true,
+    icon: (
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+      </svg>
+    ),
+  },
+  {
     name: "Statistics",
     path: "/admin/statistics",
     icon: (
@@ -171,13 +220,29 @@ const AdminLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const isSystemAdmin = user?.system_role === "admin" || user?.role === "admin";
+  const visibleNavItems = navItems.filter(
+    (item) => isSystemAdmin || !item.systemOnly,
+  );
 
-  // Check admin access
   useEffect(() => {
-    if (!isAuthenticated || user?.system_role !== "admin") {
+    if (!isAuthenticated) {
       navigate("/admin/login");
+      return;
     }
-  }, [isAuthenticated, user, navigate]);
+
+    if (!isSystemAdmin) {
+      const isSystemOnlyRoute = navItems.some(
+        (item) =>
+          item.systemOnly &&
+          (location.pathname === item.path ||
+            location.pathname.startsWith(`${item.path}/`)),
+      );
+      if (location.pathname === "/admin" || isSystemOnlyRoute) {
+        navigate("/admin/tasks", { replace: true });
+      }
+    }
+  }, [isAuthenticated, isSystemAdmin, location.pathname, navigate]);
 
   const handleLogout = () => {
     logout();
@@ -194,8 +259,7 @@ const AdminLayout: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  // Don't render if not admin
-  if (!isAuthenticated || user?.system_role !== "admin") {
+  if (!isAuthenticated) {
     return null;
   }
 
@@ -283,7 +347,7 @@ const AdminLayout: React.FC = () => {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4 px-3">
           <ul className="space-y-1">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <li key={item.path}>
                 <Link
                   to={item.path}
@@ -320,7 +384,7 @@ const AdminLayout: React.FC = () => {
                 <p className="text-sm font-medium text-gray-900 truncate">
                   {user?.first_name} {user?.last_name}
                 </p>
-                <p className="text-xs text-gray-500 truncate">System Admin</p>
+                <p className="text-xs text-gray-500 truncate">{getRoleName(user?.system_role)}</p>
               </div>
               <button
                 onClick={handleLogout}

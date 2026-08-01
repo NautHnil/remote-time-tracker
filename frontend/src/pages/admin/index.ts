@@ -7,6 +7,8 @@ export { default as AdminDashboardPage } from "./AdminDashboardPage";
 export { default as AdminLoginPage } from "./AdminLoginPage";
 export { default as AdminOrganizationsPage } from "./AdminOrganizationsPage";
 export { default as AdminScreenshotsPage } from "./AdminScreenshotsPage";
+export { default as AdminSystemLogsPage } from "./AdminSystemLogsPage";
+export { default as AdminSystemSettingsPage } from "./AdminSystemSettingsPage";
 export { default as AdminStatisticsPage } from "./AdminStatisticsPage";
 export { default as AdminTasksPage } from "./AdminTasksPage";
 export { default as AdminTimeLogsPage } from "./AdminTimeLogsPage";

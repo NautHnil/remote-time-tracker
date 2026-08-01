@@ -1,14 +1,25 @@
-import dotenv from "dotenv";
 import { app } from "electron";
 import Store from "electron-store";
 import path from "path";
+import { ENV } from "./env";
 
-// Load .env file from project root
-const envPath = app.isPackaged
-  ? path.join(process.resourcesPath, ".env")
-  : path.join(__dirname, "../../.env");
+export const SCREENSHOT_INTERVAL_MIN = 60 * 1000;
+export const SCREENSHOT_INTERVAL_MAX = 15 * 60 * 1000;
+export const SCREENSHOT_INTERVAL_DEFAULT = 5 * 60 * 1000;
 
-dotenv.config({ path: envPath });
+export const SYNC_INTERVAL_MIN = 5 * 1000;
+export const SYNC_INTERVAL_MAX = 30 * 60 * 1000;
+export const SYNC_INTERVAL_DEFAULT = 60 * 1000;
+const MS_PER_SECOND = 1000;
+
+const SCREENSHOT_INTERVAL_MIN_SECONDS = SCREENSHOT_INTERVAL_MIN / MS_PER_SECOND;
+const SCREENSHOT_INTERVAL_MAX_SECONDS = SCREENSHOT_INTERVAL_MAX / MS_PER_SECOND;
+const SCREENSHOT_INTERVAL_DEFAULT_SECONDS =
+  SCREENSHOT_INTERVAL_DEFAULT / MS_PER_SECOND;
+
+const SYNC_INTERVAL_MIN_SECONDS = SYNC_INTERVAL_MIN / MS_PER_SECOND;
+const SYNC_INTERVAL_MAX_SECONDS = SYNC_INTERVAL_MAX / MS_PER_SECOND;
+const SYNC_INTERVAL_DEFAULT_SECONDS = SYNC_INTERVAL_DEFAULT / MS_PER_SECOND;
 
 interface Credentials {
   accessToken: string;
@@ -34,11 +45,18 @@ interface Config {
   inviteWebsiteDomain: string;
   screenshotInterval: number;
   syncInterval: number;
+  systemLogRetentionDays: number;
   presenceHeartbeatInterval: number;
+  launchAtLogin: boolean;
   credentials?: Credentials;
   deviceUUID?: string;
   imageOptimization: ImageOptimizationConfig;
   customScreenshotPath?: string; // Custom path for screenshots, if set
+}
+
+interface RendererConfig extends Config {
+  screenshotIntervalMs: number;
+  syncIntervalMs: number;
 }
 
 class AppConfigClass {
@@ -47,16 +65,28 @@ class AppConfigClass {
   constructor() {
     this.store = new Store<Config>({
       defaults: {
-        apiUrl: process.env.VITE_API_URL || "",
-        websiteDomain: process.env.VITE_WEBSITE_DOMAIN || "",
-        inviteWebsiteDomain: process.env.VITE_INVITE_WEBSITE_DOMAIN || "",
-        screenshotInterval: parseInt(
-          process.env.VITE_SCREENSHOT_INTERVAL || "300000",
-        ), // 5 minutes
-        syncInterval: parseInt(process.env.VITE_SYNC_INTERVAL || "60000"), // 1 minute
+        apiUrl: ENV.VITE_API_URL || "",
+        websiteDomain: ENV.VITE_WEBSITE_DOMAIN || "",
+        inviteWebsiteDomain: ENV.VITE_INVITE_WEBSITE_DOMAIN || "",
+        screenshotInterval: this.normalizeIntervalValue(
+          ENV.VITE_SCREENSHOT_INTERVAL,
+          SCREENSHOT_INTERVAL_DEFAULT_SECONDS,
+          SCREENSHOT_INTERVAL_MIN_SECONDS,
+          SCREENSHOT_INTERVAL_MAX_SECONDS,
+        ),
+        syncInterval: this.normalizeIntervalValue(
+          ENV.VITE_SYNC_INTERVAL,
+          SYNC_INTERVAL_DEFAULT_SECONDS,
+          SYNC_INTERVAL_MIN_SECONDS,
+          SYNC_INTERVAL_MAX_SECONDS,
+        ),
+        systemLogRetentionDays: parseInt(
+          ENV.VITE_SYSTEM_LOG_RETENTION_DAYS || "30",
+        ),
         presenceHeartbeatInterval: parseInt(
-          process.env.VITE_PRESENCE_HEARTBEAT_INTERVAL || "15000",
+          ENV.VITE_PRESENCE_HEARTBEAT_INTERVAL || "15000",
         ), // 15 seconds
+        launchAtLogin: false,
         imageOptimization: {
           enabled: true,
           format: "jpeg",
@@ -66,6 +96,8 @@ class AppConfigClass {
         },
       },
     });
+
+    this.normalizeIntervals();
   }
 
   get apiUrl(): string {
@@ -81,15 +113,23 @@ class AppConfigClass {
   }
 
   get screenshotInterval(): number {
-    return this.store.get("screenshotInterval");
+    return this.store.get("screenshotInterval") * MS_PER_SECOND;
   }
 
   get syncInterval(): number {
-    return this.store.get("syncInterval");
+    return this.store.get("syncInterval") * MS_PER_SECOND;
   }
 
   get presenceHeartbeatInterval(): number {
     return this.store.get("presenceHeartbeatInterval");
+  }
+
+  get systemLogRetentionDays(): number {
+    return this.store.get("systemLogRetentionDays");
+  }
+
+  get launchAtLogin(): boolean {
+    return this.getLaunchAtLogin();
   }
 
   getCredentials(): Credentials | undefined {
@@ -109,11 +149,26 @@ class AppConfigClass {
   }
 
   set(key: keyof Config, value: any): void {
-    this.store.set(key, value);
+    if (key === "launchAtLogin") {
+      this.setLaunchAtLogin(Boolean(value));
+      return;
+    }
+
+    this.store.set(key, this.sanitizeConfigValue(key, value));
   }
 
   getAll(): Config {
     return this.store.store;
+  }
+
+  getRendererConfig(): RendererConfig {
+    const config = this.store.store;
+    return {
+      ...config,
+      launchAtLogin: this.getLaunchAtLogin(),
+      screenshotIntervalMs: config.screenshotInterval * MS_PER_SECOND,
+      syncIntervalMs: config.syncInterval * MS_PER_SECOND,
+    };
   }
 
   getAppDataPath(): string {
@@ -166,6 +221,9 @@ class AppConfigClass {
   // Reset to defaults
   resetToDefaults(): void {
     this.store.clear();
+    this.store.set("screenshotInterval", SCREENSHOT_INTERVAL_DEFAULT_SECONDS);
+    this.store.set("syncInterval", SYNC_INTERVAL_DEFAULT_SECONDS);
+    this.setLaunchAtLogin(false);
     this.store.set("imageOptimization", {
       enabled: true,
       format: "jpeg",
@@ -173,6 +231,90 @@ class AppConfigClass {
       maxWidth: 1920,
       maxHeight: 1080,
     });
+  }
+
+  private sanitizeConfigValue(key: keyof Config, value: any): any {
+    if (key === "screenshotInterval") {
+      return this.normalizeIntervalValue(
+        value,
+        SCREENSHOT_INTERVAL_DEFAULT_SECONDS,
+        SCREENSHOT_INTERVAL_MIN_SECONDS,
+        SCREENSHOT_INTERVAL_MAX_SECONDS,
+      );
+    }
+
+    if (key === "syncInterval") {
+      return this.normalizeIntervalValue(
+        value,
+        SYNC_INTERVAL_DEFAULT_SECONDS,
+        SYNC_INTERVAL_MIN_SECONDS,
+        SYNC_INTERVAL_MAX_SECONDS,
+      );
+    }
+
+    return value;
+  }
+
+  private getLaunchAtLogin(): boolean {
+    if (!app.isReady()) {
+      return this.store.get("launchAtLogin");
+    }
+
+    const settings = app.getLoginItemSettings();
+    const openAtLogin = Boolean(settings.openAtLogin);
+
+    if (openAtLogin !== this.store.get("launchAtLogin")) {
+      this.store.set("launchAtLogin", openAtLogin);
+    }
+
+    return openAtLogin;
+  }
+
+  private setLaunchAtLogin(enabled: boolean): void {
+    app.setLoginItemSettings({
+      openAtLogin: enabled,
+      openAsHidden: true,
+    });
+    this.store.set("launchAtLogin", enabled);
+  }
+
+  private normalizeIntervals(): void {
+    const screenshotInterval = this.normalizeIntervalValue(
+      this.store.get("screenshotInterval"),
+      SCREENSHOT_INTERVAL_DEFAULT_SECONDS,
+      SCREENSHOT_INTERVAL_MIN_SECONDS,
+      SCREENSHOT_INTERVAL_MAX_SECONDS,
+    );
+    const syncInterval = this.normalizeIntervalValue(
+      this.store.get("syncInterval"),
+      SYNC_INTERVAL_DEFAULT_SECONDS,
+      SYNC_INTERVAL_MIN_SECONDS,
+      SYNC_INTERVAL_MAX_SECONDS,
+    );
+
+    this.store.set("screenshotInterval", screenshotInterval);
+    this.store.set("syncInterval", syncInterval);
+  }
+
+  private normalizeIntervalValue(
+    value: unknown,
+    fallbackSeconds: number,
+    minSeconds: number,
+    maxSeconds: number,
+  ): number {
+    const parsed =
+      typeof value === "number" ? value : parseInt(String(value ?? ""), 10);
+
+    if (!Number.isFinite(parsed)) {
+      return fallbackSeconds;
+    }
+
+    // Previous versions stored interval in milliseconds.
+    // Any value above the allowed seconds range is treated as a legacy ms value.
+    const normalizedSeconds =
+      parsed > maxSeconds ? Math.round(parsed / MS_PER_SECOND) : parsed;
+
+    return Math.min(Math.max(normalizedSeconds, minSeconds), maxSeconds);
   }
 }
 

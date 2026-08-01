@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/beuphecan/remote-time-tracker/internal/dto"
-	"github.com/beuphecan/remote-time-tracker/internal/service"
-	"github.com/beuphecan/remote-time-tracker/internal/utils"
 	"github.com/gin-gonic/gin"
+	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/service"
+	"remote-time-tracker.dev/internal/utils"
 )
 
 // UpdateController handles auto-update API endpoints
@@ -30,6 +30,7 @@ func NewUpdateController(updateService *service.UpdateService) *UpdateController
 // @Tags updates
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param request body dto.UpdateCheckRequest true "Current version and platform info"
 // @Success 200 {object} dto.UpdateCheckResponse "Update check result"
 // @Failure 400 {object} dto.ErrorResponse "Invalid request"
@@ -60,6 +61,7 @@ func (c *UpdateController) CheckForUpdates(ctx *gin.Context) {
 // @Description Get information about the latest available version
 // @Tags updates
 // @Produce json
+// @Security BearerAuth
 // @Param platform query string false "Platform (darwin, win32, linux)" default(darwin)
 // @Param arch query string false "Architecture (x64, arm64)" default(x64)
 // @Success 200 {object} dto.UpdateCheckResponse "Latest version info"
@@ -90,6 +92,7 @@ func (c *UpdateController) GetLatestVersion(ctx *gin.Context) {
 // @Description Download a specific release asset (installer/update file)
 // @Tags updates
 // @Produce application/octet-stream
+// @Security BearerAuth
 // @Param version path string true "Version tag (e.g., v1.0.0)"
 // @Param filename path string true "Asset filename"
 // @Success 200 {file} binary "File download"
@@ -98,6 +101,26 @@ func (c *UpdateController) GetLatestVersion(ctx *gin.Context) {
 // @Failure 500 {object} dto.ErrorResponse "Internal server error"
 // @Router /updates/download/{version}/{filename} [get]
 func (c *UpdateController) DownloadAsset(ctx *gin.Context) {
+	c.downloadAsset(ctx)
+}
+
+// DownloadPublicAsset proxies the download of a public release asset
+// @Summary Download public release asset
+// @Description Download a specific public release asset for the website download page
+// @Tags updates
+// @Produce application/octet-stream
+// @Param version path string true "Version tag (e.g., v1.0.0)"
+// @Param filename path string true "Asset filename"
+// @Success 200 {file} binary "File download"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 404 {object} dto.ErrorResponse "Asset not found"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /public/downloads/file/{version}/{filename} [get]
+func (c *UpdateController) DownloadPublicAsset(ctx *gin.Context) {
+	c.downloadAsset(ctx)
+}
+
+func (c *UpdateController) downloadAsset(ctx *gin.Context) {
 	version := ctx.Param("version")
 	filename := ctx.Param("filename")
 
@@ -143,6 +166,7 @@ func (c *UpdateController) DownloadAsset(ctx *gin.Context) {
 // @Description Get the latest.yml file for electron-updater auto-update
 // @Tags updates
 // @Produce application/x-yaml
+// @Security BearerAuth
 // @Param platform path string true "Platform (darwin, win32, linux)"
 // @Success 200 {object} dto.YMLInfo "YAML update info"
 // @Failure 500 {object} dto.ErrorResponse "Internal server error"
@@ -172,11 +196,13 @@ func (c *UpdateController) GetYMLFile(ctx *gin.Context) {
 // @Description Get release notes for a specific version or the latest release
 // @Tags updates
 // @Produce json
+// @Security BearerAuth
 // @Param version path string false "Version tag (use 'latest' for latest release)" default(latest)
 // @Success 200 {object} dto.ReleaseNotesResponse "Release notes"
 // @Failure 404 {object} dto.ErrorResponse "Release not found"
 // @Failure 500 {object} dto.ErrorResponse "Internal server error"
 // @Router /updates/notes/{version} [get]
+// @Router /updates/notes [get]
 func (c *UpdateController) GetReleaseNotes(ctx *gin.Context) {
 	version := ctx.Param("version")
 	if version == "" {

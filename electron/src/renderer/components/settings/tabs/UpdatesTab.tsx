@@ -1,8 +1,19 @@
 import { Icons } from "../../Icons";
 import { Card, SectionHeader } from "../ui";
-import { UpdateSection } from "../UpdateSection";
+import { UpdateSection, UpdateStep } from "../UpdateSection";
 
-export function UpdatesTab() {
+interface UpdatesTabProps {
+  version: string;
+  step: UpdateStep;
+  availableVersion: string | null;
+  progress: number;
+  errorMessage: string;
+  onCheck: () => void | Promise<void>;
+  onDownload: () => void | Promise<void>;
+  onInstall: () => void | Promise<void>;
+}
+
+export function UpdatesTab(props: UpdatesTabProps) {
   return (
     <Card className="p-6">
       <SectionHeader
@@ -10,7 +21,7 @@ export function UpdatesTab() {
         title="Application Updates"
         description="Keep your app up to date"
       />
-      <UpdateSection />
+      <UpdateSection {...props} />
     </Card>
   );
 }
