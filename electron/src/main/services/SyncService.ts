@@ -3,7 +3,9 @@ import { formatISO, subDays } from "date-fns";
 import { app } from "electron";
 // @ts-ignore
 import fs from "fs";
+import path from "path";
 import { AppConfig } from "../config";
+import { ImageOptimizer, OptimizationOptions } from "./ImageOptimizer";
 import { ScreenshotService } from "./ScreenshotService";
 import { deleteFileWithRetries } from "../utils/FileDeletion";
 import {
@@ -33,14 +35,62 @@ interface PreparedScreenshotPayload {
   screenshot: Screenshot;
   dto: Record<string, any>;
   encodedBytes: number;
+  requestBytes: number;
+  temporaryFilePath?: string;
 }
 
 export class SyncService {
   private static readonly TIME_LOG_BATCH_SIZE = 100;
   private static readonly SCREENSHOT_BATCH_SIZE = 10;
-  private static readonly SCREENSHOT_MAX_BATCH_BYTES = 4 * 1024 * 1024;
+  private static readonly SCREENSHOT_MAX_BATCH_BYTES = 900 * 1024;
+  private static readonly SCREENSHOT_SINGLE_TARGET_BYTES = 620 * 1024;
   private static readonly SYSTEM_LOG_BATCH_SIZE = 200;
   private static readonly SYNC_BATCH_ENDPOINT = "/sync-data/batch-sync";
+  private static readonly SCREENSHOT_RECOMPRESSION_PRESETS: OptimizationOptions[] =
+    [
+      {
+        format: "jpeg",
+        quality: 70,
+        maxWidth: 1600,
+        maxHeight: 900,
+        stripMetadata: true,
+      },
+      {
+        format: "jpeg",
+        quality: 60,
+        maxWidth: 1440,
+        maxHeight: 900,
+        stripMetadata: true,
+      },
+      {
+        format: "webp",
+        quality: 55,
+        maxWidth: 1440,
+        maxHeight: 900,
+        stripMetadata: true,
+      },
+      {
+        format: "jpeg",
+        quality: 50,
+        maxWidth: 1280,
+        maxHeight: 720,
+        stripMetadata: true,
+      },
+      {
+        format: "webp",
+        quality: 45,
+        maxWidth: 1280,
+        maxHeight: 720,
+        stripMetadata: true,
+      },
+      {
+        format: "jpeg",
+        quality: 40,
+        maxWidth: 1024,
+        maxHeight: 576,
+        stripMetadata: true,
+      },
+    ];
 
   private dbService: DatabaseService;
   private screenshotService: ScreenshotService;
@@ -56,6 +106,8 @@ export class SyncService {
     this.apiClient = axios.create({
       baseURL: AppConfig.apiUrl,
       timeout: 30000,
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity,
     });
 
     // Add request interceptor for auth token
@@ -352,11 +404,14 @@ export class SyncService {
           continue;
         }
 
-        const base64Data = fs.readFileSync(screenshot.filePath).toString("base64");
+        const base64Data = fs
+          .readFileSync(screenshot.filePath)
+          .toString("base64");
         preparedBatch.push({
           screenshot,
           dto: await this.screenshotToDTO(screenshot, base64Data),
           encodedBytes: Buffer.byteLength(base64Data, "utf8"),
+          requestBytes: 0,
         });
       } catch (error) {
         console.error(
@@ -380,9 +435,13 @@ export class SyncService {
     let currentBytes = 0;
 
     for (const item of batch) {
+      const uploadItem = await this.ensureScreenshotPayloadFits(
+        item,
+        contextPayload
+      );
       const nextBatchWouldOverflow =
         currentBatch.length > 0 &&
-        currentBytes + item.encodedBytes >
+        currentBytes + uploadItem.requestBytes >
           SyncService.SCREENSHOT_MAX_BATCH_BYTES;
 
       if (nextBatchWouldOverflow) {
@@ -395,8 +454,8 @@ export class SyncService {
         currentBytes = 0;
       }
 
-      currentBatch.push(item);
-      currentBytes += item.encodedBytes;
+      currentBatch.push(uploadItem);
+      currentBytes += uploadItem.requestBytes;
     }
 
     if (currentBatch.length > 0) {
@@ -469,12 +528,185 @@ export class SyncService {
   ): Promise<void> {
     for (const item of batch) {
       await this.finalizeSyncedScreenshot(item.screenshot);
+      await this.cleanupTemporaryScreenshot(item);
     }
+  }
+
+  private async ensureScreenshotPayloadFits(
+    item: PreparedScreenshotPayload,
+    contextPayload: Record<string, any>
+  ): Promise<PreparedScreenshotPayload> {
+    const requestBytes = this.measureScreenshotRequestBytes(
+      [item.dto],
+      contextPayload
+    );
+
+    if (requestBytes <= SyncService.SCREENSHOT_MAX_BATCH_BYTES) {
+      return {
+        ...item,
+        requestBytes,
+      };
+    }
+
+    const optimizedItem = await this.createUploadSizedScreenshot(
+      item,
+      contextPayload
+    );
+
+    if (optimizedItem.requestBytes <= SyncService.SCREENSHOT_MAX_BATCH_BYTES) {
+      console.warn(
+        `Screenshot ${item.screenshot.fileName} was too large for sync (${this.formatBytes(
+          requestBytes
+        )} request). Recompressed upload copy to ${this.formatBytes(
+          optimizedItem.requestBytes
+        )}.`
+      );
+      return optimizedItem;
+    }
+
+    await this.cleanupTemporaryScreenshot(optimizedItem);
+    throw new Error(
+      `screenshots: ${item.screenshot.fileName} remains too large after recompression (${this.formatBytes(
+        optimizedItem.requestBytes
+      )} request body). Lower screenshot quality/resolution or increase the server/proxy request body limit.`
+    );
+  }
+
+  private async createUploadSizedScreenshot(
+    item: PreparedScreenshotPayload,
+    contextPayload: Record<string, any>
+  ): Promise<PreparedScreenshotPayload> {
+    let bestItem = item;
+    let bestRequestBytes = this.measureScreenshotRequestBytes(
+      [item.dto],
+      contextPayload
+    );
+
+    for (const options of SyncService.SCREENSHOT_RECOMPRESSION_PRESETS) {
+      const optimizer = new ImageOptimizer(options);
+      const outputPath = this.buildTemporaryScreenshotPath(
+        item.screenshot,
+        optimizer.getOutputExtension()
+      );
+      const inputBuffer = fs.readFileSync(item.screenshot.filePath);
+      const result = await optimizer.optimizeBuffer(inputBuffer, outputPath);
+
+      if (!result.success || !fs.existsSync(result.optimizedPath)) {
+        console.warn(
+          `Screenshot recompression failed for ${item.screenshot.fileName}: ${
+            result.error || "unknown error"
+          }`
+        );
+        continue;
+      }
+
+      const base64Data = fs
+        .readFileSync(result.optimizedPath)
+        .toString("base64");
+      const uploadScreenshot: Screenshot = {
+        ...item.screenshot,
+        filePath: result.optimizedPath,
+        fileName: path.basename(result.optimizedPath),
+        fileSize: result.optimizedSize,
+        mimeType: optimizer.getMimeType(),
+        checksum: "",
+      };
+      const dto = await this.screenshotToDTO(uploadScreenshot, base64Data);
+      const requestBytes = this.measureScreenshotRequestBytes(
+        [dto],
+        contextPayload
+      );
+
+      if (requestBytes < bestRequestBytes) {
+        if (
+          bestItem.temporaryFilePath &&
+          bestItem.temporaryFilePath !== result.optimizedPath
+        ) {
+          await this.deleteTemporaryScreenshot(bestItem.temporaryFilePath);
+        }
+
+        bestRequestBytes = requestBytes;
+        bestItem = {
+          screenshot: item.screenshot,
+          dto,
+          encodedBytes: Buffer.byteLength(base64Data, "utf8"),
+          requestBytes,
+          temporaryFilePath: result.optimizedPath,
+        };
+      } else {
+        await this.deleteTemporaryScreenshot(result.optimizedPath);
+      }
+
+      if (
+        requestBytes <= SyncService.SCREENSHOT_MAX_BATCH_BYTES &&
+        result.optimizedSize <= SyncService.SCREENSHOT_SINGLE_TARGET_BYTES
+      ) {
+        break;
+      }
+    }
+
+    return {
+      ...bestItem,
+      requestBytes: bestRequestBytes,
+    };
+  }
+
+  private measureScreenshotRequestBytes(
+    screenshots: Record<string, any>[],
+    contextPayload: Record<string, any>
+  ): number {
+    return Buffer.byteLength(
+      JSON.stringify({
+        ...contextPayload,
+        time_logs: [],
+        screenshots,
+        system_logs: [],
+      }),
+      "utf8"
+    );
+  }
+
+  private buildTemporaryScreenshotPath(
+    screenshot: Screenshot,
+    extension: string
+  ): string {
+    const uploadCacheDir = path.join(
+      AppConfig.getAppDataPath(),
+      "sync-upload-cache"
+    );
+    if (!fs.existsSync(uploadCacheDir)) {
+      fs.mkdirSync(uploadCacheDir, { recursive: true });
+    }
+
+    const safeLocalId = screenshot.localId.replace(/[^a-zA-Z0-9_-]/g, "");
+    return path.join(uploadCacheDir, `${safeLocalId}-${Date.now()}${extension}`);
+  }
+
+  private async cleanupTemporaryScreenshot(
+    item: PreparedScreenshotPayload
+  ): Promise<void> {
+    if (!item.temporaryFilePath) {
+      return;
+    }
+
+    await this.deleteTemporaryScreenshot(item.temporaryFilePath);
+  }
+
+  private async deleteTemporaryScreenshot(filePath: string): Promise<void> {
+    if (!fs.existsSync(filePath)) {
+      return;
+    }
+
+    await deleteFileWithRetries(filePath, {
+      fileLabel: `temporary sync screenshot ${path.basename(filePath)}`,
+      logPrefix: "Cleanup",
+    });
   }
 
   private shouldRetryScreenshotBatch(error: any): boolean {
     const errorCode = error?.code;
     return (
+      error?.response?.status === 413 ||
       errorCode === "EPIPE" ||
       errorCode === "ECONNRESET" ||
       errorCode === "ECONNABORTED" ||
@@ -684,6 +916,10 @@ export class SyncService {
 
     if (status === 404 && requestUrl) {
       return `${scope}: endpoint not found (${requestUrl}). Admin system log APIs may exist, but the desktop sync route is missing or different.`;
+    }
+
+    if (status === 413) {
+      return `${scope}: upload payload is too large for the server/proxy limit (HTTP 413). Screenshot sync will retry with smaller batches and recompressed upload copies.`;
     }
 
     if (status && serverMessage) {
