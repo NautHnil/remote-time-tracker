@@ -327,6 +327,60 @@ func (a *AuditLog) BeforeSave(tx *gorm.DB) error {
 	return nil
 }
 
+// AppVersion represents a desktop app release synced from GitHub and managed by admins.
+type AppVersion struct {
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	Version              string     `gorm:"size:50;uniqueIndex;not null" json:"version"`
+	TagName              string     `gorm:"size:100;not null;index" json:"tag_name"`
+	Name                 string     `gorm:"size:255" json:"name"`
+	GitHubReleaseID      int64      `gorm:"uniqueIndex" json:"github_release_id"`
+	GitHubURL            string     `gorm:"size:500" json:"github_url"`
+	ReleaseDate          *time.Time `gorm:"index" json:"release_date"`
+	ReleaseNotes         string     `gorm:"type:text" json:"release_notes"`
+	OriginalReleaseNotes string     `gorm:"type:text" json:"original_release_notes"`
+	IsMandatory          bool       `gorm:"default:false;index" json:"is_mandatory"`
+	IsLatest             bool       `gorm:"default:false;index" json:"is_latest"`
+	Draft                bool       `gorm:"default:false;index" json:"draft"`
+	Prerelease           bool       `gorm:"default:false;index" json:"prerelease"`
+	LastSyncedAt         *time.Time `json:"last_synced_at"`
+
+	Assets []AppVersionAsset `gorm:"foreignKey:AppVersionID" json:"assets,omitempty"`
+}
+
+// TableName overrides the table name
+func (AppVersion) TableName() string {
+	return "app_versions"
+}
+
+// AppVersionAsset represents a downloadable artifact for an app version.
+type AppVersionAsset struct {
+	ID        uint           `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	AppVersionID       uint   `gorm:"not null;index;uniqueIndex:idx_app_version_asset_name" json:"app_version_id"`
+	GitHubAssetID      int64  `gorm:"uniqueIndex" json:"github_asset_id"`
+	Name               string `gorm:"size:255;not null;uniqueIndex:idx_app_version_asset_name" json:"name"`
+	URL                string `gorm:"size:500;not null" json:"url"`
+	BrowserDownloadURL string `gorm:"size:500" json:"browser_download_url"`
+	Size               int64  `json:"size"`
+	ContentType        string `gorm:"size:100" json:"content_type"`
+	State              string `gorm:"size:50" json:"state"`
+	SHA512             string `gorm:"size:255" json:"sha512"`
+
+	AppVersion AppVersion `gorm:"foreignKey:AppVersionID" json:"-"`
+}
+
+// TableName overrides the table name
+func (AppVersionAsset) TableName() string {
+	return "app_version_assets"
+}
+
 // ============================================================================
 // ORGANIZATION & WORKSPACE MODELS
 // ============================================================================

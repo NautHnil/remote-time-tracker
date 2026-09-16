@@ -18,8 +18,8 @@ type UpdateCheckResponse struct {
 	UpdateAvailable bool           `json:"update_available"`
 	LatestVersion   string         `json:"latest_version,omitempty"`
 	ReleaseDate     *time.Time     `json:"release_date,omitempty"`
-	ReleaseNotes    string         `json:"release_notes,omitempty"`
-	IsMandatory     bool           `json:"is_mandatory,omitempty"`
+	ReleaseNotes    string         `json:"release_notes"`
+	IsMandatory     bool           `json:"is_mandatory"`
 	Files           []ReleaseAsset `json:"files,omitempty"`
 }
 
@@ -37,6 +37,7 @@ type GHRelease struct {
 	ID          int64     `json:"id"`
 	TagName     string    `json:"tag_name"`
 	Name        string    `json:"name"`
+	HTMLURL     string    `json:"html_url"`
 	Body        string    `json:"body"` // Release notes (markdown)
 	Draft       bool      `json:"draft"`
 	Prerelease  bool      `json:"prerelease"`
@@ -111,4 +112,58 @@ type PlatformDownload struct {
 	URL         string `json:"url"`          // Proxied download URL through backend (use this for private repos)
 	Size        int64  `json:"size"`         // File size in bytes
 	ContentType string `json:"content_type"` // MIME type
+}
+
+// AdminAppVersionAssetResponse represents an app version asset in admin APIs.
+type AdminAppVersionAssetResponse struct {
+	ID                 uint   `json:"id"`
+	Name               string `json:"name"`
+	URL                string `json:"url"`
+	BrowserDownloadURL string `json:"browser_download_url"`
+	DownloadURL        string `json:"download_url"`
+	Size               int64  `json:"size"`
+	ContentType        string `json:"content_type"`
+	State              string `json:"state"`
+	SHA512             string `json:"sha512,omitempty"`
+}
+
+// AdminAppVersionResponse represents a managed app version.
+type AdminAppVersionResponse struct {
+	ID                   uint                           `json:"id"`
+	Version              string                         `json:"version"`
+	TagName              string                         `json:"tag_name"`
+	Name                 string                         `json:"name"`
+	GitHubReleaseID      int64                          `json:"github_release_id"`
+	GitHubURL            string                         `json:"github_url"`
+	ReleaseDate          *time.Time                     `json:"release_date"`
+	ReleaseNotes         string                         `json:"release_notes"`
+	OriginalReleaseNotes string                         `json:"original_release_notes"`
+	IsMandatory          bool                           `json:"is_mandatory"`
+	IsLatest             bool                           `json:"is_latest"`
+	Draft                bool                           `json:"draft"`
+	Prerelease           bool                           `json:"prerelease"`
+	LastSyncedAt         *time.Time                     `json:"last_synced_at"`
+	CreatedAt            time.Time                      `json:"created_at"`
+	UpdatedAt            time.Time                      `json:"updated_at"`
+	Assets               []AdminAppVersionAssetResponse `json:"assets"`
+}
+
+// AdminAppVersionListResponse represents app version list response.
+type AdminAppVersionListResponse struct {
+	Versions []AdminAppVersionResponse `json:"versions"`
+}
+
+// AdminUpdateAppVersionRequest represents editable admin fields for app versions.
+type AdminUpdateAppVersionRequest struct {
+	ReleaseNotes *string `json:"release_notes"`
+	IsMandatory  *bool   `json:"is_mandatory"`
+	IsLatest     *bool   `json:"is_latest"`
+}
+
+// AdminSyncAppVersionsResponse represents a GitHub sync result.
+type AdminSyncAppVersionsResponse struct {
+	SyncedCount int       `json:"synced_count"`
+	SyncedAt    time.Time `json:"synced_at"`
+	Latest      string    `json:"latest,omitempty"`
+	Error       string    `json:"error,omitempty"`
 }

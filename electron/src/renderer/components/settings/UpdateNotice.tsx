@@ -6,6 +6,7 @@ interface UpdateNoticeProps {
   availableVersion: string | null;
   progress: number;
   errorMessage: string;
+  isMandatory?: boolean;
   onClose: () => void;
   onUpdateNow: () => void | Promise<void>;
 }
@@ -15,12 +16,15 @@ export function UpdateNotice({
   availableVersion,
   progress,
   errorMessage,
+  isMandatory = false,
   onClose,
   onUpdateNow,
 }: UpdateNoticeProps) {
   const title =
-    step === "downloaded"
-      ? "Update is ready to install"
+    isMandatory && step === "downloaded"
+      ? "Required update is ready"
+      : step === "downloaded"
+        ? "Update is ready to install"
       : step === "downloading" || step === "download-pending"
         ? "Downloading new version"
         : step === "installing"
@@ -30,8 +34,10 @@ export function UpdateNotice({
             : "New version available";
 
   const description =
-    step === "downloaded"
-      ? "Open the Updates tab and install when you're ready."
+    isMandatory && step === "downloaded"
+      ? "Install this required update to continue using the app."
+      : step === "downloaded"
+        ? "Install when you're ready."
       : step === "downloading"
         ? `Download in progress: ${progress}%`
         : step === "download-pending"
@@ -44,7 +50,7 @@ export function UpdateNotice({
 
   const buttonLabel =
     step === "downloaded"
-      ? "Open Update"
+      ? "Install & Restart"
       : step === "downloading" || step === "download-pending"
         ? "View Progress"
         : step === "installing"
@@ -85,13 +91,15 @@ export function UpdateNotice({
                 </p>
               </div>
 
-              <button
-                onClick={onClose}
-                className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-white/70 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-100"
-                aria-label="Close update notice"
-              >
-                <Icons.X className="h-4 w-4" />
-              </button>
+              {!isMandatory && (
+                <button
+                  onClick={onClose}
+                  className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-white/70 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-100"
+                  aria-label="Close update notice"
+                >
+                  <Icons.X className="h-4 w-4" />
+                </button>
+              )}
             </div>
 
             {step === "downloading" && (

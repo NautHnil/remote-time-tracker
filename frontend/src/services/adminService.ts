@@ -121,6 +121,55 @@ export interface AdminSystemLogPolicyResponse {
   runtime_only: boolean;
 }
 
+export interface AdminAppVersionAsset {
+  id: number;
+  name: string;
+  url: string;
+  browser_download_url: string;
+  download_url: string;
+  size: number;
+  content_type: string;
+  state: string;
+  sha512?: string;
+}
+
+export interface AdminAppVersion {
+  id: number;
+  version: string;
+  tag_name: string;
+  name: string;
+  github_release_id: number;
+  github_url: string;
+  release_date: string | null;
+  release_notes: string;
+  original_release_notes: string;
+  is_mandatory: boolean;
+  is_latest: boolean;
+  draft: boolean;
+  prerelease: boolean;
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+  assets: AdminAppVersionAsset[];
+}
+
+export interface AdminAppVersionListResponse {
+  versions: AdminAppVersion[];
+}
+
+export interface AdminUpdateAppVersionRequest {
+  release_notes?: string;
+  is_mandatory?: boolean;
+  is_latest?: boolean;
+}
+
+export interface AdminSyncAppVersionsResponse {
+  synced_count: number;
+  synced_at: string;
+  latest?: string;
+  error?: string;
+}
+
 // ============================================================================
 // REQUEST INTERFACES
 // ============================================================================
@@ -827,6 +876,27 @@ class AdminService {
     if (params.end_date) queryParams.end_date = params.end_date;
 
     return apiClient.get("/admin/audit-logs", queryParams);
+  }
+
+  // ==========================================================================
+  // APP VERSION MANAGEMENT
+  // ==========================================================================
+
+  async getAppVersions(): Promise<ApiResponse<AdminAppVersionListResponse>> {
+    return apiClient.get<AdminAppVersionListResponse>("/admin/app-versions");
+  }
+
+  async updateAppVersion(
+    id: number,
+    data: AdminUpdateAppVersionRequest,
+  ): Promise<ApiResponse<AdminAppVersion>> {
+    return apiClient.put<AdminAppVersion>(`/admin/app-versions/${id}`, data);
+  }
+
+  async syncAppVersions(): Promise<ApiResponse<AdminSyncAppVersionsResponse>> {
+    return apiClient.post<AdminSyncAppVersionsResponse>(
+      "/admin/app-versions/sync",
+    );
   }
 }
 

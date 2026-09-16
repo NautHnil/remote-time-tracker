@@ -25,9 +25,10 @@ type Config struct {
 
 // GitHubConfig holds GitHub API configuration for auto-updates
 type GitHubConfig struct {
-	Token string // Personal access token for private repos
-	Owner string // Repository owner
-	Repo  string // Repository name
+	Token        string        // Personal access token for private repos
+	Owner        string        // Repository owner
+	Repo         string        // Repository name
+	SyncInterval time.Duration // Interval for syncing releases into the database
 }
 
 // ServerConfig holds server-related configuration
@@ -127,9 +128,10 @@ func Load() (*Config, error) {
 			SystemLogCleanupInterval: parseDuration(getEnv("SYSTEM_LOG_CLEANUP_INTERVAL", "6h")),
 		},
 		GitHub: GitHubConfig{
-			Token: getEnv("GITHUB_TOKEN", ""),
-			Owner: getEnv("GITHUB_OWNER", "NautHnil"),
-			Repo:  getEnv("GITHUB_REPO", "remote-time-tracker"),
+			Token:        getEnv("GITHUB_TOKEN", ""),
+			Owner:        getEnv("GITHUB_OWNER", "NautHnil"),
+			Repo:         getEnv("GITHUB_REPO", "remote-time-tracker"),
+			SyncInterval: parseDuration(getEnv("GITHUB_RELEASE_SYNC_INTERVAL", "15m")),
 		},
 		Presence: PresenceConfig{
 			HeartbeatInterval: parseDuration(getEnv("PRESENCE_HEARTBEAT_INTERVAL", "15s")),

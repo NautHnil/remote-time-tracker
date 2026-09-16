@@ -61,3 +61,7 @@ uploads/screenshots/*
 # Temporary files
 tmp/
 temp/
+
+# AI
+.claude/
+CLAUDE.md

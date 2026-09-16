@@ -22,6 +22,198 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/app-versions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List GitHub releases synced into the backend app version table",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List app versions",
+                "responses": {
+                    "200": {
+                        "description": "App versions retrieved",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminAppVersionListResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/app-versions/sync": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Fetch GitHub releases and sync them into the backend app version table",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Sync app versions from GitHub",
+                "responses": {
+                    "200": {
+                        "description": "App versions synced",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminSyncAppVersionsResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/app-versions/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update editable release metadata such as release notes, latest flag, and mandatory update flag",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update app version metadata",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "App version ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "App version metadata",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUpdateAppVersionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "App version updated",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminAppVersionResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/organizations": {
             "get": {
                 "security": [
@@ -75,25 +267,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization list",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgListResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOrgListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -127,31 +319,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgDetailResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOrgDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid organization ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Organization not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -187,7 +379,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateOrgRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUpdateOrgRequest"
                         }
                     }
                 ],
@@ -195,25 +387,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Updated organization",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOrgResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -245,25 +437,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid organization ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -298,7 +490,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminVerifyOrgRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminVerifyOrgRequest"
                         }
                     }
                 ],
@@ -315,25 +507,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -429,25 +621,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Screenshot list",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotListResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminScreenshotListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -478,7 +670,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminBulkDeleteRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminBulkDeleteRequest"
                         }
                     }
                 ],
@@ -495,25 +687,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -547,31 +739,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Screenshot details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminScreenshotResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid screenshot ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Screenshot not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -603,25 +795,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid screenshot ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -662,25 +854,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid screenshot ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Screenshot not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -705,25 +897,25 @@ const docTemplate = `{
                     "200": {
                         "description": "System statistics",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOverviewStats"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOverviewStats"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -748,25 +940,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Activity statistics",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminActivityStats"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminActivityStats"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -791,25 +983,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization statistics",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgStats"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOrgStats"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -834,25 +1026,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Overview statistics",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOverviewStats"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOverviewStats"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -898,25 +1090,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Trend statistics",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTrendStats"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTrendStats"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -964,26 +1156,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserPerformance"
+                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUserPerformance"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1008,7 +1200,7 @@ const docTemplate = `{
                     "200": {
                         "description": "System configs",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigListResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminSystemConfigListResponse"
                         }
                     }
                 }
@@ -1046,7 +1238,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateSystemConfigRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUpdateSystemConfigRequest"
                         }
                     }
                 ],
@@ -1054,13 +1246,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Updated config",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminSystemConfigResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1155,25 +1347,25 @@ const docTemplate = `{
                     "200": {
                         "description": "System log list",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogListResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminSystemLogListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1203,7 +1395,7 @@ const docTemplate = `{
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminCleanupSystemLogsRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminCleanupSystemLogsRequest"
                         }
                     }
                 ],
@@ -1211,19 +1403,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Cleanup result",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminCleanupSystemLogsResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminCleanupSystemLogsResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Cleanup failed",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1248,7 +1440,7 @@ const docTemplate = `{
                     "200": {
                         "description": "System log policy",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogPolicyResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminSystemLogPolicyResponse"
                         }
                     }
                 }
@@ -1277,7 +1469,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateSystemLogPolicyRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUpdateSystemLogPolicyRequest"
                         }
                     }
                 ],
@@ -1285,13 +1477,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Updated system log policy",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogPolicyResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminSystemLogPolicyResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1325,19 +1517,19 @@ const docTemplate = `{
                     "200": {
                         "description": "System log details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminSystemLogResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid system log ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "System log not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1408,25 +1600,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Task list",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskListResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTaskListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1460,31 +1652,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Task details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskDetailResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTaskDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid task ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Task not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1520,7 +1712,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateTaskRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUpdateTaskRequest"
                         }
                     }
                 ],
@@ -1528,25 +1720,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Updated task",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTaskResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1578,25 +1770,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid task ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1673,25 +1865,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Time log list",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogListResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTimeLogListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1722,7 +1914,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminApproveTimeLogsRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminApproveTimeLogsRequest"
                         }
                     }
                 ],
@@ -1739,25 +1931,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1791,31 +1983,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Time log details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogDetailResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTimeLogDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid time log ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Time log not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1851,7 +2043,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateTimeLogRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUpdateTimeLogRequest"
                         }
                     }
                 ],
@@ -1859,25 +2051,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Updated time log",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTimeLogResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -1909,25 +2101,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid time log ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2016,25 +2208,25 @@ const docTemplate = `{
                     "200": {
                         "description": "User list",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserListResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUserListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2063,7 +2255,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminCreateUserRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminCreateUserRequest"
                         }
                     }
                 ],
@@ -2071,25 +2263,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created user",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUserResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2123,31 +2315,31 @@ const docTemplate = `{
                     "200": {
                         "description": "User details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserDetailResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUserDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid user ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2183,7 +2375,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateUserRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUpdateUserRequest"
                         }
                     }
                 ],
@@ -2191,25 +2383,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Updated user",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUserResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2241,25 +2433,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid user ID or self-deletion",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2294,7 +2486,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminActivateUserRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminActivateUserRequest"
                         }
                     }
                 ],
@@ -2311,25 +2503,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2364,7 +2556,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminChangeRoleRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminChangeRoleRequest"
                         }
                     }
                 ],
@@ -2381,25 +2573,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2434,7 +2626,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminChangeSystemRoleRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminChangeSystemRoleRequest"
                         }
                     }
                 ],
@@ -2451,25 +2643,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request or self-modification",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2534,25 +2726,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Workspace list",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceListResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminWorkspaceListResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2586,31 +2778,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Workspace details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceDetailResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminWorkspaceDetailResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid workspace ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Workspace not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2646,7 +2838,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateWorkspaceRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUpdateWorkspaceRequest"
                         }
                     }
                 ],
@@ -2654,25 +2846,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Updated workspace",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminWorkspaceResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2704,25 +2896,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid workspace ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2757,7 +2949,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminArchiveWorkspaceRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminArchiveWorkspaceRequest"
                         }
                     }
                 ],
@@ -2774,25 +2966,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2818,7 +3010,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.LoginRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.LoginRequest"
                         }
                     }
                 ],
@@ -2828,13 +3020,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.LoginResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.LoginResponse"
                                         }
                                     }
                                 }
@@ -2844,7 +3036,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Invalid credentials",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2871,13 +3063,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UserResponse"
                                         }
                                     }
                                 }
@@ -2887,13 +3079,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Not authenticated",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "User not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2919,7 +3111,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.RefreshTokenRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.RefreshTokenRequest"
                         }
                     }
                 ],
@@ -2929,13 +3121,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.LoginResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.LoginResponse"
                                         }
                                     }
                                 }
@@ -2945,7 +3137,7 @@ const docTemplate = `{
                     "401": {
                         "description": "Invalid or expired refresh token",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -2971,7 +3163,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.RegisterRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.RegisterRequest"
                         }
                     }
                 ],
@@ -2981,13 +3173,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.LoginResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.LoginResponse"
                                         }
                                     }
                                 }
@@ -2997,7 +3189,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request or registration failed",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3023,7 +3215,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AcceptInvitationRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AcceptInvitationRequest"
                         }
                     }
                 ],
@@ -3031,13 +3223,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Invitation accepted",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationMemberResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request or token",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3071,19 +3263,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Invitation accepted",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationMemberResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid token or already accepted",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3110,26 +3302,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse"
+                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.InvitationResponse"
                             }
                         }
                     },
                     "400": {
                         "description": "User email not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3163,19 +3355,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid invitation ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3204,19 +3396,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Invitation details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.InvitationResponse"
                         }
                     },
                     "400": {
                         "description": "Token required",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Invitation not found or expired",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3243,20 +3435,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationListResponse"
+                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationListResponse"
                             }
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3285,7 +3477,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateOrganizationRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.CreateOrganizationRequest"
                         }
                     }
                 ],
@@ -3293,19 +3485,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Organization created successfully",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3339,25 +3531,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invite code required",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Organization not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3389,19 +3581,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Joined successfully",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationMemberResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid invite code or already member",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3441,25 +3633,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid organization ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Organization not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3495,7 +3687,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateOrganizationRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UpdateOrganizationRequest"
                         }
                     }
                 ],
@@ -3503,25 +3695,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization updated",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3553,19 +3745,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden - only owner can delete",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3601,20 +3793,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse"
+                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.InvitationResponse"
                             }
                         }
                     },
                     "400": {
                         "description": "Invalid organization ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3650,7 +3842,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateInvitationRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.CreateInvitationRequest"
                         }
                     }
                 ],
@@ -3658,25 +3850,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Invitation created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.InvitationResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3717,19 +3909,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3765,26 +3957,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse"
+                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationMemberResponse"
                             }
                         }
                     },
                     "400": {
                         "description": "Invalid organization ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Not a member",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3820,7 +4012,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AddOrganizationMemberRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AddOrganizationMemberRequest"
                         }
                     }
                 ],
@@ -3828,25 +4020,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Member added",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationMemberResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3891,7 +4083,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateOrganizationMemberRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UpdateOrganizationMemberRequest"
                         }
                     }
                 ],
@@ -3899,25 +4091,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Member updated",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationMemberResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -3956,19 +4148,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Cannot remove owner",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4011,19 +4203,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4059,20 +4251,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse"
+                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceRoleResponse"
                             }
                         }
                     },
                     "400": {
                         "description": "Invalid organization ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4108,7 +4300,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateWorkspaceRoleRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.CreateWorkspaceRoleRequest"
                         }
                     }
                 ],
@@ -4116,25 +4308,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Role created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceRoleResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4179,7 +4371,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceRoleRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UpdateWorkspaceRoleRequest"
                         }
                     }
                 ],
@@ -4187,25 +4379,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Role updated",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceRoleResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4244,19 +4436,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4294,7 +4486,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TransferOwnershipRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TransferOwnershipRequest"
                         }
                     }
                 ],
@@ -4311,19 +4503,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Only owner can transfer",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4359,20 +4551,20 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceListResponse"
+                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceListResponse"
                             }
                         }
                     },
                     "400": {
                         "description": "Invalid organization ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4408,7 +4600,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateWorkspaceRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.CreateWorkspaceRequest"
                         }
                     }
                 ],
@@ -4416,25 +4608,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Workspace created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4465,7 +4657,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PresenceHeartbeatRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.PresenceHeartbeatRequest"
                         }
                     }
                 ],
@@ -4475,13 +4667,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PresenceStatusResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.PresenceStatusResponse"
                                         }
                                     }
                                 }
@@ -4491,13 +4683,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4539,19 +4731,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Asset not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4571,13 +4763,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Download links for all platforms",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PublicDownloadsResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.PublicDownloadsResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4606,19 +4798,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invite code required",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Organization not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4664,13 +4856,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PaginationResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.PaginationResponse"
                                         }
                                     }
                                 }
@@ -4680,13 +4872,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4731,7 +4923,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4739,7 +4931,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse"
+                                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ScreenshotResponse"
                                             }
                                         }
                                     }
@@ -4750,19 +4942,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid date format or missing parameters",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4805,13 +4997,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotStats"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ScreenshotStats"
                                         }
                                     }
                                 }
@@ -4821,13 +5013,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4863,7 +5055,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4871,7 +5063,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse"
+                                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ScreenshotResponse"
                                             }
                                         }
                                     }
@@ -4882,19 +5074,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid task ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4930,7 +5122,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
@@ -4938,7 +5130,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse"
+                                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ScreenshotResponse"
                                             }
                                         }
                                     }
@@ -4949,19 +5141,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid time log ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -4986,19 +5178,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Today's screenshot count retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5034,13 +5226,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ScreenshotResponse"
                                         }
                                     }
                                 }
@@ -5050,19 +5242,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid screenshot ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Screenshot not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5094,25 +5286,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Screenshot deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid screenshot ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to delete screenshot",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5152,19 +5344,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid screenshot ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Screenshot not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5205,19 +5397,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid screenshot ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Screenshot not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5248,7 +5440,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.BatchSyncRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.BatchSyncRequest"
                         }
                     }
                 ],
@@ -5258,13 +5450,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.BatchSyncResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.BatchSyncResponse"
                                         }
                                     }
                                 }
@@ -5274,19 +5466,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Sync failed",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5308,13 +5500,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CheckAdminExistsResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.CheckAdminExistsResponse"
                                         }
                                     }
                                 }
@@ -5324,7 +5516,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Failed to check admin status",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5350,7 +5542,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InitAdminRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.InitAdminRequest"
                         }
                     }
                 ],
@@ -5360,13 +5552,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.InitAdminResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.InitAdminResponse"
                                         }
                                     }
                                 }
@@ -5376,19 +5568,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "Admin already exists",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to create admin",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5413,13 +5605,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Upload folder check completed",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5444,19 +5636,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Upload folders ensured",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to create folders",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5500,19 +5692,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Tasks retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5541,7 +5733,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.CreateTaskRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.CreateTaskRequest"
                         }
                     }
                 ],
@@ -5551,13 +5743,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TaskWithStats"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TaskWithStats"
                                         }
                                     }
                                 }
@@ -5567,19 +5759,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5604,19 +5796,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Active tasks retrieved successfully",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5652,13 +5844,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TaskWithStats"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TaskWithStats"
                                         }
                                     }
                                 }
@@ -5668,19 +5860,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid task ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Task not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5716,7 +5908,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateTaskRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UpdateTaskRequest"
                         }
                     }
                 ],
@@ -5726,13 +5918,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TaskWithStats"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TaskWithStats"
                                         }
                                     }
                                 }
@@ -5742,25 +5934,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Task not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5792,31 +5984,31 @@ const docTemplate = `{
                     "200": {
                         "description": "Task deleted successfully",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid task ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Task not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5862,7 +6054,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PaginatedResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.PaginatedResponse"
                                 },
                                 {
                                     "type": "object",
@@ -5870,7 +6062,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse"
+                                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TimeLogResponse"
                                             }
                                         }
                                     }
@@ -5881,13 +6073,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5914,13 +6106,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TimeLogResponse"
                                         }
                                     }
                                 }
@@ -5930,13 +6122,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -5967,7 +6159,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PauseTimeLogRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.PauseTimeLogRequest"
                         }
                     }
                 ],
@@ -5977,13 +6169,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TimeLogResponse"
                                         }
                                     }
                                 }
@@ -5993,13 +6185,13 @@ const docTemplate = `{
                     "400": {
                         "description": "No active session or already paused",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6030,7 +6222,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ResumeTimeLogRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ResumeTimeLogRequest"
                         }
                     }
                 ],
@@ -6040,13 +6232,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TimeLogResponse"
                                         }
                                     }
                                 }
@@ -6056,13 +6248,13 @@ const docTemplate = `{
                     "400": {
                         "description": "No paused session or invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6093,7 +6285,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.StartTimeLogRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.StartTimeLogRequest"
                         }
                     }
                 ],
@@ -6103,13 +6295,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TimeLogResponse"
                                         }
                                     }
                                 }
@@ -6119,13 +6311,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Already have an active session or invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6168,13 +6360,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogStats"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TimeLogStats"
                                         }
                                     }
                                 }
@@ -6184,13 +6376,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6221,7 +6413,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.StopTimeLogRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.StopTimeLogRequest"
                         }
                     }
                 ],
@@ -6231,13 +6423,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TimeLogResponse"
                                         }
                                     }
                                 }
@@ -6247,13 +6439,13 @@ const docTemplate = `{
                     "400": {
                         "description": "No active session or invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6289,13 +6481,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse"
+                                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SuccessResponse"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse"
+                                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.TimeLogResponse"
                                         }
                                     }
                                 }
@@ -6305,19 +6497,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Time log not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6348,7 +6540,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UpdateCheckRequest"
                         }
                     }
                 ],
@@ -6356,19 +6548,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Update check result",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UpdateCheckResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6415,19 +6607,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Asset not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6468,13 +6660,13 @@ const docTemplate = `{
                     "200": {
                         "description": "Latest version info",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UpdateCheckResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6499,19 +6691,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Release notes",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseNotesResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ReleaseNotesResponse"
                         }
                     },
                     "404": {
                         "description": "Release not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6545,19 +6737,19 @@ const docTemplate = `{
                     "200": {
                         "description": "Release notes",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseNotesResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ReleaseNotesResponse"
                         }
                     },
                     "404": {
                         "description": "Release not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6591,13 +6783,13 @@ const docTemplate = `{
                     "200": {
                         "description": "YAML update info",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.YMLInfo"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.YMLInfo"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6632,26 +6824,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceListResponse"
+                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceListResponse"
                             }
                         }
                     },
                     "400": {
                         "description": "Invalid organization ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6691,25 +6883,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Workspace details",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid workspace ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Workspace not found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6745,7 +6937,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UpdateWorkspaceRequest"
                         }
                     }
                 ],
@@ -6753,25 +6945,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Workspace updated",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6803,19 +6995,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6851,26 +7043,26 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse"
+                                "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceMemberResponse"
                             }
                         }
                     },
                     "400": {
                         "description": "Invalid workspace ID",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Not a member",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6906,7 +7098,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AddWorkspaceMemberRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AddWorkspaceMemberRequest"
                         }
                     }
                 ],
@@ -6914,25 +7106,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Member added",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceMemberResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -6977,7 +7169,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceMemberRequest"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UpdateWorkspaceMemberRequest"
                         }
                     }
                 ],
@@ -6985,25 +7177,25 @@ const docTemplate = `{
                     "200": {
                         "description": "Member updated",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceMemberResponse"
                         }
                     },
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -7042,19 +7234,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Invalid request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     },
                     "403": {
                         "description": "Cannot remove admin",
                         "schema": {
-                            "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse"
+                            "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ErrorResponse"
                         }
                     }
                 }
@@ -7062,7 +7254,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AcceptInvitationRequest": {
+        "remote-time-tracker_dev_internal_dto.AcceptInvitationRequest": {
             "type": "object",
             "required": [
                 "token"
@@ -7073,7 +7265,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AddOrganizationMemberRequest": {
+        "remote-time-tracker_dev_internal_dto.AddOrganizationMemberRequest": {
             "type": "object",
             "required": [
                 "role",
@@ -7092,7 +7284,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AddWorkspaceMemberRequest": {
+        "remote-time-tracker_dev_internal_dto.AddWorkspaceMemberRequest": {
             "type": "object",
             "required": [
                 "user_id"
@@ -7118,7 +7310,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminActivateUserRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminActivateUserRequest": {
             "type": "object",
             "properties": {
                 "active": {
@@ -7126,13 +7318,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminActivityStats": {
+        "remote-time-tracker_dev_internal_dto.AdminActivityStats": {
             "type": "object",
             "properties": {
                 "activity_by_hour": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminHourlyStat"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminHourlyStat"
                     }
                 },
                 "peak_hour": {
@@ -7159,7 +7351,109 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminApproveTimeLogsRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminAppVersionAssetResponse": {
+            "type": "object",
+            "properties": {
+                "browser_download_url": {
+                    "type": "string"
+                },
+                "content_type": {
+                    "type": "string"
+                },
+                "download_url": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "sha512": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "remote-time-tracker_dev_internal_dto.AdminAppVersionListResponse": {
+            "type": "object",
+            "properties": {
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminAppVersionResponse"
+                    }
+                }
+            }
+        },
+        "remote-time-tracker_dev_internal_dto.AdminAppVersionResponse": {
+            "type": "object",
+            "properties": {
+                "assets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminAppVersionAssetResponse"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "draft": {
+                    "type": "boolean"
+                },
+                "github_release_id": {
+                    "type": "integer"
+                },
+                "github_url": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_latest": {
+                    "type": "boolean"
+                },
+                "is_mandatory": {
+                    "type": "boolean"
+                },
+                "last_synced_at": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "original_release_notes": {
+                    "type": "string"
+                },
+                "prerelease": {
+                    "type": "boolean"
+                },
+                "release_date": {
+                    "type": "string"
+                },
+                "release_notes": {
+                    "type": "string"
+                },
+                "tag_name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "remote-time-tracker_dev_internal_dto.AdminApproveTimeLogsRequest": {
             "type": "object",
             "required": [
                 "ids"
@@ -7176,7 +7470,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminArchiveWorkspaceRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminArchiveWorkspaceRequest": {
             "type": "object",
             "properties": {
                 "archived": {
@@ -7184,7 +7478,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminBulkDeleteRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminBulkDeleteRequest": {
             "type": "object",
             "required": [
                 "ids"
@@ -7198,7 +7492,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminChangeRoleRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminChangeRoleRequest": {
             "type": "object",
             "required": [
                 "role"
@@ -7209,7 +7503,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminChangeSystemRoleRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminChangeSystemRoleRequest": {
             "type": "object",
             "required": [
                 "system_role"
@@ -7220,7 +7514,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminCleanupSystemLogsRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminCleanupSystemLogsRequest": {
             "type": "object",
             "properties": {
                 "retention_days": {
@@ -7228,7 +7522,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminCleanupSystemLogsResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminCleanupSystemLogsResponse": {
             "type": "object",
             "properties": {
                 "deleted_count": {
@@ -7239,7 +7533,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminCreateUserRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminCreateUserRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -7272,7 +7566,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminDailyStat": {
+        "remote-time-tracker_dev_internal_dto.AdminDailyStat": {
             "type": "object",
             "properties": {
                 "date": {
@@ -7295,7 +7589,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminDeviceResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminDeviceResponse": {
             "type": "object",
             "properties": {
                 "app_version": {
@@ -7330,7 +7624,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminHourlyStat": {
+        "remote-time-tracker_dev_internal_dto.AdminHourlyStat": {
             "type": "object",
             "properties": {
                 "count": {
@@ -7341,7 +7635,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgDetailResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminOrgDetailResponse": {
             "type": "object",
             "properties": {
                 "admin_notes": {
@@ -7374,7 +7668,7 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgMemberResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOrgMemberResponse"
                     }
                 },
                 "name": {
@@ -7404,26 +7698,26 @@ const docTemplate = `{
                 "workspaces": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceSummary"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminWorkspaceSummary"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgListResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminOrgListResponse": {
             "type": "object",
             "properties": {
                 "organizations": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOrgResponse"
                     }
                 },
                 "pagination": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminPaginationResponse"
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgMemberResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminOrgMemberResponse": {
             "type": "object",
             "properties": {
                 "is_active": {
@@ -7446,7 +7740,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgMembershipResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminOrgMembershipResponse": {
             "type": "object",
             "properties": {
                 "is_active": {
@@ -7469,7 +7763,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminOrgResponse": {
             "type": "object",
             "properties": {
                 "admin_notes": {
@@ -7525,7 +7819,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgSizeCategory": {
+        "remote-time-tracker_dev_internal_dto.AdminOrgSizeCategory": {
             "type": "object",
             "properties": {
                 "category": {
@@ -7537,24 +7831,24 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgStats": {
+        "remote-time-tracker_dev_internal_dto.AdminOrgStats": {
             "type": "object",
             "properties": {
                 "size_distribution": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgSizeCategory"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOrgSizeCategory"
                     }
                 },
                 "top_workspaces": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTopWorkspace"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTopWorkspace"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminOverviewStats": {
+        "remote-time-tracker_dev_internal_dto.AdminOverviewStats": {
             "type": "object",
             "properties": {
                 "active_tasks": {
@@ -7607,7 +7901,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminPaginationResponse": {
             "type": "object",
             "properties": {
                 "has_next": {
@@ -7630,21 +7924,21 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotListResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminScreenshotListResponse": {
             "type": "object",
             "properties": {
                 "pagination": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminPaginationResponse"
                 },
                 "screenshots": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminScreenshotResponse"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminScreenshotResponse": {
             "type": "object",
             "properties": {
                 "captured_at": {
@@ -7712,18 +8006,35 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigListResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminSyncAppVersionsResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "latest": {
+                    "type": "string"
+                },
+                "synced_at": {
+                    "type": "string"
+                },
+                "synced_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "remote-time-tracker_dev_internal_dto.AdminSystemConfigListResponse": {
             "type": "object",
             "properties": {
                 "configs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminSystemConfigResponse"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemConfigResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminSystemConfigResponse": {
             "type": "object",
             "properties": {
                 "category": {
@@ -7752,21 +8063,21 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogListResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminSystemLogListResponse": {
             "type": "object",
             "properties": {
                 "pagination": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminPaginationResponse"
                 },
                 "system_logs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminSystemLogResponse"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogPolicyResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminSystemLogPolicyResponse": {
             "type": "object",
             "properties": {
                 "cleanup_interval": {
@@ -7783,7 +8094,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminSystemLogResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminSystemLogResponse": {
             "type": "object",
             "properties": {
                 "app_version": {
@@ -7851,7 +8162,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskDetailResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminTaskDetailResponse": {
             "type": "object",
             "properties": {
                 "admin_notes": {
@@ -7890,7 +8201,7 @@ const docTemplate = `{
                 "screenshots": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminScreenshotResponse"
                     }
                 },
                 "start_time": {
@@ -7902,7 +8213,7 @@ const docTemplate = `{
                 "timelogs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTimeLogResponse"
                     }
                 },
                 "timelogs_count": {
@@ -7937,21 +8248,21 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskListResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminTaskListResponse": {
             "type": "object",
             "properties": {
                 "pagination": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminPaginationResponse"
                 },
                 "tasks": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTaskResponse"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminTaskResponse": {
             "type": "object",
             "properties": {
                 "admin_notes": {
@@ -8025,7 +8336,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogDetailResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminTimeLogDetailResponse": {
             "type": "object",
             "properties": {
                 "admin_notes": {
@@ -8067,7 +8378,7 @@ const docTemplate = `{
                 "screenshots": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminScreenshotResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminScreenshotResponse"
                     }
                 },
                 "start_time": {
@@ -8099,21 +8410,21 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogListResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminTimeLogListResponse": {
             "type": "object",
             "properties": {
                 "pagination": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminPaginationResponse"
                 },
                 "timelogs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTimeLogResponse"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminTimeLogResponse": {
             "type": "object",
             "properties": {
                 "admin_notes": {
@@ -8181,7 +8492,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminTopWorkspace": {
+        "remote-time-tracker_dev_internal_dto.AdminTopWorkspace": {
             "type": "object",
             "properties": {
                 "member_count": {
@@ -8201,24 +8512,38 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminTrendStats": {
+        "remote-time-tracker_dev_internal_dto.AdminTrendStats": {
             "type": "object",
             "properties": {
                 "activity_trend": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminDailyStat"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminDailyStat"
                     }
                 },
                 "user_growth": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminDailyStat"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminDailyStat"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateOrgRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminUpdateAppVersionRequest": {
+            "type": "object",
+            "properties": {
+                "is_latest": {
+                    "type": "boolean"
+                },
+                "is_mandatory": {
+                    "type": "boolean"
+                },
+                "release_notes": {
+                    "type": "string"
+                }
+            }
+        },
+        "remote-time-tracker_dev_internal_dto.AdminUpdateOrgRequest": {
             "type": "object",
             "properties": {
                 "admin_notes": {
@@ -8241,7 +8566,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateSystemConfigRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminUpdateSystemConfigRequest": {
             "type": "object",
             "required": [
                 "value"
@@ -8252,7 +8577,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateSystemLogPolicyRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminUpdateSystemLogPolicyRequest": {
             "type": "object",
             "properties": {
                 "cleanup_interval": {
@@ -8263,7 +8588,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateTaskRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminUpdateTaskRequest": {
             "type": "object",
             "properties": {
                 "admin_notes": {
@@ -8283,7 +8608,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateTimeLogRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminUpdateTimeLogRequest": {
             "type": "object",
             "properties": {
                 "admin_notes": {
@@ -8303,7 +8628,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateUserRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminUpdateUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -8330,7 +8655,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUpdateWorkspaceRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminUpdateWorkspaceRequest": {
             "type": "object",
             "properties": {
                 "description": {
@@ -8350,7 +8675,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserDetailResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminUserDetailResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -8359,7 +8684,7 @@ const docTemplate = `{
                 "devices": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminDeviceResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminDeviceResponse"
                     }
                 },
                 "email": {
@@ -8389,7 +8714,7 @@ const docTemplate = `{
                 "organizations": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminOrgMembershipResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminOrgMembershipResponse"
                     }
                 },
                 "orgs_count": {
@@ -8401,13 +8726,13 @@ const docTemplate = `{
                 "recent_tasks": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTaskResponse"
                     }
                 },
                 "recent_timelogs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTimeLogResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTimeLogResponse"
                     }
                 },
                 "role": {
@@ -8432,7 +8757,7 @@ const docTemplate = `{
                 "workspaces": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceMembershipResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminWorkspaceMembershipResponse"
                     }
                 },
                 "workspaces_count": {
@@ -8440,21 +8765,21 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserListResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminUserListResponse": {
             "type": "object",
             "properties": {
                 "pagination": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminPaginationResponse"
                 },
                 "users": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminUserResponse"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserPerformance": {
+        "remote-time-tracker_dev_internal_dto.AdminUserPerformance": {
             "type": "object",
             "properties": {
                 "active_days": {
@@ -8501,7 +8826,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminUserResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminUserResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -8561,7 +8886,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminVerifyOrgRequest": {
+        "remote-time-tracker_dev_internal_dto.AdminVerifyOrgRequest": {
             "type": "object",
             "properties": {
                 "verified": {
@@ -8569,7 +8894,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceDetailResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminWorkspaceDetailResponse": {
             "type": "object",
             "properties": {
                 "admin_email": {
@@ -8611,7 +8936,7 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceMemberResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminWorkspaceMemberResponse"
                     }
                 },
                 "name": {
@@ -8626,7 +8951,7 @@ const docTemplate = `{
                 "recent_tasks": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminTaskResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminTaskResponse"
                     }
                 },
                 "slug": {
@@ -8640,21 +8965,21 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceListResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminWorkspaceListResponse": {
             "type": "object",
             "properties": {
                 "pagination": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminPaginationResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminPaginationResponse"
                 },
                 "workspaces": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.AdminWorkspaceResponse"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceMemberResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminWorkspaceMemberResponse": {
             "type": "object",
             "properties": {
                 "is_active": {
@@ -8680,7 +9005,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceMembershipResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminWorkspaceMembershipResponse": {
             "type": "object",
             "properties": {
                 "is_active": {
@@ -8709,7 +9034,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceResponse": {
+        "remote-time-tracker_dev_internal_dto.AdminWorkspaceResponse": {
             "type": "object",
             "properties": {
                 "admin_email": {
@@ -8768,7 +9093,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.AdminWorkspaceSummary": {
+        "remote-time-tracker_dev_internal_dto.AdminWorkspaceSummary": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -8788,14 +9113,14 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.BatchSyncRequest": {
+        "remote-time-tracker_dev_internal_dto.BatchSyncRequest": {
             "type": "object",
             "required": [
                 "device_uuid"
             ],
             "properties": {
                 "device_info": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncDeviceInfoItem"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SyncDeviceInfoItem"
                 },
                 "device_uuid": {
                     "type": "string"
@@ -8807,19 +9132,19 @@ const docTemplate = `{
                 "screenshots": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncScreenshotItem"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SyncScreenshotItem"
                     }
                 },
                 "system_logs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncSystemLogItem"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SyncSystemLogItem"
                     }
                 },
                 "time_logs": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncTimeLogItem"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SyncTimeLogItem"
                     }
                 },
                 "workspace_id": {
@@ -8828,17 +9153,17 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.BatchSyncResponse": {
+        "remote-time-tracker_dev_internal_dto.BatchSyncResponse": {
             "type": "object",
             "properties": {
                 "device_info": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.DeviceInfoResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.DeviceInfoResponse"
                 },
                 "message": {
                     "type": "string"
                 },
                 "screenshots_sync": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncResult"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SyncResult"
                 },
                 "success": {
                     "type": "boolean"
@@ -8847,14 +9172,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "system_logs_sync": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncResult"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SyncResult"
                 },
                 "time_logs_sync": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.SyncResult"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.SyncResult"
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.CheckAdminExistsResponse": {
+        "remote-time-tracker_dev_internal_dto.CheckAdminExistsResponse": {
             "type": "object",
             "properties": {
                 "exists": {
@@ -8862,7 +9187,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.CreateInvitationRequest": {
+        "remote-time-tracker_dev_internal_dto.CreateInvitationRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -8894,7 +9219,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.CreateOrganizationRequest": {
+        "remote-time-tracker_dev_internal_dto.CreateOrganizationRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -8919,7 +9244,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.CreateTaskRequest": {
+        "remote-time-tracker_dev_internal_dto.CreateTaskRequest": {
             "type": "object",
             "required": [
                 "title"
@@ -8951,7 +9276,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.CreateWorkspaceRequest": {
+        "remote-time-tracker_dev_internal_dto.CreateWorkspaceRequest": {
             "type": "object",
             "required": [
                 "name",
@@ -8995,7 +9320,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.CreateWorkspaceRoleRequest": {
+        "remote-time-tracker_dev_internal_dto.CreateWorkspaceRoleRequest": {
             "type": "object",
             "required": [
                 "display_name",
@@ -9030,7 +9355,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.DeviceInfoResponse": {
+        "remote-time-tracker_dev_internal_dto.DeviceInfoResponse": {
             "type": "object",
             "properties": {
                 "app_version": {
@@ -9059,7 +9384,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.ErrorResponse": {
+        "remote-time-tracker_dev_internal_dto.ErrorResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -9073,7 +9398,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.InitAdminRequest": {
+        "remote-time-tracker_dev_internal_dto.InitAdminRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -9097,7 +9422,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.InitAdminResponse": {
+        "remote-time-tracker_dev_internal_dto.InitAdminResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -9107,11 +9432,11 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UserResponse"
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.InvitationResponse": {
+        "remote-time-tracker_dev_internal_dto.InvitationResponse": {
             "type": "object",
             "properties": {
                 "accepted_at": {
@@ -9136,7 +9461,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "inviter": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UserResponse"
                 },
                 "message": {
                     "type": "string"
@@ -9145,7 +9470,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "organization": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationResponse"
                 },
                 "organization_id": {
                     "type": "integer"
@@ -9158,20 +9483,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "workspace": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceResponse"
                 },
                 "workspace_id": {
                     "type": "integer"
                 },
                 "workspace_role": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceRoleResponse"
                 },
                 "workspace_role_id": {
                     "type": "integer"
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.LoginRequest": {
+        "remote-time-tracker_dev_internal_dto.LoginRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -9186,7 +9511,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.LoginResponse": {
+        "remote-time-tracker_dev_internal_dto.LoginResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -9199,11 +9524,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UserResponse"
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationListResponse": {
+        "remote-time-tracker_dev_internal_dto.OrganizationListResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -9236,7 +9561,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse": {
+        "remote-time-tracker_dev_internal_dto.OrganizationMemberResponse": {
             "type": "object",
             "properties": {
                 "id": {
@@ -9255,14 +9580,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UserResponse"
                 },
                 "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationResponse": {
+        "remote-time-tracker_dev_internal_dto.OrganizationResponse": {
             "type": "object",
             "properties": {
                 "allow_invite_link": {
@@ -9295,14 +9620,14 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.OrganizationMemberResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.OrganizationMemberResponse"
                     }
                 },
                 "name": {
                     "type": "string"
                 },
                 "owner": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UserResponse"
                 },
                 "owner_id": {
                     "type": "integer"
@@ -9323,24 +9648,24 @@ const docTemplate = `{
                 "workspaces": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceResponse"
                     }
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.PaginatedResponse": {
+        "remote-time-tracker_dev_internal_dto.PaginatedResponse": {
             "type": "object",
             "properties": {
                 "data": {},
                 "meta": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PaginationMeta"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.PaginationMeta"
                 },
                 "success": {
                     "type": "boolean"
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.PaginationMeta": {
+        "remote-time-tracker_dev_internal_dto.PaginationMeta": {
             "type": "object",
             "properties": {
                 "page": {
@@ -9357,7 +9682,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.PaginationResponse": {
+        "remote-time-tracker_dev_internal_dto.PaginationResponse": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -9375,7 +9700,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.PauseTimeLogRequest": {
+        "remote-time-tracker_dev_internal_dto.PauseTimeLogRequest": {
             "type": "object",
             "properties": {
                 "local_id": {
@@ -9383,7 +9708,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.PlatformDownload": {
+        "remote-time-tracker_dev_internal_dto.PlatformDownload": {
             "type": "object",
             "properties": {
                 "content_type": {
@@ -9412,7 +9737,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.PresenceHeartbeatRequest": {
+        "remote-time-tracker_dev_internal_dto.PresenceHeartbeatRequest": {
             "type": "object",
             "required": [
                 "status"
@@ -9427,7 +9752,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.PresenceStatusResponse": {
+        "remote-time-tracker_dev_internal_dto.PresenceStatusResponse": {
             "type": "object",
             "properties": {
                 "last_presence_at": {
@@ -9441,13 +9766,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.PublicDownloadsResponse": {
+        "remote-time-tracker_dev_internal_dto.PublicDownloadsResponse": {
             "type": "object",
             "properties": {
                 "downloads": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.PlatformDownload"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.PlatformDownload"
                     }
                 },
                 "release_date": {
@@ -9461,7 +9786,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.RefreshTokenRequest": {
+        "remote-time-tracker_dev_internal_dto.RefreshTokenRequest": {
             "type": "object",
             "required": [
                 "refresh_token"
@@ -9473,7 +9798,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.RegisterRequest": {
+        "remote-time-tracker_dev_internal_dto.RegisterRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -9517,7 +9842,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseAsset": {
+        "remote-time-tracker_dev_internal_dto.ReleaseAsset": {
             "type": "object",
             "properties": {
                 "content_type": {
@@ -9541,7 +9866,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseNotesResponse": {
+        "remote-time-tracker_dev_internal_dto.ReleaseNotesResponse": {
             "description": "Release notes for a specific version",
             "type": "object",
             "properties": {
@@ -9558,7 +9883,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.ResumeTimeLogRequest": {
+        "remote-time-tracker_dev_internal_dto.ResumeTimeLogRequest": {
             "type": "object",
             "properties": {
                 "local_id": {
@@ -9566,7 +9891,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotResponse": {
+        "remote-time-tracker_dev_internal_dto.ScreenshotResponse": {
             "type": "object",
             "properties": {
                 "captured_at": {
@@ -9618,7 +9943,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.ScreenshotStats": {
+        "remote-time-tracker_dev_internal_dto.ScreenshotStats": {
             "type": "object",
             "properties": {
                 "this_month_count": {
@@ -9643,7 +9968,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.StartTimeLogRequest": {
+        "remote-time-tracker_dev_internal_dto.StartTimeLogRequest": {
             "type": "object",
             "properties": {
                 "device_id": {
@@ -9660,7 +9985,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.StopTimeLogRequest": {
+        "remote-time-tracker_dev_internal_dto.StopTimeLogRequest": {
             "type": "object",
             "properties": {
                 "local_id": {
@@ -9675,7 +10000,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.SuccessResponse": {
+        "remote-time-tracker_dev_internal_dto.SuccessResponse": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -9687,7 +10012,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.SyncDeviceInfoItem": {
+        "remote-time-tracker_dev_internal_dto.SyncDeviceInfoItem": {
             "type": "object",
             "required": [
                 "device_uuid"
@@ -9713,7 +10038,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.SyncResult": {
+        "remote-time-tracker_dev_internal_dto.SyncResult": {
             "type": "object",
             "properties": {
                 "errors": {
@@ -9733,7 +10058,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.SyncScreenshotItem": {
+        "remote-time-tracker_dev_internal_dto.SyncScreenshotItem": {
             "type": "object",
             "required": [
                 "captured_at",
@@ -9795,11 +10120,10 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.SyncSystemLogItem": {
+        "remote-time-tracker_dev_internal_dto.SyncSystemLogItem": {
             "type": "object",
             "required": [
                 "local_id",
-                "message",
                 "occurred_at"
             ],
             "properties": {
@@ -9812,6 +10136,9 @@ const docTemplate = `{
                 "details": {
                     "type": "string"
                 },
+                "details_b64": {
+                    "type": "string"
+                },
                 "device_uuid": {
                     "type": "string"
                 },
@@ -9822,6 +10149,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "message": {
+                    "type": "string"
+                },
+                "message_b64": {
                     "type": "string"
                 },
                 "occurred_at": {
@@ -9842,12 +10172,15 @@ const docTemplate = `{
                 "stack_trace": {
                     "type": "string"
                 },
+                "stack_trace_b64": {
+                    "type": "string"
+                },
                 "workspace_id": {
                     "type": "integer"
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.SyncTimeLogItem": {
+        "remote-time-tracker_dev_internal_dto.SyncTimeLogItem": {
             "type": "object",
             "required": [
                 "local_id",
@@ -9903,7 +10236,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.TaskWithStats": {
+        "remote-time-tracker_dev_internal_dto.TaskWithStats": {
             "type": "object",
             "properties": {
                 "color": {
@@ -9952,7 +10285,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogResponse": {
+        "remote-time-tracker_dev_internal_dto.TimeLogResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -10013,7 +10346,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.TimeLogStats": {
+        "remote-time-tracker_dev_internal_dto.TimeLogStats": {
             "type": "object",
             "properties": {
                 "end_date": {
@@ -10038,7 +10371,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.TransferOwnershipRequest": {
+        "remote-time-tracker_dev_internal_dto.TransferOwnershipRequest": {
             "type": "object",
             "required": [
                 "new_owner_id"
@@ -10049,7 +10382,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckRequest": {
+        "remote-time-tracker_dev_internal_dto.UpdateCheckRequest": {
             "type": "object",
             "required": [
                 "arch",
@@ -10071,13 +10404,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.UpdateCheckResponse": {
+        "remote-time-tracker_dev_internal_dto.UpdateCheckResponse": {
             "type": "object",
             "properties": {
                 "files": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.ReleaseAsset"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.ReleaseAsset"
                     }
                 },
                 "is_mandatory": {
@@ -10097,7 +10430,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.UpdateOrganizationMemberRequest": {
+        "remote-time-tracker_dev_internal_dto.UpdateOrganizationMemberRequest": {
             "type": "object",
             "required": [
                 "role"
@@ -10116,7 +10449,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.UpdateOrganizationRequest": {
+        "remote-time-tracker_dev_internal_dto.UpdateOrganizationRequest": {
             "type": "object",
             "properties": {
                 "allow_invite_link": {
@@ -10143,7 +10476,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.UpdateTaskRequest": {
+        "remote-time-tracker_dev_internal_dto.UpdateTaskRequest": {
             "type": "object",
             "properties": {
                 "color": {
@@ -10167,7 +10500,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceMemberRequest": {
+        "remote-time-tracker_dev_internal_dto.UpdateWorkspaceMemberRequest": {
             "type": "object",
             "properties": {
                 "can_manage_tasks": {
@@ -10190,7 +10523,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceRequest": {
+        "remote-time-tracker_dev_internal_dto.UpdateWorkspaceRequest": {
             "type": "object",
             "properties": {
                 "admin_id": {
@@ -10225,7 +10558,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.UpdateWorkspaceRoleRequest": {
+        "remote-time-tracker_dev_internal_dto.UpdateWorkspaceRoleRequest": {
             "type": "object",
             "properties": {
                 "color": {
@@ -10248,7 +10581,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse": {
+        "remote-time-tracker_dev_internal_dto.UserResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -10280,7 +10613,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceListResponse": {
+        "remote-time-tracker_dev_internal_dto.WorkspaceListResponse": {
             "type": "object",
             "properties": {
                 "color": {
@@ -10332,7 +10665,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse": {
+        "remote-time-tracker_dev_internal_dto.WorkspaceMemberResponse": {
             "type": "object",
             "properties": {
                 "added_by": {
@@ -10360,24 +10693,24 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UserResponse"
                 },
                 "user_id": {
                     "type": "integer"
                 },
                 "workspace_role": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceRoleResponse"
                 },
                 "workspace_role_id": {
                     "type": "integer"
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceResponse": {
+        "remote-time-tracker_dev_internal_dto.WorkspaceResponse": {
             "type": "object",
             "properties": {
                 "admin": {
-                    "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.UserResponse"
+                    "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.UserResponse"
                 },
                 "admin_id": {
                     "type": "integer"
@@ -10415,7 +10748,7 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceMemberResponse"
+                        "$ref": "#/definitions/remote-time-tracker_dev_internal_dto.WorkspaceMemberResponse"
                     }
                 },
                 "name": {
@@ -10438,7 +10771,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.WorkspaceRoleResponse": {
+        "remote-time-tracker_dev_internal_dto.WorkspaceRoleResponse": {
             "type": "object",
             "properties": {
                 "color": {
@@ -10473,7 +10806,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_beuphecan_remote-time-tracker_internal_dto.YMLInfo": {
+        "remote-time-tracker_dev_internal_dto.YMLInfo": {
             "description": "YAML update info for electron-updater",
             "type": "object",
             "properties": {
