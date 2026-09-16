@@ -8538,7 +8538,7 @@ const docTemplate = `{
                 "is_mandatory": {
                     "type": "boolean"
                 },
-                "release_notes": {
+                "release_notes_base64": {
                     "type": "string"
                 }
             }

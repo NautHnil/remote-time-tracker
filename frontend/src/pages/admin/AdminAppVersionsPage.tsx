@@ -31,6 +31,15 @@ function buildDownloadUrl(url: string) {
   return `${API_BASE_URL.replace(/\/api\/v1\/?$/, "")}${url}`;
 }
 
+function encodeBase64Utf8(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
 export default function AdminAppVersionsPage() {
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -115,7 +124,7 @@ export default function AdminAppVersionsPage() {
     void updateMutation.mutateAsync({
       id: selectedVersion.id,
       payload: {
-        release_notes: releaseNotes,
+        release_notes_base64: encodeBase64Utf8(releaseNotes),
         is_mandatory: isMandatory,
         is_latest: isLatest,
       },

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -393,8 +394,12 @@ func (s *UpdateService) UpdateAdminAppVersion(id uint, req dto.AdminUpdateAppVer
 	}
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
-		if req.ReleaseNotes != nil {
-			version.ReleaseNotes = *req.ReleaseNotes
+		if req.ReleaseNotesBase64 != nil {
+			decodedNotes, err := base64.StdEncoding.DecodeString(*req.ReleaseNotesBase64)
+			if err != nil {
+				return fmt.Errorf("invalid release_notes_base64: %w", err)
+			}
+			version.ReleaseNotes = string(decodedNotes)
 		}
 		if req.IsMandatory != nil {
 			version.IsMandatory = *req.IsMandatory
