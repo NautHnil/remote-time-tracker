@@ -12,24 +12,28 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
+	"gorm.io/gorm"
 	"remote-time-tracker.dev/internal/config"
 	"remote-time-tracker.dev/internal/dto"
+	"remote-time-tracker.dev/internal/models"
 )
 
-// UpdateService handles auto-update operations via GitHub API
+// UpdateService handles auto-update operations from the database and syncs GitHub releases.
 type UpdateService struct {
 	httpClient *http.Client
+	db         *gorm.DB
 	ghOwner    string
 	ghRepo     string
 	ghToken    string
 }
 
 // NewUpdateService creates a new update service instance
-func NewUpdateService() *UpdateService {
+func NewUpdateService(db *gorm.DB) *UpdateService {
 	return &UpdateService{
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		db:      db,
 		ghOwner: config.AppConfig.GitHub.Owner,
 		ghRepo:  config.AppConfig.GitHub.Repo,
 		ghToken: config.AppConfig.GitHub.Token,
@@ -57,34 +61,64 @@ func (s *UpdateService) CheckForUpdates(req dto.UpdateCheckRequest) (*dto.Update
 	log.Printf("🔍 Checking for updates: current=%s, platform=%s, arch=%s",
 		req.CurrentVersion, req.Platform, req.Arch)
 
-	// Get latest release from GitHub
-	release, err := s.getLatestRelease()
+	version, err := s.GetLatestAppVersion()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch latest release: %w", err)
+		return nil, err
 	}
 
-	// Parse version from tag name (remove 'v' prefix if present)
-	latestVersion := strings.TrimPrefix(release.TagName, "v")
+	latestVersion := strings.TrimPrefix(version.Version, "v")
 	currentVersion := strings.TrimPrefix(req.CurrentVersion, "v")
-
-	// Compare versions
 	updateAvailable := compareVersions(latestVersion, currentVersion) > 0
 
 	response := &dto.UpdateCheckResponse{
 		UpdateAvailable: updateAvailable,
 		LatestVersion:   latestVersion,
-		ReleaseDate:     &release.PublishedAt,
-		ReleaseNotes:    release.Body,
-		IsMandatory:     false, // Can be determined from release notes or tags
+		ReleaseDate:     version.ReleaseDate,
+		ReleaseNotes:    version.ReleaseNotes,
+		IsMandatory:     version.IsMandatory,
 	}
 
 	if updateAvailable {
-		// Filter assets for the requested platform
-		response.Files = s.filterAssetsForPlatform(release.Assets, req.Platform, req.Arch, latestVersion)
+		response.Files = s.filterStoredAssetsForPlatform(version.Assets, req.Platform, req.Arch, latestVersion)
 	}
 
 	log.Printf("✅ Update check complete: available=%v, latest=%s", updateAvailable, latestVersion)
 	return response, nil
+}
+
+// GetLatestAppVersion returns the admin-managed latest release from the database.
+func (s *UpdateService) GetLatestAppVersion() (*models.AppVersion, error) {
+	var version models.AppVersion
+	err := s.db.
+		Preload("Assets").
+		Where("draft = ?", false).
+		Order("is_latest DESC, release_date DESC, created_at DESC").
+		First(&version).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("no synced app versions found")
+		}
+		return nil, err
+	}
+	return &version, nil
+}
+
+// GetAppVersionByVersion returns a specific app version from the database.
+func (s *UpdateService) GetAppVersionByVersion(versionValue string) (*models.AppVersion, error) {
+	normalizedVersion := strings.TrimPrefix(versionValue, "v")
+
+	var version models.AppVersion
+	err := s.db.
+		Preload("Assets").
+		Where("version = ? OR tag_name = ?", normalizedVersion, versionValue).
+		First(&version).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("version %s not found", versionValue)
+		}
+		return nil, err
+	}
+	return &version, nil
 }
 
 // getLatestRelease fetches the latest release from GitHub
@@ -125,6 +159,294 @@ func (s *UpdateService) getLatestRelease() (*dto.GHRelease, error) {
 	}
 
 	return &release, nil
+}
+
+// getReleases fetches recent non-deleted releases from GitHub for synchronization.
+func (s *UpdateService) getReleases() ([]dto.GHRelease, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases?per_page=30", s.ghOwner, s.ghRepo)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, value := range s.getAuthHeaders() {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return nil, fmt.Errorf("GitHub API authentication failed (status %d). Check GITHUB_TOKEN", resp.StatusCode)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GitHub API error: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var releases []dto.GHRelease
+	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return releases, nil
+}
+
+// SyncReleasesFromGitHub syncs GitHub releases and assets into the database.
+func (s *UpdateService) SyncReleasesFromGitHub() (*dto.AdminSyncAppVersionsResponse, error) {
+	releases, err := s.getReleases()
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	syncedCount := 0
+	latestVersion := ""
+
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		bestVersion := ""
+		currentLatestVersion := ""
+		var currentLatest models.AppVersion
+		currentLatestErr := tx.Where("is_latest = ? AND draft = ?", true, false).First(&currentLatest).Error
+		if currentLatestErr != nil && !errors.Is(currentLatestErr, gorm.ErrRecordNotFound) {
+			return currentLatestErr
+		}
+		if currentLatestErr == nil {
+			currentLatestVersion = currentLatest.Version
+		}
+
+		for _, release := range releases {
+			versionValue := strings.TrimPrefix(release.TagName, "v")
+			if versionValue == "" {
+				continue
+			}
+			if release.Draft {
+				continue
+			}
+			if latestVersion == "" || compareVersions(versionValue, bestVersion) > 0 {
+				bestVersion = versionValue
+				latestVersion = versionValue
+			}
+		}
+
+		shouldPromoteLatest := currentLatestVersion == ""
+		if !shouldPromoteLatest && latestVersion != "" {
+			shouldPromoteLatest = compareVersions(latestVersion, currentLatestVersion) > 0
+		}
+
+		if shouldPromoteLatest {
+			if err := tx.Model(&models.AppVersion{}).Where("is_latest = ?", true).Update("is_latest", false).Error; err != nil {
+				return err
+			}
+		}
+
+		for _, release := range releases {
+			versionValue := strings.TrimPrefix(release.TagName, "v")
+			if versionValue == "" {
+				continue
+			}
+
+			var appVersion models.AppVersion
+			err := tx.Where("version = ?", versionValue).First(&appVersion).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+
+			isNew := errors.Is(err, gorm.ErrRecordNotFound)
+			if isNew {
+				appVersion = models.AppVersion{
+					Version:      versionValue,
+					ReleaseNotes: release.Body,
+					IsMandatory:  false,
+				}
+			}
+
+			appVersion.TagName = release.TagName
+			appVersion.Name = release.Name
+			appVersion.GitHubReleaseID = release.ID
+			appVersion.GitHubURL = release.HTMLURL
+			appVersion.ReleaseDate = &release.PublishedAt
+			appVersion.OriginalReleaseNotes = release.Body
+			appVersion.Draft = release.Draft
+			appVersion.Prerelease = release.Prerelease
+			if shouldPromoteLatest {
+				appVersion.IsLatest = !release.Draft && versionValue == latestVersion
+			}
+			appVersion.LastSyncedAt = &now
+
+			if isNew {
+				if err := tx.Create(&appVersion).Error; err != nil {
+					return err
+				}
+			} else if err := tx.Save(&appVersion).Error; err != nil {
+				return err
+			}
+
+			for _, asset := range release.Assets {
+				var storedAsset models.AppVersionAsset
+				assetErr := tx.
+					Where("app_version_id = ? AND name = ?", appVersion.ID, asset.Name).
+					First(&storedAsset).Error
+				if assetErr != nil && !errors.Is(assetErr, gorm.ErrRecordNotFound) {
+					return assetErr
+				}
+
+				storedAsset.AppVersionID = appVersion.ID
+				storedAsset.GitHubAssetID = asset.ID
+				storedAsset.Name = asset.Name
+				storedAsset.URL = asset.URL
+				storedAsset.BrowserDownloadURL = asset.BrowserDownloadURL
+				storedAsset.Size = asset.Size
+				storedAsset.ContentType = asset.ContentType
+				storedAsset.State = asset.State
+
+				if errors.Is(assetErr, gorm.ErrRecordNotFound) {
+					if err := tx.Create(&storedAsset).Error; err != nil {
+						return err
+					}
+				} else if err := tx.Save(&storedAsset).Error; err != nil {
+					return err
+				}
+			}
+
+			syncedCount++
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.AdminSyncAppVersionsResponse{
+		SyncedCount: syncedCount,
+		SyncedAt:    now,
+		Latest:      latestVersion,
+	}, nil
+}
+
+func (s *UpdateService) toAdminAppVersionResponse(version models.AppVersion) dto.AdminAppVersionResponse {
+	assets := make([]dto.AdminAppVersionAssetResponse, 0, len(version.Assets))
+	for _, asset := range version.Assets {
+		assets = append(assets, dto.AdminAppVersionAssetResponse{
+			ID:                 asset.ID,
+			Name:               asset.Name,
+			URL:                asset.URL,
+			BrowserDownloadURL: asset.BrowserDownloadURL,
+			DownloadURL:        fmt.Sprintf("/api/v1/public/downloads/file/%s/%s", version.Version, asset.Name),
+			Size:               asset.Size,
+			ContentType:        asset.ContentType,
+			State:              asset.State,
+			SHA512:             asset.SHA512,
+		})
+	}
+
+	return dto.AdminAppVersionResponse{
+		ID:                   version.ID,
+		Version:              version.Version,
+		TagName:              version.TagName,
+		Name:                 version.Name,
+		GitHubReleaseID:      version.GitHubReleaseID,
+		GitHubURL:            version.GitHubURL,
+		ReleaseDate:          version.ReleaseDate,
+		ReleaseNotes:         version.ReleaseNotes,
+		OriginalReleaseNotes: version.OriginalReleaseNotes,
+		IsMandatory:          version.IsMandatory,
+		IsLatest:             version.IsLatest,
+		Draft:                version.Draft,
+		Prerelease:           version.Prerelease,
+		LastSyncedAt:         version.LastSyncedAt,
+		CreatedAt:            version.CreatedAt,
+		UpdatedAt:            version.UpdatedAt,
+		Assets:               assets,
+	}
+}
+
+// ListAdminAppVersions lists all synced app versions for admin management.
+func (s *UpdateService) ListAdminAppVersions() (*dto.AdminAppVersionListResponse, error) {
+	var versions []models.AppVersion
+	if err := s.db.
+		Preload("Assets").
+		Order("is_latest DESC, release_date DESC, created_at DESC").
+		Find(&versions).Error; err != nil {
+		return nil, err
+	}
+
+	result := make([]dto.AdminAppVersionResponse, 0, len(versions))
+	for _, version := range versions {
+		result = append(result, s.toAdminAppVersionResponse(version))
+	}
+
+	return &dto.AdminAppVersionListResponse{Versions: result}, nil
+}
+
+// UpdateAdminAppVersion updates admin-managed app version fields.
+func (s *UpdateService) UpdateAdminAppVersion(id uint, req dto.AdminUpdateAppVersionRequest) (*dto.AdminAppVersionResponse, error) {
+	var version models.AppVersion
+	if err := s.db.Preload("Assets").First(&version, id).Error; err != nil {
+		return nil, err
+	}
+
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		if req.ReleaseNotes != nil {
+			version.ReleaseNotes = *req.ReleaseNotes
+		}
+		if req.IsMandatory != nil {
+			version.IsMandatory = *req.IsMandatory
+		}
+		if req.IsLatest != nil {
+			version.IsLatest = *req.IsLatest
+			if *req.IsLatest {
+				if err := tx.Model(&models.AppVersion{}).
+					Where("id <> ?", version.ID).
+					Update("is_latest", false).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		return tx.Save(&version).Error
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.db.Preload("Assets").First(&version, id).Error; err != nil {
+		return nil, err
+	}
+	response := s.toAdminAppVersionResponse(version)
+	return &response, nil
+}
+
+// StartSyncWorker starts background GitHub release synchronization.
+func (s *UpdateService) StartSyncWorker(interval time.Duration) {
+	if interval <= 0 {
+		interval = 15 * time.Minute
+	}
+
+	go func() {
+		if result, err := s.SyncReleasesFromGitHub(); err != nil {
+			log.Printf("❌ Initial app version sync failed: %v", err)
+		} else {
+			log.Printf("✅ Initial app version sync completed: %d versions, latest=%s", result.SyncedCount, result.Latest)
+		}
+
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			if result, err := s.SyncReleasesFromGitHub(); err != nil {
+				log.Printf("❌ Scheduled app version sync failed: %v", err)
+			} else {
+				log.Printf("✅ Scheduled app version sync completed: %d versions, latest=%s", result.SyncedCount, result.Latest)
+			}
+		}
+	}()
 }
 
 // GetReleaseByTag fetches a specific release by tag name
@@ -218,6 +540,62 @@ func (s *UpdateService) filterAssetsForPlatform(assets []dto.GHAsset, platform, 
 	return result
 }
 
+// filterStoredAssetsForPlatform filters synced assets based on platform and architecture.
+func (s *UpdateService) filterStoredAssetsForPlatform(assets []models.AppVersionAsset, platform, arch, version string) []dto.ReleaseAsset {
+	var result []dto.ReleaseAsset
+
+	var patterns []string
+	switch platform {
+	case "darwin":
+		if arch == "arm64" {
+			patterns = []string{
+				`.*-arm64\.dmg$`,
+				`.*-arm64-mac\.zip$`,
+				`latest-mac\.yml$`,
+			}
+		} else {
+			patterns = []string{
+				`.*\.dmg$`,
+				`.*-mac\.zip$`,
+				`latest-mac\.yml$`,
+			}
+		}
+	case "win32":
+		patterns = []string{
+			`.*Setup.*\.exe$`,
+			`.*\.exe\.blockmap$`,
+			`latest\.yml$`,
+		}
+	case "linux":
+		patterns = []string{
+			`.*\.AppImage$`,
+			`latest-linux\.yml$`,
+		}
+	}
+
+	for _, asset := range assets {
+		for _, pattern := range patterns {
+			matched, _ := regexp.MatchString(pattern, asset.Name)
+			if matched {
+				if platform == "darwin" && arch != "arm64" && strings.Contains(asset.Name, "arm64") {
+					continue
+				}
+
+				result = append(result, dto.ReleaseAsset{
+					Name:        asset.Name,
+					URL:         fmt.Sprintf("/api/v1/updates/download/%s/%s", version, asset.Name),
+					Size:        asset.Size,
+					ContentType: asset.ContentType,
+					SHA512:      asset.SHA512,
+				})
+				break
+			}
+		}
+	}
+
+	return result
+}
+
 // AssetInfo contains information about a release asset
 type AssetInfo struct {
 	Name        string
@@ -228,34 +606,23 @@ type AssetInfo struct {
 
 // GetAssetInfo returns information about a specific asset
 func (s *UpdateService) GetAssetInfo(version, assetName string) (*AssetInfo, error) {
-	// Get release by tag
-	tag := version
-	if !strings.HasPrefix(tag, "v") {
-		tag = "v" + tag
-	}
+	normalizedVersion := strings.TrimPrefix(version, "v")
 
-	release, err := s.GetReleaseByTag(tag)
+	var asset models.AppVersionAsset
+	err := s.db.
+		Joins("JOIN app_versions ON app_versions.id = app_version_assets.app_version_id").
+		Where("app_versions.version = ? AND app_version_assets.name = ?", normalizedVersion, assetName).
+		First(&asset).Error
 	if err != nil {
-		// Try without 'v' prefix
-		release, err = s.GetReleaseByTag(version)
-		if err != nil {
-			return nil, fmt.Errorf("release not found: %w", err)
-		}
+		return nil, fmt.Errorf("asset %s not found in release %s", assetName, version)
 	}
 
-	// Find the asset
-	for _, asset := range release.Assets {
-		if asset.Name == assetName {
-			return &AssetInfo{
-				Name:        asset.Name,
-				URL:         asset.URL,
-				Size:        asset.Size,
-				ContentType: asset.ContentType,
-			}, nil
-		}
-	}
-
-	return nil, fmt.Errorf("asset %s not found in release %s", assetName, version)
+	return &AssetInfo{
+		Name:        asset.Name,
+		URL:         asset.URL,
+		Size:        asset.Size,
+		ContentType: asset.ContentType,
+	}, nil
 }
 
 // GetAssetDownloadURL returns the actual GitHub download URL for an asset
@@ -327,15 +694,13 @@ func (s *UpdateService) GetYMLFile(platform string) (*dto.YMLUpdateInfo, error) 
 		ymlFileName = "latest.yml"
 	}
 
-	// Get latest release
-	release, err := s.getLatestRelease()
+	version, err := s.GetLatestAppVersion()
 	if err != nil {
 		return nil, err
 	}
 
-	// Find the yml asset
-	var ymlAsset *dto.GHAsset
-	for _, asset := range release.Assets {
+	var ymlAsset *models.AppVersionAsset
+	for _, asset := range version.Assets {
 		if asset.Name == ymlFileName {
 			ymlAsset = &asset
 			break
@@ -380,18 +745,18 @@ func (s *UpdateService) GetYMLFile(platform string) (*dto.YMLUpdateInfo, error) 
 // GetAllPlatformDownloads returns download links for all platforms
 // This is used by the website to display download links for users
 func (s *UpdateService) GetAllPlatformDownloads() (*dto.PublicDownloadResponse, error) {
-	release, err := s.getLatestRelease()
+	version, err := s.GetLatestAppVersion()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch latest release: %w", err)
 	}
 
-	version := strings.TrimPrefix(release.TagName, "v")
-
 	response := &dto.PublicDownloadResponse{
-		Version:      version,
-		ReleaseDate:  release.PublishedAt,
-		ReleaseNotes: release.Body,
+		Version:      version.Version,
+		ReleaseNotes: version.ReleaseNotes,
 		Downloads:    make(map[string]dto.PlatformDownload),
+	}
+	if version.ReleaseDate != nil {
+		response.ReleaseDate = *version.ReleaseDate
 	}
 
 	// Define platform patterns
@@ -429,7 +794,7 @@ func (s *UpdateService) GetAllPlatformDownloads() (*dto.PublicDownloadResponse, 
 	// Find assets for each platform
 	for _, platformKey := range platformOrder {
 		config := platformPatterns[platformKey]
-		for _, asset := range release.Assets {
+		for _, asset := range version.Assets {
 			for _, pattern := range config.patterns {
 				matched, _ := regexp.MatchString(pattern, asset.Name)
 				if matched {
@@ -442,7 +807,7 @@ func (s *UpdateService) GetAllPlatformDownloads() (*dto.PublicDownloadResponse, 
 						Name:        config.displayName,
 						Icon:        config.icon,
 						Filename:    asset.Name,
-						URL:         fmt.Sprintf("/api/v1/public/downloads/file/%s/%s", version, asset.Name),
+						URL:         fmt.Sprintf("/api/v1/public/downloads/file/%s/%s", version.Version, asset.Name),
 						Size:        asset.Size,
 						ContentType: asset.ContentType,
 					}

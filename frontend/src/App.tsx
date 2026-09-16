@@ -3,6 +3,7 @@ import { AdminLayout, AdminProtectedRoute } from "./components/admin";
 import DownloadPage from "./pages/DownloadPage";
 import JoinOrganizationPage from "./pages/JoinOrganizationPage";
 import {
+  AdminAppVersionsPage,
   AdminDashboardPage,
   AdminLoginPage,
   AdminOrganizationsPage,
@@ -63,6 +64,7 @@ function BaseRoute() {
           <Route path="screenshots" element={<AdminScreenshotsPage />} />
           <Route path="system-logs" element={<AdminSystemLogsPage />} />
           <Route path="system-settings" element={<AdminSystemSettingsPage />} />
+          <Route path="app-versions" element={<AdminAppVersionsPage />} />
           <Route path="statistics" element={<AdminStatisticsPage />} />
         </Route>
 

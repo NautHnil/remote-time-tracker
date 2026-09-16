@@ -209,44 +209,111 @@ func (c *UpdateController) GetReleaseNotes(ctx *gin.Context) {
 		version = "latest"
 	}
 
-	var release *dto.GHRelease
-	var err error
-
 	if version == "latest" {
-		// Use CheckForUpdates with version 0 to get latest
-		req := dto.UpdateCheckRequest{
-			CurrentVersion: "0.0.0",
-			Platform:       "darwin",
-			Arch:           "x64",
-		}
-		result, err := c.updateService.CheckForUpdates(req)
+		result, err := c.updateService.GetLatestAppVersion()
 		if err != nil {
 			utils.ErrorResponse(ctx, http.StatusInternalServerError, "Failed to get release notes: "+err.Error())
 			return
 		}
 
 		utils.SuccessResponse(ctx, http.StatusOK, "Release notes retrieved", gin.H{
-			"version":       result.LatestVersion,
+			"version":       result.Version,
 			"release_notes": result.ReleaseNotes,
 			"release_date":  result.ReleaseDate,
 		})
 		return
 	}
 
-	release, err = c.updateService.GetReleaseByTag(version)
+	result, err := c.updateService.GetAppVersionByVersion(version)
 	if err != nil {
-		release, err = c.updateService.GetReleaseByTag("v" + version)
-		if err != nil {
-			utils.ErrorResponse(ctx, http.StatusNotFound, "Release not found: "+err.Error())
-			return
-		}
+		utils.ErrorResponse(ctx, http.StatusNotFound, "Release not found: "+err.Error())
+		return
 	}
 
 	utils.SuccessResponse(ctx, http.StatusOK, "Release notes retrieved", gin.H{
-		"version":       release.TagName,
-		"release_notes": release.Body,
-		"release_date":  release.PublishedAt,
+		"version":       result.Version,
+		"release_notes": result.ReleaseNotes,
+		"release_date":  result.ReleaseDate,
 	})
+}
+
+// ListAdminAppVersions returns all synced app versions.
+// @Summary List app versions
+// @Description List GitHub releases synced into the backend app version table
+// @Tags admin
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.SuccessResponse{data=dto.AdminAppVersionListResponse} "App versions retrieved"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Forbidden"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /admin/app-versions [get]
+func (c *UpdateController) ListAdminAppVersions(ctx *gin.Context) {
+	result, err := c.updateService.ListAdminAppVersions()
+	if err != nil {
+		utils.ErrorResponse(ctx, http.StatusInternalServerError, "Failed to list app versions: "+err.Error())
+		return
+	}
+
+	utils.SuccessResponse(ctx, http.StatusOK, "App versions retrieved", result)
+}
+
+// UpdateAdminAppVersion updates admin-managed release metadata.
+// @Summary Update app version metadata
+// @Description Update editable release metadata such as release notes, latest flag, and mandatory update flag
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "App version ID"
+// @Param request body dto.AdminUpdateAppVersionRequest true "App version metadata"
+// @Success 200 {object} dto.SuccessResponse{data=dto.AdminAppVersionResponse} "App version updated"
+// @Failure 400 {object} dto.ErrorResponse "Invalid request"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Forbidden"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /admin/app-versions/{id} [put]
+func (c *UpdateController) UpdateAdminAppVersion(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	if err != nil {
+		utils.ErrorResponse(ctx, http.StatusBadRequest, "Invalid version ID")
+		return
+	}
+
+	var req dto.AdminUpdateAppVersionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(ctx, http.StatusBadRequest, "Invalid request body: "+err.Error())
+		return
+	}
+
+	result, err := c.updateService.UpdateAdminAppVersion(uint(id), req)
+	if err != nil {
+		utils.ErrorResponse(ctx, http.StatusInternalServerError, "Failed to update app version: "+err.Error())
+		return
+	}
+
+	utils.SuccessResponse(ctx, http.StatusOK, "App version updated", result)
+}
+
+// SyncAdminAppVersions syncs GitHub releases into the app version table.
+// @Summary Sync app versions from GitHub
+// @Description Fetch GitHub releases and sync them into the backend app version table
+// @Tags admin
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.SuccessResponse{data=dto.AdminSyncAppVersionsResponse} "App versions synced"
+// @Failure 401 {object} dto.ErrorResponse "Unauthorized"
+// @Failure 403 {object} dto.ErrorResponse "Forbidden"
+// @Failure 500 {object} dto.ErrorResponse "Internal server error"
+// @Router /admin/app-versions/sync [post]
+func (c *UpdateController) SyncAdminAppVersions(ctx *gin.Context) {
+	result, err := c.updateService.SyncReleasesFromGitHub()
+	if err != nil {
+		utils.ErrorResponse(ctx, http.StatusInternalServerError, "Failed to sync app versions: "+err.Error())
+		return
+	}
+
+	utils.SuccessResponse(ctx, http.StatusOK, "App versions synced", result)
 }
 
 // GetPublicDownloadLinks returns download links for all platforms (public, no auth required)

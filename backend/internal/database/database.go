@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"remote-time-tracker.dev/internal/config"
+	"remote-time-tracker.dev/internal/models"
 )
 
 var DB *gorm.DB
@@ -59,6 +60,8 @@ func AutoMigrate(db *gorm.DB) error {
 	log.Println("🔄 Running database migrations...")
 
 	err := db.AutoMigrate(
+		&models.AppVersion{},
+		&models.AppVersionAsset{},
 	//// Core models
 	//&models.User{},
 	//&models.Task{},

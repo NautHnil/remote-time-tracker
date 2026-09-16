@@ -4,6 +4,7 @@
  */
 
 export { default as AdminDashboardPage } from "./AdminDashboardPage";
+export { default as AdminAppVersionsPage } from "./AdminAppVersionsPage";
 export { default as AdminLoginPage } from "./AdminLoginPage";
 export { default as AdminOrganizationsPage } from "./AdminOrganizationsPage";
 export { default as AdminScreenshotsPage } from "./AdminScreenshotsPage";

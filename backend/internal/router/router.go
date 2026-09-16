@@ -392,6 +392,16 @@ func SetupRouterWithConfig(cfg *RouterConfig) *gin.Engine {
 						systemConfigs.PUT("/:key", cfg.AdminController.UpdateSystemConfig)
 					}
 
+					if cfg.UpdateController != nil {
+						appVersions := admin.Group("/app-versions")
+						appVersions.Use(middleware.RequireSystemAdmin())
+						{
+							appVersions.GET("", cfg.UpdateController.ListAdminAppVersions)
+							appVersions.POST("/sync", cfg.UpdateController.SyncAdminAppVersions)
+							appVersions.PUT("/:id", cfg.UpdateController.UpdateAdminAppVersion)
+						}
+					}
+
 					// Statistics & Reports
 					stats := admin.Group("/stats")
 					{

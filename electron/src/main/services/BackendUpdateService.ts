@@ -27,6 +27,7 @@ export interface UpdateCheckResponse {
   latest_version?: string;
   release_date?: string;
   release_notes?: string;
+  original_release_notes?: string;
   is_mandatory?: boolean;
   files?: ReleaseAsset[];
 }
@@ -81,6 +82,23 @@ export class BackendUpdateService {
     } catch (e) {
       log.error("Failed to send update event to renderer:", e);
     }
+  }
+
+  private toBoolean(value: unknown): boolean {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") return value.toLowerCase() === "true";
+    if (typeof value === "number") return value === 1;
+    return false;
+  }
+
+  private normalizeUpdateResponse(response: any): UpdateCheckResponse {
+    return {
+      ...response,
+      release_notes: response?.release_notes ?? response?.releaseNotes ?? "",
+      is_mandatory: this.toBoolean(
+        response?.is_mandatory ?? response?.isMandatory
+      ),
+    };
   }
 
   /**
@@ -221,19 +239,22 @@ export class BackendUpdateService {
         `Checking for updates: v${currentVersion} on ${platform}/${arch}`
       );
 
-      const response = await this.makeBackendRequest<UpdateCheckResponse>(
-        "/updates/check",
-        {
-          method: "POST",
-          body: {
-            current_version: currentVersion,
-            platform,
-            arch,
-          },
-        }
+      const response = this.normalizeUpdateResponse(
+        await this.makeBackendRequest<UpdateCheckResponse>(
+          "/updates/check",
+          {
+            method: "POST",
+            body: {
+              current_version: currentVersion,
+              platform,
+              arch,
+            },
+          }
+        )
       );
 
       log.info("Update check response:", JSON.stringify(response, null, 2));
+      this.downloadedUpdateInfo = response;
 
       if (response.update_available) {
         this.sendEvent({ type: "update-available", info: response });

@@ -15,6 +15,8 @@ import {
 import { Icons } from "./components/Icons";
 import {
   SettingsTabId,
+  UpdateInfo,
+  UpdateModal,
   UpdateNotice,
   UpdateStep,
 } from "./components/settings";
@@ -42,6 +44,23 @@ const LoadingScreen = () => (
   </div>
 );
 
+function toBoolean(value: unknown) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.toLowerCase() === "true";
+  if (typeof value === "number") return value === 1;
+  return false;
+}
+
+function normalizeUpdateInfo(info: any): UpdateInfo | null {
+  if (!info) return null;
+
+  return {
+    ...info,
+    release_notes: info.release_notes ?? info.releaseNotes ?? "",
+    is_mandatory: toBoolean(info.is_mandatory ?? info.isMandatory),
+  };
+}
+
 // ============================================================================
 // APP CONTENT (Authenticated)
 // ============================================================================
@@ -63,9 +82,12 @@ function AppContent() {
   const [updateVersion, setUpdateVersion] = useState("?");
   const [updateStep, setUpdateStep] = useState<UpdateStep>("idle");
   const [availableVersion, setAvailableVersion] = useState<string | null>(null);
+  const [availableUpdateInfo, setAvailableUpdateInfo] =
+    useState<UpdateInfo | null>(null);
   const [updateProgress, setUpdateProgress] = useState(0);
   const [updateErrorMessage, setUpdateErrorMessage] = useState("");
   const [isUpdateNoticeDismissed, setIsUpdateNoticeDismissed] = useState(false);
+  const [isUpdateModalDismissed, setIsUpdateModalDismissed] = useState(false);
 
   // Logout confirmation dialog
   const logoutDialog = useLogoutConfirmDialog();
@@ -109,14 +131,18 @@ function AppContent() {
             setAvailableVersion(
               payload.info?.latest_version || payload.info?.version || null,
             );
+            setAvailableUpdateInfo(normalizeUpdateInfo(payload.info));
             setUpdateErrorMessage("");
             setIsUpdateNoticeDismissed(false);
+            setIsUpdateModalDismissed(false);
             break;
           case "update-not-available":
             setUpdateStep("up-to-date");
             setAvailableVersion(null);
+            setAvailableUpdateInfo(null);
             setUpdateProgress(0);
             setUpdateErrorMessage("");
+            setIsUpdateModalDismissed(false);
             break;
           case "download-progress":
             setUpdateStep("downloading");
@@ -124,9 +150,11 @@ function AppContent() {
             break;
           case "update-downloaded":
             setUpdateStep("downloaded");
+            setAvailableUpdateInfo(normalizeUpdateInfo(payload.info));
             setUpdateProgress(100);
             setUpdateErrorMessage("");
             setIsUpdateNoticeDismissed(false);
+            setIsUpdateModalDismissed(false);
             break;
           case "error":
             setUpdateStep("error");
@@ -182,6 +210,7 @@ function AppContent() {
   const handleCheckUpdates = useCallback(async () => {
     setUpdateStep("checking");
     setAvailableVersion(null);
+    setAvailableUpdateInfo(null);
     setUpdateProgress(0);
     setUpdateErrorMessage("");
 
@@ -231,12 +260,27 @@ function AppContent() {
 
   const handleUpdateNow = useCallback(async () => {
     setIsUpdateNoticeDismissed(false);
-    openUpdateSettings();
 
     if (updateStep === "available") {
       await handleDownloadUpdate();
+      return;
     }
-  }, [handleDownloadUpdate, openUpdateSettings, updateStep]);
+
+    if (updateStep === "downloaded") {
+      await handleInstallUpdate();
+      return;
+    }
+
+    openUpdateSettings();
+  }, [handleDownloadUpdate, handleInstallUpdate, openUpdateSettings, updateStep]);
+
+  const handleDismissUpdateModal = useCallback(() => {
+    if (availableUpdateInfo?.is_mandatory) {
+      return;
+    }
+
+    setIsUpdateModalDismissed(true);
+  }, [availableUpdateInfo?.is_mandatory]);
 
   // ============================================================================
   // LOGOUT HANDLERS
@@ -485,8 +529,19 @@ function AppContent() {
     );
   }
 
+  const shouldShowUpdateModal =
+    Boolean(availableUpdateInfo) &&
+    (Boolean(availableUpdateInfo?.is_mandatory) || !isUpdateModalDismissed) &&
+    (updateStep === "available" ||
+      updateStep === "download-pending" ||
+      updateStep === "downloading" ||
+      updateStep === "downloaded" ||
+      updateStep === "installing" ||
+      updateStep === "error");
+
   const shouldShowUpdateNotice =
-    !isUpdateNoticeDismissed &&
+    !shouldShowUpdateModal &&
+    (!isUpdateNoticeDismissed || Boolean(availableUpdateInfo?.is_mandatory)) &&
     (updateStep === "available" ||
       updateStep === "download-pending" ||
       updateStep === "downloading" ||
@@ -558,12 +613,24 @@ function AppContent() {
         />
       </MainLayout>
 
+      <UpdateModal
+        open={shouldShowUpdateModal}
+        info={availableUpdateInfo}
+        step={updateStep}
+        progress={updateProgress}
+        errorMessage={updateErrorMessage}
+        onClose={handleDismissUpdateModal}
+        onDownload={handleDownloadUpdate}
+        onInstall={handleInstallUpdate}
+      />
+
       {shouldShowUpdateNotice && (
         <UpdateNotice
           step={updateStep}
           availableVersion={availableVersion}
           progress={updateProgress}
           errorMessage={updateErrorMessage}
+          isMandatory={availableUpdateInfo?.is_mandatory}
           onClose={() => setIsUpdateNoticeDismissed(true)}
           onUpdateNow={handleUpdateNow}
         />

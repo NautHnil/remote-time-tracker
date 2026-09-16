@@ -151,7 +151,7 @@ func main() {
 	workspaceService := service.NewWorkspaceService(workspaceRepo, orgRepo, userRepo)
 	invitationService := service.NewInvitationService(invitationRepo, orgRepo, workspaceRepo, userRepo)
 	roleService := service.NewRoleService(workspaceRepo, orgRepo)
-	updateService := service.NewUpdateService()
+	updateService := service.NewUpdateService(db)
 	systemService := service.NewSystemService(userRepo, systemConfigRepo, systemLogService)
 	adminService := service.NewAdminService(
 		adminRepo,
@@ -166,6 +166,7 @@ func main() {
 		cfg.Log.SystemLogRetentionDays,
 		cfg.Log.SystemLogCleanupInterval,
 	)
+	updateService.StartSyncWorker(cfg.GitHub.SyncInterval)
 
 	log.Println("✅ Services initialized")
 
