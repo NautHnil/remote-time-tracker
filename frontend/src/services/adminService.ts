@@ -158,7 +158,7 @@ export interface AdminAppVersionListResponse {
 }
 
 export interface AdminUpdateAppVersionRequest {
-  release_notes?: string;
+  release_notes_base64?: string;
   is_mandatory?: boolean;
   is_latest?: boolean;
 }

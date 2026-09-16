@@ -845,7 +845,7 @@ definitions:
         type: boolean
       is_mandatory:
         type: boolean
-      release_notes:
+      release_notes_base64:
         type: string
     type: object
   remote-time-tracker_dev_internal_dto.AdminUpdateOrgRequest:

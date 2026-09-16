@@ -155,9 +155,9 @@ type AdminAppVersionListResponse struct {
 
 // AdminUpdateAppVersionRequest represents editable admin fields for app versions.
 type AdminUpdateAppVersionRequest struct {
-	ReleaseNotes *string `json:"release_notes"`
-	IsMandatory  *bool   `json:"is_mandatory"`
-	IsLatest     *bool   `json:"is_latest"`
+	ReleaseNotesBase64 *string `json:"release_notes_base64"`
+	IsMandatory        *bool   `json:"is_mandatory"`
+	IsLatest           *bool   `json:"is_latest"`
 }
 
 // AdminSyncAppVersionsResponse represents a GitHub sync result.
